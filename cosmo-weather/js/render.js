@@ -26,7 +26,7 @@
     try { const c = document.createElement('canvas').getContext('2d'); c.filter = 'blur(2px)'; return c.filter === 'blur(2px)'; }
     catch (e) { return false; }
   })();
-  let FAST = false, PURE = false, ENGRAVE = false;   // ENGRAVE: prototype — light as engraved line weight, no glows, no gradients                    // PURE: the sigil layer — solid ink, no glow, no fill                       // scrubbing at speed: skip blurs and the neptune pass
+  let FAST = false, PURE = false, ENGRAVE = false, LUMINOUS = false;   // LUMINOUS: prototype — planets as lights, flat, glowing by power   // ENGRAVE: prototype — light as engraved line weight, no glows, no gradients                    // PURE: the sigil layer — solid ink, no glow, no fill                       // scrubbing at speed: skip blurs and the neptune pass
   function withBlur(ctx, px, fn) {
     if (FAST || px < 0.35) return fn();
     if (supportsFilter) { ctx.save(); ctx.filter = `blur(${px.toFixed(2)}px)`; fn(); ctx.restore(); return; }
@@ -71,7 +71,7 @@
     const u = S / 2048;
     return {
       S, u, cx: S / 2, cy: S * 0.44,
-      Rb: S * 0.395,                  // dodecagon circumradius — the container: equal houses from the ascendant
+      Rb: S * 0.395,                  // dodecagon circumradius — the container; the houses are drawn across it
       Rz: S * 0.35,                   // bezel inner edge / zodiac ring outer
       Rzi: S * 0.33,                  // zodiac ring inner
       R: S * 0.325,                   // sky
@@ -124,7 +124,7 @@
   /* The field: three lights over midnight — ascendant from the eastern horizon, sun and moon where
      they stand, in their sign colours, weighted by sect. Pure light, no texture: a colour field. */
   function buildLight(state, Lt, N) {
-    const key = ['l', N, Math.round(state.date.getTime() / 60000), state.loc.lat, state.loc.lon].join('|');
+    const key = ['l', N, Lt.ext || 1, Math.round(state.date.getTime() / 60000), state.loc.lat, state.loc.lon].join('|');
     if (fieldCache.key === key) return fieldCache.canvas;
     const cv = fieldCache.canvas && fieldCache.canvas.width === N ? fieldCache.canvas : document.createElement('canvas');
     cv.width = cv.height = N;
@@ -134,11 +134,11 @@
     const L = lights(state, Lt).map(l => ({ ...l, lin: lin(l.color) }));
     const base = lin(MIDNIGHT);
     const E = 0.6 + 0.4 * state.moon.illum;
-    const ext = 1.08;
+    const ext = Lt.ext || 1.08;
     for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) {
       const x = (i / (N - 1) * 2 - 1) * ext, y = (j / (N - 1) * 2 - 1) * ext;
       const rr = x * x + y * y, o = (j * N + i) * 4;
-      if (rr > ext * ext) { img.data[o + 3] = 0; continue; }
+      if (!Lt.bleed && rr > ext * ext) { img.data[o + 3] = 0; continue; }
       let r = base[0], gg = base[1], b = base[2];
       for (const l of L) {
         const dx = x - l.pos.x, dy = y - l.pos.y;
@@ -159,7 +159,7 @@
   }
 
   function buildField(state, Lt, N) {
-    const key = [N, Math.round(state.date.getTime() / 60000), state.loc.lat, state.loc.lon].join('|');
+    const key = [N, Lt.ext || 1, Math.round(state.date.getTime() / 60000), state.loc.lat, state.loc.lon].join('|');
     if (fieldCache.key === key) return fieldCache.canvas;
     const cv = fieldCache.canvas && fieldCache.canvas.width === N ? fieldCache.canvas : document.createElement('canvas');
     cv.width = cv.height = N;
@@ -172,12 +172,12 @@
     const E = 0.6 + 0.4 * state.moon.illum;
     const seed = Math.floor(state.date.getTime() / 864e5);   // one weather per day, drifting with the hour
     const drift = (state.date.getTime() / 3600e3) % 1000 * 0.07;
-    const ext = 1.08;
+    const ext = Lt.ext || 1.08;
     for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) {
       const x = (i / (N - 1) * 2 - 1) * ext, y = (j / (N - 1) * 2 - 1) * ext;
       const rr = x * x + y * y;
       const o = (j * N + i) * 4;
-      if (rr > ext * ext) { img.data[o + 3] = 0; continue; }
+      if (!Lt.bleed && rr > ext * ext) { img.data[o + 3] = 0; continue; }
       // domain-warped fbm: smoke, not stars
       const qx = fbm(x * 1.6 + drift, y * 1.6, seed, 3), qy = fbm(x * 1.6 + 5.2, y * 1.6 - drift, seed + 3, 3);
       const n1 = fbm(x * 2.2 + 3.0 * qx, y * 2.2 + 3.0 * qy, seed + 7, 4);
@@ -217,8 +217,9 @@
   const engraveCache = { key: null, canvas: null };
   function drawEngravedField(ctx, state, Lt, density = 1) {
     const m = ctx.getTransform(), k = m.a;
-    const key = [Lt.S, k.toFixed(3), density, Math.round(state.date.getTime() / 60000), state.loc.lat, state.loc.lon].join('|');
-    const px = Math.ceil(Lt.R * 2 * k) + 4;
+    const ext = Lt.ext || 1;
+    const key = [Lt.S, k.toFixed(3), density, ext, Math.round(state.date.getTime() / 60000), state.loc.lat, state.loc.lon].join('|');
+    const px = Math.ceil(Lt.R * 2 * ext * k) + 4;
     if (engraveCache.key !== key) {
       const cv = engraveCache.canvas || document.createElement('canvas');
       if (cv.width !== px) cv.width = cv.height = px; else cv.getContext('2d').clearRect(0, 0, px, px);
@@ -235,7 +236,7 @@
     const L = lights(state, Lt).map(l => ({ ...l, rgb: K.hexToRgb(l.color) }));
     const E = 0.6 + 0.4 * state.moon.illum, u = Lt.u, step = 4.4 * u / density, segLen = 7 * u / density;
     ctx.save(); ctx.lineCap = 'butt';
-    for (let r = step; r < Lt.R; r += step) {
+    for (let r = step; r < Lt.R * (Lt.ext || 1); r += step) {
       const segs = Math.max(24, Math.round(TAU * r / segLen));
       for (let j = 0; j < segs; j++) {
         const a0 = j / segs * TAU, a1 = (j + 1) / segs * TAU, am = (a0 + a1) / 2;
@@ -575,12 +576,16 @@
       const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, rg * 2.6);
       g.addColorStop(0, K.rgba(tint, 0.55 * E * level)); g.addColorStop(0.35, K.rgba(tint, 0.18 * E * level)); g.addColorStop(1, K.rgba(tint, 0));
       ctx.globalCompositeOperation = 'screen'; ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, rg * 2.6, 0, TAU); ctx.fill();
-    } else {                                              // void: the door is closed — a dark pupil
-      const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, rg * 1.8);
-      g.addColorStop(0, 'rgba(2,3,10,0.75)'); g.addColorStop(1, 'rgba(2,3,10,0)');
-      ctx.globalCompositeOperation = 'source-over'; ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, rg * 1.8, 0, TAU); ctx.fill();
+    } else {                                              // void: the door is closed — a dark pupil, and the whole portal dims around it
+      ctx.globalCompositeOperation = 'source-over';
+      const g0 = ctx.createRadialGradient(cx, cy, rg * 1.2, cx, cy, rg * 6);
+      g0.addColorStop(0, 'rgba(2,3,10,0.55)'); g0.addColorStop(1, 'rgba(2,3,10,0)');
+      ctx.fillStyle = g0; ctx.beginPath(); ctx.arc(cx, cy, rg * 6, 0, TAU); ctx.fill();
+      const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, rg * 2.4);
+      g.addColorStop(0, 'rgba(2,3,10,0.97)'); g.addColorStop(0.5, 'rgba(2,3,10,0.85)'); g.addColorStop(1, 'rgba(2,3,10,0)');
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, rg * 2.4, 0, TAU); ctx.fill();
     }
-    const ghost = v === 'void' ? 0.35 : v === 'unripe' ? 0.7 : 1;
+    const ghost = v === 'void' ? 0.22 : v === 'unripe' ? 0.7 : 1;
     const lw = Lt.u * 1.6;
     const star = (key, alpha) => {
       const n = C.PLANETS[key].number, k = GUARD_K[n];
@@ -654,25 +659,50 @@
   }
 
   /* ---------- the intelligences ---------- */
-  function placeBodies(state, Lt) {
+  /* conjunct bodies are one thing: grouped through the conjunction aspects */
+  function conjunctionClusters(state) {
+    const parent = {}; C.ORDER.forEach(k => { parent[k] = k; });
+    const find = k => parent[k] === k ? k : (parent[k] = find(parent[k]));
+    for (const a of state.aspects) if (a.aspect === 'conjunction') parent[find(a.a)] = find(a.b);
+    const groups = {};
+    for (const k of C.ORDER) { const r = find(k); (groups[r] = groups[r] || []).push(k); }
+    return Object.values(groups).filter(g => g.length > 1)
+      .map(g => { const l0 = state.bodies[g[0]].lon; return g.sort((x, y) => E_.norm180(state.bodies[x].lon - l0) - E_.norm180(state.bodies[y].lon - l0)); });
+  }
+  function placeBodies(state, Lt, clusters = []) {
     const pts = C.ORDER.map(k => ({ key: k, ...skyPoint(Lt, state.bodies[k]) }));
+    const byKey = {}; pts.forEach(p => { byKey[p.key] = p; });
+    const inCluster = {}; clusters.forEach((g, i) => g.forEach(k => { inCluster[k] = i; }));
+    const put = q => { q.x = Lt.cx + q.r * Math.cos(q.th); q.y = Lt.cy - q.r * Math.sin(q.th); };
+    // conjunct bodies close on their common centre until their rings overlap: one form
+    for (const g of clusters) {
+      const ps = g.map(k => byKey[k]), th0 = ps[0].th;
+      const rel = ps.map(p => E_.norm180((p.th - th0) * 180 / Math.PI) * Math.PI / 180);
+      const rMean = ps.reduce((a, p) => a + p.r, 0) / ps.length;
+      const gap = Lt.S * 0.036 / rMean;
+      const mean = rel.reduce((a, v) => a + v, 0) / rel.length;
+      const pos = [0]; for (let i = 1; i < rel.length; i++) pos.push(pos[i - 1] + Math.min(gap, Math.abs(rel[i] - rel[i - 1])));
+      const shift = mean - pos.reduce((a, v) => a + v, 0) / pos.length;
+      ps.forEach((p, i) => { p.th = th0 + pos[i] + shift; put(p); });
+    }
     const min = Lt.S * 0.056;
-    for (let it = 0; it < 24; it++) {                     // nudge apart along the orbit, never radially
+    const turn = (q, d) => { for (const k of (inCluster[q.key] !== undefined ? clusters[inCluster[q.key]] : [q.key])) { byKey[k].th += d; put(byKey[k]); } };
+    for (let it = 0; it < 24; it++) {                     // nudge apart along the orbit, never radially; a cluster moves as one
       let moved = false;
       for (let i = 0; i < pts.length; i++) for (let j = i + 1; j < pts.length; j++) {
         const a = pts[i], b = pts[j];
+        if (inCluster[a.key] !== undefined && inCluster[a.key] === inCluster[b.key]) continue;
         const d = Math.hypot(a.x - b.x, a.y - b.y);
         if (d < min) {
           const push = (min - d) / (2 * ((a.r + b.r) / 2));
-          const s = E_.norm180((a.th - b.th) * 180 / Math.PI) >= 0 ? 1 : -1;
-          a.th += s * push; b.th -= s * push;
-          for (const q of [a, b]) { q.x = Lt.cx + q.r * Math.cos(q.th); q.y = Lt.cy - q.r * Math.sin(q.th); }
+          const sg = E_.norm180((a.th - b.th) * 180 / Math.PI) >= 0 ? 1 : -1;
+          turn(a, sg * push); turn(b, -sg * push);
           moved = true;
         }
       }
       if (!moved) break;
     }
-    const map = {}; pts.forEach(p => (map[p.key] = p)); return map;
+    return byKey;
   }
 
   function drawMoonDisc(ctx, x, y, r, phaseAngle, col, P) {
@@ -741,7 +771,14 @@
     const dig = C.PLANETS[key].kind === 'optic' ? 0.5 : (b.dignity.score + 5) / 15;   // −5 … +10 → 0 … 1
     return clamp(0.45 * dig + 0.5 * Math.min(1, inv || 0) + (b.angular ? 0.2 : 0) + (b.station ? 0.2 : 0), 0, 1.2);
   }
-  function drawStateRing(ctx, state, Lt, key, q, coreR, lw, E, dim, t) {
+
+  /* the state ring: the planet's own polygon, larger; its form is the condition, its rotation the alignment */
+  const RING = {
+    domicile: { w: 1.6, a: 1, off: 0 }, exaltation: { w: 1.4, a: 1, off: 0, double: true }, minor: { w: 1.0, a: 0.85, off: 0.25 },
+    peregrine: { w: 0.8, a: 0.55, off: 0.5 }, neutral: { w: 0.9, a: 0.6, off: 0 },
+    detriment: { w: 1.4, a: 0.9, off: 1, broken: true }, fall: { w: 1.2, a: 0.75, off: 1, broken: true, inward: true }
+  };
+  function ringSpec(ctx, state, Lt, key, q, coreR, t) {
     const b = state.bodies[key];
     const st = stateOf(b, key);
     const n = POLY[key];
@@ -756,125 +793,237 @@
       for (let i = 0; i <= 6; i++) g.addColorStop(i / 6, K.hueShift('#c9f0ff', i * 60));
       stroke = g;
     }
-    const spec = {
-      domicile: { w: 1.6, a: 1, off: 0 }, exaltation: { w: 1.4, a: 1, off: 0, double: true }, minor: { w: 1.0, a: 0.85, off: 0.25 },
-      peregrine: { w: 0.8, a: 0.55, off: 0.5 }, neutral: { w: 0.9, a: 0.6, off: 0 },
-      detriment: { w: 1.4, a: 0.9, off: 1, broken: true }, fall: { w: 1.2, a: 0.75, off: 1, broken: true, inward: true }
-    }[st];
+    const spec = RING[st];
     if (spec.inward) rr *= 0.92;
     const rot = Math.PI / 2 + (n ? spec.off * Math.PI / n : 0);
-    withBlur(ctx, 3 * Lt.u * b.slow, () => {             // retrograde: the ring loses focus
-      ctx.save();
-      ctx.globalCompositeOperation = 'source-over';
-      ctx.globalAlpha = spec.a * dim;
-      ctx.strokeStyle = stroke; ctx.lineWidth = lw * spec.w; ctx.lineJoin = 'round';
-      if (spec.broken) { const per = n ? 2 * rr * Math.sin(Math.PI / n) : TAU * rr / 12; ctx.setLineDash([per * 0.55, per * 0.45]); }
-      ctx.stroke(polyPath(q.x, q.y, rr, n, rot));
-      if (spec.double) { ctx.lineWidth = lw * 0.8; ctx.stroke(polyPath(q.x, q.y, rr * 1.3, n, rot)); }
-      ctx.restore();
-    });
-    return rr;
+    return { rr, n, rot, stroke, spec, slow: b.slow };
+  }
+  function strokeRing(ctx, sp, q, lw, alpha, wIn = 1, wOut = 0.8) {
+    ctx.save();
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.globalAlpha = alpha;
+    ctx.strokeStyle = sp.stroke; ctx.lineWidth = lw * sp.spec.w * wIn; ctx.lineJoin = 'round';
+    if (sp.spec.broken) { const per = sp.n ? 2 * sp.rr * Math.sin(Math.PI / sp.n) : TAU * sp.rr / 12; ctx.setLineDash([per * 0.55, per * 0.45]); }
+    ctx.stroke(polyPath(q.x, q.y, sp.rr, sp.n, sp.rot));
+    if (sp.spec.double) { ctx.lineWidth = lw * wOut; ctx.stroke(polyPath(q.x, q.y, sp.rr * 1.3, sp.n, sp.rot)); }
+    ctx.restore();
+  }
+  function drawStateRing(ctx, state, Lt, key, q, coreR, lw, E, dim, t) {
+    const sp = ringSpec(ctx, state, Lt, key, q, coreR, t);
+    withBlur(ctx, 3 * Lt.u * sp.slow, () => strokeRing(ctx, sp, q, lw, sp.spec.a * dim));   // retrograde: the ring loses focus
+    return sp.rr;
   }
 
-  function drawBodies(ctx, state, Lt, pos, E, lw, t, involved) {
-    const B = state.bodies;
-    for (const key of C.ORDER.slice().reverse()) {
-      const b = B[key], P = C.PLANETS[key], q = pos[key];
-      const up = b.alt > 0;
-      const dim = up ? 1 : 0.6;
-      const core = coreColor(state, key);
-      const aura = signColorAt(b.lon);
-      const pw = planetPower(state, key, involved[key]);
-      const k = 0.95 + 0.5 * pw;                           // a powerful planet stands larger
-      const coreR = Lt.S * (key === 'sun' ? 0.022 : key === 'moon' ? 0.0195 : 0.0145) * k;
-      const auraR = coreR * (key === 'sun' ? 4.2 : 3.6);
-      const n = POLY[key];
-
-      // aura: sign colour, purity and brightness from dignity
-      if (!(key === 'sun' && !up) && !ENGRAVE) {
-        const ac = K.shade(K.clarify(aura, b.clarity), -0.15 * (1 - b.clarity));
-        const aw = 0.35 + 0.65 * b.clarity;
-        withBlur(ctx, 4 * Lt.u * b.slow, () => {
-          ctx.save(); ctx.globalCompositeOperation = 'screen';
-          const g = ctx.createRadialGradient(q.x, q.y, 0, q.x, q.y, auraR);
-          g.addColorStop(0, K.rgba(ac, 0.6 * E * dim * aw)); g.addColorStop(0.4, K.rgba(ac, 0.18 * E * dim * aw)); g.addColorStop(1, K.rgba(ac, 0));
-          ctx.fillStyle = g; ctx.beginPath(); ctx.arc(q.x, q.y, auraR, 0, TAU); ctx.fill();
-          ctx.restore();
-        });
-      }
-      const rr = drawStateRing(ctx, state, Lt, key, q, coreR, lw, E, (key === 'sun' && !up) ? 0.4 : dim, t);
-
-      ctx.save();
-      ctx.globalCompositeOperation = 'source-over';
-      ctx.globalAlpha = dim;
-      if (key === 'sun' && !up) {                         // below the horizon the sun is switched off
-        ctx.strokeStyle = K.rgba(C.PLANETS.sun.tincture, 0.6); ctx.lineWidth = lw;
-        ctx.stroke(polyPath(q.x, q.y, coreR, 6, Math.PI / 2));
-      } else if (key === 'moon') {
-        drawMoonDisc(ctx, q.x, q.y, coreR, state.moon.phaseAngle, core, P);
-      } else if (key === 'saturn') {
-        const p = polyPath(q.x, q.y, coreR * 1.25, 3, Math.PI / 2);
-        ctx.fillStyle = '#000'; ctx.fill(p); ctx.strokeStyle = P.rim; ctx.lineWidth = lw * 0.9; ctx.lineJoin = 'round'; ctx.stroke(p);
-      } else if (key === 'uranus') {
-        ctx.fillStyle = '#dcebf3'; ctx.beginPath(); ctx.arc(q.x, q.y, coreR * 0.6, 0, TAU); ctx.fill();
-      } else if (key === 'neptune') {
-        const g = ctx.createRadialGradient(q.x, q.y, 0, q.x, q.y, coreR * 2.2);
-        g.addColorStop(0, 'rgba(255,255,255,1)'); g.addColorStop(0.35, 'rgba(235,242,255,0.4)'); g.addColorStop(1, 'rgba(235,242,255,0)');
-        ctx.globalCompositeOperation = 'screen'; ctx.fillStyle = g; ctx.beginPath(); ctx.arc(q.x, q.y, coreR * 2.2, 0, TAU); ctx.fill();
-      } else if (key === 'pluto') {
-        // no body colour: pluto is the lens drawn later
-      } else {
-        const p = polyPath(q.x, q.y, coreR * 1.12, n, Math.PI / 2);
-        // a material, not a flat: a sheen off-centre, the tincture, a shadow at the edge. gold and silver shine hardest.
-        const g = ctx.createRadialGradient(q.x - coreR * 0.38, q.y - coreR * 0.42, 0, q.x - coreR * 0.1, q.y - coreR * 0.1, coreR * 2.0);
-        g.addColorStop(0, P.sheen || K.shade(core, 0.16)); g.addColorStop(0.42, core); g.addColorStop(1, P.shade || K.shade(core, -0.14));
-        ctx.fillStyle = g; ctx.fill(p);
-        if (P.sheen) { ctx.strokeStyle = K.rgba(P.sheen, 0.5); ctx.lineWidth = Lt.u; ctx.lineJoin = 'round'; ctx.stroke(p); }
-      }
-      if (b.cazimi) {
-        ctx.strokeStyle = 'rgba(255,240,200,0.95)'; ctx.lineWidth = lw * 1.3;
-        ctx.beginPath(); ctx.arc(q.x, q.y, rr * 1.5, 0, TAU); ctx.stroke();
-      }
+  const SOLID = new Set(['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn']);
+  function bodyGeom(state, Lt, key, q, involved) {
+    const b = state.bodies[key], P = C.PLANETS[key];
+    const up = b.alt > 0;
+    const pw = planetPower(state, key, involved[key]);
+    const k = 0.95 + 0.5 * pw;                             // a powerful planet stands larger
+    const coreR = Lt.S * (key === 'sun' ? 0.022 : key === 'moon' ? 0.0195 : 0.0145) * k;
+    return { key, b, P, q, up, dim: up ? 1 : 0.6, core: coreColor(state, key), aura: signColorAt(b.lon), pw, coreR,
+      auraR: coreR * (key === 'sun' ? 4.2 : 3.6), n: POLY[key], solid: SOLID.has(key) && !(key === 'sun' && !up) };
+  }
+  // aura: sign colour, purity and brightness from dignity
+  function drawAura(ctx, m, Lt, E) {
+    if ((m.key === 'sun' && !m.up) || ENGRAVE) return;
+    const b = m.b, q = m.q;
+    const ac = K.shade(K.clarify(m.aura, b.clarity), -0.15 * (1 - b.clarity));
+    const aw = 0.35 + 0.65 * b.clarity;
+    withBlur(ctx, 4 * Lt.u * b.slow, () => {
+      ctx.save(); ctx.globalCompositeOperation = 'screen';
+      const g = ctx.createRadialGradient(q.x, q.y, 0, q.x, q.y, m.auraR);
+      g.addColorStop(0, K.rgba(ac, 0.6 * E * m.dim * aw)); g.addColorStop(0.4, K.rgba(ac, 0.18 * E * m.dim * aw)); g.addColorStop(1, K.rgba(ac, 0));
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(q.x, q.y, m.auraR, 0, TAU); ctx.fill();
       ctx.restore();
+    });
+  }
+  function shapePath(m) {
+    const q = m.q, r = m.coreR;
+    if (m.key === 'moon') { const p = new Path2D(); p.arc(q.x, q.y, r, 0, TAU); return p; }
+    if (m.key === 'saturn') return polyPath(q.x, q.y, r * 1.25, 3, Math.PI / 2);
+    return polyPath(q.x, q.y, r * 1.12, m.n, Math.PI / 2);
+  }
+  function drawShape(ctx, state, m, Lt, lw) {
+    const { key, q, coreR, P, core, n } = m;
+    ctx.save();
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.globalAlpha = m.dim;
+    if (key === 'sun' && !m.up) {                         // below the horizon the sun is switched off
+      ctx.strokeStyle = K.rgba(C.PLANETS.sun.tincture, 0.6); ctx.lineWidth = lw;
+      ctx.stroke(polyPath(q.x, q.y, coreR, 6, Math.PI / 2));
+    } else if (key === 'moon') {
+      drawMoonDisc(ctx, q.x, q.y, coreR, state.moon.phaseAngle, core, P);
+    } else if (key === 'saturn') {
+      const p = shapePath(m);
+      ctx.fillStyle = '#000'; ctx.fill(p); ctx.strokeStyle = P.rim; ctx.lineWidth = lw * 0.9; ctx.lineJoin = 'round'; ctx.stroke(p);
+    } else if (key === 'uranus') {
+      ctx.fillStyle = '#dcebf3'; ctx.beginPath(); ctx.arc(q.x, q.y, coreR * 0.6, 0, TAU); ctx.fill();
+    } else if (key === 'neptune') {
+      const g = ctx.createRadialGradient(q.x, q.y, 0, q.x, q.y, coreR * 2.2);
+      g.addColorStop(0, 'rgba(255,255,255,1)'); g.addColorStop(0.35, 'rgba(235,242,255,0.4)'); g.addColorStop(1, 'rgba(235,242,255,0)');
+      ctx.globalCompositeOperation = 'screen'; ctx.fillStyle = g; ctx.beginPath(); ctx.arc(q.x, q.y, coreR * 2.2, 0, TAU); ctx.fill();
+    } else if (key === 'pluto') {
+      // no body colour: pluto is the occultation drawn after everything
+    } else if (LUMINOUS) {                                // prototype: a light, not a body. flat, and it glows by its power
+      glow(ctx, q.x, q.y, coreR, core, m.pw, m.dim);
+      ctx.fillStyle = K.shade(core, 0.08 + 0.22 * m.pw); ctx.fill(shapePath(m));
+    } else {
+      const p = shapePath(m);
+      // a material, not a flat: a sheen off-centre, the tincture, a shadow at the edge. gold and silver shine hardest.
+      const g = ctx.createRadialGradient(q.x - coreR * 0.38, q.y - coreR * 0.42, 0, q.x - coreR * 0.1, q.y - coreR * 0.1, coreR * 2.0);
+      g.addColorStop(0, P.sheen || K.shade(core, 0.16)); g.addColorStop(0.42, core); g.addColorStop(1, P.shade || K.shade(core, -0.14));
+      ctx.fillStyle = g; ctx.fill(p);
+      if (P.sheen) { ctx.strokeStyle = K.rgba(P.sheen, 0.5); ctx.lineWidth = Lt.u; ctx.lineJoin = 'round'; ctx.stroke(p); }
+    }
+    if (LUMINOUS && key === 'moon') glow(ctx, q.x, q.y, coreR, '#e8edf3', 0.2 + 0.8 * state.moon.illum, m.dim);
+    if (LUMINOUS && key === 'saturn') glow(ctx, q.x, q.y, coreR, '#6e737c', 0.25, m.dim);
+    ctx.restore();
+  }
+  function glow(ctx, x, y, r, col, pw, dim) {
+    const R = r * (1.9 + 2.6 * Math.min(1, pw)), a = (0.3 + 0.6 * Math.min(1, pw)) * dim;
+    ctx.save(); ctx.globalCompositeOperation = 'screen';
+    const g = ctx.createRadialGradient(x, y, r * 0.5, x, y, R);
+    g.addColorStop(0, K.rgba(col, a)); g.addColorStop(0.35, K.rgba(col, a * 0.35)); g.addColorStop(1, K.rgba(col, 0));
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, R, 0, TAU); ctx.fill();
+    ctx.restore();
+  }
+  function drawCazimi(ctx, m, rr, lw) {
+    if (!m.b.cazimi) return;
+    ctx.save(); ctx.globalCompositeOperation = 'source-over';
+    ctx.strokeStyle = 'rgba(255,240,200,0.95)'; ctx.lineWidth = lw * 1.3;
+    ctx.beginPath(); ctx.arc(m.q.x, m.q.y, rr * 1.5, 0, TAU); ctx.stroke();
+    ctx.restore();
+  }
+  function drawGlyph(ctx, m, Lt, gx, gy) {
+    const gr = Lt.S * 0.022;
+    const ink = K.rgba(INK, (m.up ? 0.9 : 0.5));
+    withBlur(ctx, 2.5 * Lt.u * m.b.slow, () => G.planet(ctx, m.key, gx, gy, gr, ink, 0.11));
+  }
+  function drawOne(ctx, state, Lt, m, E, lw, t) {
+    drawAura(ctx, m, Lt, E);
+    const rr = drawStateRing(ctx, state, Lt, m.key, m.q, m.coreR, lw, E, (m.key === 'sun' && !m.up) ? 0.4 : m.dim, t);
+    drawShape(ctx, state, m, Lt, lw);
+    drawCazimi(ctx, m, rr, lw);
+    const gr = Lt.S * 0.022, off = rr + gr * 0.85;        // glyph, outward of the body
+    drawGlyph(ctx, m, Lt, m.q.x + Math.cos(m.q.th) * off, m.q.y - Math.sin(m.q.th) * off);
+  }
 
-      // glyph, outward of the body
-      const gr = Lt.S * 0.022, off = rr + gr * 0.85;
-      const gx = q.x + Math.cos(q.th) * off, gy = q.y - Math.sin(q.th) * off;
-      const ink = K.rgba(INK, (up ? 0.9 : 0.5));
-      withBlur(ctx, 2.5 * Lt.u * b.slow, () => G.planet(ctx, key, gx, gy, gr, ink, 0.11));
+  /* a scratch plate the size of the canvas, in the canvas's own transform: for unions */
+  let scratch = null;
+  function scratchFor(ctx) {
+    const W = ctx.canvas.width, H = ctx.canvas.height;
+    if (!scratch || scratch.width !== W || scratch.height !== H) { scratch = document.createElement('canvas'); scratch.width = W; scratch.height = H; }
+    const s = scratch.getContext('2d');
+    s.setTransform(1, 0, 0, 1, 0, 0); s.clearRect(0, 0, W, H);
+    s.globalCompositeOperation = 'source-over'; s.globalAlpha = 1; s.filter = 'none'; s.setLineDash([]);
+    if (ctx.getTransform) s.setTransform(ctx.getTransform());
+    return s;
+  }
+  function blit(ctx, s, blur) {
+    ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
+    withBlur(ctx, blur, () => ctx.drawImage(s.canvas, 0, 0));
+    ctx.restore();
+  }
+
+  /* conjunct planets are one form: the rings fuse into a single outline, the bodies into one material mixed
+     from their tinctures by power, and the glyphs stand side by side outside it, in the order of the zodiac. */
+  function drawCluster(ctx, state, Lt, ms, E, lw, t) {
+    for (const m of ms) drawAura(ctx, m, Lt, E);
+    // rings as a union: stroked on the scratch plate at double width, the interiors erased, so only the outer edge remains
+    const s = scratchFor(ctx);
+    const specs = ms.map(m => ringSpec(s, state, Lt, m.key, m.q, m.coreR, t));
+    ms.forEach((m, i) => strokeRing(s, specs[i], m.q, lw, specs[i].spec.a * ((m.key === 'sun' && !m.up) ? 0.4 : m.dim), 2, 0.8));
+    s.globalCompositeOperation = 'destination-out'; s.fillStyle = '#000';
+    ms.forEach((m, i) => s.fill(polyPath(m.q.x, m.q.y, specs[i].rr * 0.995, specs[i].n, specs[i].rot)));
+    blit(ctx, s, 3 * Lt.u * Math.max(...ms.map(m => m.b.slow)));
+    // bodies: the solid ones as one material
+    const solids = ms.filter(m => m.solid);
+    if (solids.length >= 2) {
+      let col = null, w = 0;
+      for (const m of solids) { const c = m.key === 'saturn' ? '#15171c' : m.core; const wm = 0.3 + m.pw; col = col ? K.mixLight(col, c, wm / (w + wm), 0.02) : c; w += wm; }
+      const cx = solids.reduce((a, m) => a + m.q.x, 0) / solids.length, cy = solids.reduce((a, m) => a + m.q.y, 0) / solids.length;
+      const ext = Math.max(...solids.map(m => Math.hypot(m.q.x - cx, m.q.y - cy) + m.coreR * 1.25)) * 1.6;
+      const sheen = K.shade(col, solids.some(m => m.P.sheen) ? 0.3 : 0.16);
+      const g = ctx.createRadialGradient(cx - ext * 0.28, cy - ext * 0.3, 0, cx - ext * 0.07, cy - ext * 0.07, ext);
+      g.addColorStop(0, sheen); g.addColorStop(0.42, col); g.addColorStop(1, K.shade(col, -0.16));
+      const pwMax = Math.max(...solids.map(m => m.pw)), dimMax = Math.max(...solids.map(m => m.dim));
+      if (LUMINOUS) glow(ctx, cx, cy, ext * 0.45, col, pwMax, dimMax);
+      ctx.save(); ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = dimMax;
+      ctx.fillStyle = LUMINOUS ? K.shade(col, 0.08 + 0.22 * pwMax) : g; for (const m of solids) ctx.fill(shapePath(m));
+      ctx.restore();
+      const s2 = scratchFor(ctx);                          // one outline around the union
+      s2.strokeStyle = K.rgba(sheen, 0.6); s2.lineWidth = Lt.u * 2.2; s2.lineJoin = 'round';
+      for (const m of solids) s2.stroke(shapePath(m));
+      s2.globalCompositeOperation = 'destination-out'; s2.fillStyle = '#000';
+      for (const m of solids) s2.fill(shapePath(m));
+      blit(ctx, s2, 0);
+    }
+    for (const m of ms) if (!(m.solid && solids.length >= 2)) drawShape(ctx, state, m, Lt, lw);
+    ms.forEach((m, i) => drawCazimi(ctx, m, specs[i].rr, lw));
+    // glyphs: a fan outside the form
+    const gr = Lt.S * 0.022;
+    const sx = ms.reduce((a, m) => a + Math.cos(m.q.th), 0), sy = ms.reduce((a, m) => a + Math.sin(m.q.th), 0);
+    const thM = Math.atan2(sy, sx), rM = ms.reduce((a, m) => a + m.q.r, 0) / ms.length;
+    const off = rM + Math.max(...specs.map(sp => sp.rr)) + gr * 0.85;
+    const base = { x: Lt.cx + Math.cos(thM) * off, y: Lt.cy - Math.sin(thM) * off };
+    const tx = -Math.sin(thM), ty = -Math.cos(thM);       // along the orbit
+    const order = ms.slice().sort((a, b) => E_.norm180((a.q.th - thM) * 180 / Math.PI) - E_.norm180((b.q.th - thM) * 180 / Math.PI));
+    const step = gr * 1.9;
+    order.forEach((m, i) => { const d = (i - (order.length - 1) / 2) * step; drawGlyph(ctx, m, Lt, base.x + tx * d, base.y + ty * d); });
+  }
+
+  function drawBodies(ctx, state, Lt, pos, E, lw, t, involved, clusters = []) {
+    const geoms = {}; for (const key of C.ORDER) geoms[key] = bodyGeom(state, Lt, key, pos[key], involved);
+    const inCluster = {}; clusters.forEach((g, i) => g.forEach(k => { inCluster[k] = i; }));
+    const done = new Set();
+    for (const key of C.ORDER.slice().reverse()) {
+      if (done.has(key)) continue;
+      if (inCluster[key] !== undefined) { const g = clusters[inCluster[key]]; drawCluster(ctx, state, Lt, g.map(k => geoms[k]), E, lw, t); g.forEach(k => done.add(k)); }
+      else drawOne(ctx, state, Lt, geoms[key], E, lw, t);
     }
   }
 
-  /* lensing: pluto bends the space around it. the centre is magnified, the surround is pulled inward
-     and breaks at the outer edge, a dark ring marks the einstein radius. drawn from the canvas itself. */
-  function lens(ctx, cx, cy, r, strength) {
+  /* occultation: pluto hides. inside its circle the field is put out and only the structure remains, as under an
+     eclipse; at the limb the light that was there stands out as a corona of streamers. no magnification, no pigment
+     of its own: the corona takes the colour of what it covers. */
+  function occult(ctx, cx, cy, r, strength, u, disc = true) {
     if (strength < 0.05) return;
-    const src = ctx.canvas;
-    try {
-      const m = ctx.getTransform ? ctx.getTransform() : { a: 1, e: 0, f: 0 }, k = m.a, X = x => x * k + m.e, Y = y => y * k + m.f;
-      const R2 = r * 1.7, zin = 1 + 1.0 * strength, pull = 1 + 0.45 * strength;
-      ctx.save();
-      ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1; ctx.filter = 'none';
-      ctx.beginPath(); ctx.arc(cx, cy, R2, 0, TAU); ctx.arc(cx, cy, r, 0, TAU, true); ctx.clip('evenodd');
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
-      const sw = 2 * R2 * pull;
-      ctx.drawImage(src, X(cx - R2 * pull), Y(cy - R2 * pull), sw * k, sw * k, X(cx - R2), Y(cy - R2), 2 * R2 * k, 2 * R2 * k);
-      ctx.restore();
-      ctx.save();
-      ctx.beginPath(); ctx.arc(cx, cy, r, 0, TAU); ctx.clip();
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
-      const sz = r / zin;
-      ctx.drawImage(src, X(cx - sz), Y(cy - sz), 2 * sz * k, 2 * sz * k, X(cx - r), Y(cy - r), 2 * r * k, 2 * r * k);
-      ctx.restore();
-      ctx.save();
-      ctx.strokeStyle = `rgba(0,0,0,${(0.6 * strength).toFixed(2)})`; ctx.lineWidth = Math.max(1, r * 0.07); ctx.beginPath(); ctx.arc(cx, cy, r, 0, TAU); ctx.stroke();
-      ctx.strokeStyle = K.rgba(INK, 0.3 * strength); ctx.lineWidth = Math.max(0.8, r * 0.02); ctx.beginPath(); ctx.arc(cx, cy, r * 1.06, 0, TAU); ctx.stroke();
-      ctx.strokeStyle = `rgba(0,0,0,${(0.35 * strength).toFixed(2)})`; ctx.lineWidth = Math.max(1, r * 0.03); ctx.beginPath(); ctx.arc(cx, cy, R2, 0, TAU); ctx.stroke();
-      const g = ctx.createRadialGradient(cx, cy, r, cx, cy, R2);
-      g.addColorStop(0, `rgba(0,0,0,${(0.22 * strength).toFixed(2)})`); g.addColorStop(1, 'rgba(0,0,0,0)');
-      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, R2, 0, TAU); ctx.fill();
-      ctx.restore();
-    } catch (e) { /* tainted or unsupported: skip */ }
+    const s = Math.min(1, strength);
+    let col = INK;
+    try {                                                   // sample the plate just inside the limb
+      const m = ctx.getTransform ? ctx.getTransform() : { a: 1, e: 0, f: 0 }, k = m.a;
+      let R = 0, Gc = 0, Bc = 0, n = 0;
+      for (let i = 0; i < 12; i++) {
+        const a = i * TAU / 12, px = Math.round((cx + Math.cos(a) * r * 0.85) * k + m.e), py = Math.round((cy + Math.sin(a) * r * 0.85) * k + m.f);
+        const d = ctx.getImageData(px, py, 1, 1).data; R += d[0]; Gc += d[1]; Bc += d[2]; n++;
+      }
+      if (n && (R + Gc + Bc) / (3 * n) > 14) col = '#' + [R / n, Gc / n, Bc / n].map(v => Math.round(v).toString(16).padStart(2, '0')).join('');
+    } catch (e) { /* tainted: ink */ }
+    col = K.shade(col, 0.45);
+    ctx.save();
+    ctx.globalCompositeOperation = 'source-over'; ctx.filter = 'none'; ctx.setLineDash([]);
+    if (disc) {
+      ctx.fillStyle = `rgba(2,3,10,${(0.82 * s).toFixed(2)})`; ctx.beginPath(); ctx.arc(cx, cy, r, 0, TAU); ctx.fill();
+      ctx.strokeStyle = K.rgba(col, s); ctx.lineWidth = Math.max(u, r * 0.04); ctx.beginPath(); ctx.arc(cx, cy, r, 0, TAU); ctx.stroke();
+    }
+    ctx.globalCompositeOperation = 'screen'; ctx.lineCap = 'round';
+    const N = 84;
+    for (let i = 0; i < N; i++) {                           // streamers, their lengths fixed by a hash so the corona keeps its shape
+      const a = i * TAU / N, h = hash(i, 11, 5);
+      const len = r * (0.1 + 0.7 * s * (0.3 + 0.7 * h) * (0.75 + 0.25 * Math.abs(Math.cos(2 * a))));
+      const r0 = r * 1.0, r1 = r0 + len;
+      const x0 = cx + Math.cos(a) * r0, y0 = cy + Math.sin(a) * r0, x1 = cx + Math.cos(a) * r1, y1 = cy + Math.sin(a) * r1;
+      const g = ctx.createLinearGradient(x0, y0, x1, y1);
+      g.addColorStop(0, K.rgba(col, 0.95 * s)); g.addColorStop(1, K.rgba(col, 0));
+      ctx.strokeStyle = g; ctx.lineWidth = u * (0.9 + 0.9 * h);
+      ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+    }
+    const hg = ctx.createRadialGradient(cx, cy, r, cx, cy, r * 1.8);
+    hg.addColorStop(0, K.rgba(col, 0.32 * s)); hg.addColorStop(1, K.rgba(col, 0));
+    ctx.fillStyle = hg; ctx.beginPath(); ctx.arc(cx, cy, r * 1.8, 0, TAU); ctx.fill();
+    ctx.restore();
   }
 
   /* ---------- the frame: dodecagon container, rete, houses ---------- */
@@ -903,22 +1052,22 @@
     ctx.strokeStyle = K.rgba(INK, 0.18); ctx.lineWidth = 1 * u;
     ctx.beginPath(); ctx.arc(Lt.cx, Lt.cy, Lt.Rz, 0, TAU); ctx.stroke();
 
-    // houses: vertices are cusps, faces are houses. 1 below the eastern horizon, counter-clockwise.
+    // houses: the cusps as spokes across the band (Regiomontanus unless set otherwise), the angles stronger, the number mid-house
     ctx.font = `400 ${Math.round(17 * u * Lt.ts)}px ${MONO}`;
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     const inR = Lt.Rb * Math.cos(Math.PI / 12);
-    for (let i = 0; i < 12; i++) {
-      const a = Math.PI - i * Math.PI / 6;
-      const p0 = polar(Lt, a, Lt.Rz), p1 = polar(Lt, a, Lt.Rb);
-      const angle = i % 6 === 0;
-      ctx.strokeStyle = K.rgba(INK, angle ? 0.55 : 0.16); ctx.lineWidth = (angle ? 1.4 : 1) * u;
+    const edgeR = a => inR / Math.cos(((a % (Math.PI / 6)) + Math.PI / 6) % (Math.PI / 6) - Math.PI / 12);   // the dodecagon edge at this angle
+    for (let h = 1; h <= 12; h++) {
+      const a = eclAngle(state, state.cusps[h]);
+      const angle = h % 3 === 1;
+      const p0 = polar(Lt, a, Lt.Rz), p1 = polar(Lt, a, edgeR(a) * (angle ? 0.985 : 0.965));
+      ctx.strokeStyle = K.rgba(INK, angle ? 0.6 : 0.18); ctx.lineWidth = (angle ? 1.4 : 1) * u;
       ctx.beginPath(); ctx.moveTo(p0.x, p0.y); ctx.lineTo(p1.x, p1.y); ctx.stroke();
-      const house = 12 - i;                               // face between vertex i and i+1, going clockwise above the horizon
-      const am = a - Math.PI / 12;
-      const lp = polar(Lt, am, (Lt.Rz + inR) / 2);
-      const sunHouse = state.bodies.sun.house === house;
+      const span = E_.norm360(state.cusps[h % 12 + 1] - state.cusps[h]);
+      const lp = polar(Lt, eclAngle(state, state.cusps[h] + span / 2), (Lt.Rz + inR) / 2);
+      const sunHouse = state.bodies.sun.house === h;
       ctx.fillStyle = K.rgba(sunHouse ? C.PLANETS.sun.tincture : INK, sunHouse ? 0.95 : 0.34);
-      ctx.fillText(String(house).padStart(2, '0'), lp.x, lp.y);
+      ctx.fillText(String(h).padStart(2, '0'), lp.x, lp.y);
     }
     // cardinal labels outside the container
     ctx.font = `400 ${Math.round(18 * u * Lt.ts)}px ${SANS}`;
@@ -929,9 +1078,6 @@
       const rOut = Lt.Rb / Math.cos(((a % (Math.PI / 6)) + Math.PI / 6) % (Math.PI / 6) - Math.PI / 12);  // to the dodecagon edge
       const p = polar(Lt, a, Math.min(rOut, Lt.Rb) + 26 * u); ctx.fillText(s, p.x, p.y);
     }
-    // the meridian: the mc degree, drawn across the container
-    ctx.strokeStyle = K.rgba(INK, 0.6); ctx.lineWidth = 1.4 * u;
-    for (const a of [am, am + Math.PI]) { const p0 = polar(Lt, a, Lt.Rz), p1 = polar(Lt, a, Lt.Rb * 0.97); ctx.beginPath(); ctx.moveTo(p0.x, p0.y); ctx.lineTo(p1.x, p1.y); ctx.stroke(); }
     ctx.restore();
   }
 
@@ -1042,32 +1188,42 @@
   /* ---------- clock mode ---------- */
   const ground = state => K.mixLight(VOID, MIDNIGHT, 0.12 + 0.4 * state.moon.illum, 0);
   function renderClock(ctx, state, S, t, opts) {
+    const bare = opts.bare;                               // wallpaper: no wheel, the field runs to the edges of a W × H canvas
     const Lt = layout(S); Lt.asc = state.asc;
+    const W = bare ? bare.W : S, H = bare ? bare.H : S;
+    if (bare) {
+      Lt.cx = W / 2; Lt.cy = H * (H > W * 1.4 ? 0.56 : 0.5);   // on a phone the clock sits at the top: the sky below it
+      Lt.bleed = true;
+      Lt.ext = Math.max(1.08, Math.hypot(W / 2, Math.max(Lt.cy, H - Lt.cy)) / Lt.R * 1.02);
+    }
     const E = 0.62 + 0.38 * state.moon.illum;
     const lw = Lt.u * (1.9 + 1.3 * state.moon.illum);   // the full moon inflates the marks
     const B = state.bodies;
 
     // ground
     ctx.fillStyle = ground(state);
-    ctx.fillRect(0, 0, S, S);
+    ctx.fillRect(0, 0, W, H);
 
     // sky
     ctx.save();
-    ctx.beginPath(); ctx.arc(Lt.cx, Lt.cy, Lt.R + 1, 0, TAU); ctx.clip();
-    ctx.fillStyle = MIDNIGHT; ctx.fillRect(0, 0, S, S);
+    if (!bare) { ctx.beginPath(); ctx.arc(Lt.cx, Lt.cy, Lt.R + 1, 0, TAU); ctx.clip(); }
+    ctx.fillStyle = MIDNIGHT; ctx.fillRect(0, 0, W, H);
     const smoke = opts.field === 'smoke';
+    const ext = Lt.ext || 1.08;
     const field = smoke ? buildField(state, Lt, opts.fieldRes || 180) : buildLight(state, Lt, opts.fieldRes || 180);
     ctx.save();
     ctx.translate(Lt.cx, Lt.cy);
     ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
-    if (!ENGRAVE) ctx.drawImage(field, -Lt.R * 1.08, -Lt.R * 1.08, Lt.R * 2.16, Lt.R * 2.16);
+    if (!ENGRAVE) ctx.drawImage(field, -Lt.R * ext, -Lt.R * ext, Lt.R * 2 * ext, Lt.R * 2 * ext);
     ctx.restore();
-    if (ENGRAVE) { ctx.fillStyle = '#03061a'; ctx.fillRect(0, 0, S, S); drawEngravedField(ctx, state, Lt, opts.fast ? 0.4 : 1); }
+    if (ENGRAVE) { ctx.fillStyle = '#03061a'; ctx.fillRect(0, 0, W, H); drawEngravedField(ctx, state, Lt, opts.fast ? 0.4 : 1); }
     const weave = drawWeave(ctx, state, Lt, lw, E);
     if (!opts.plate && !ENGRAVE) drawFlow(ctx, weave, state, Lt, E, t);
     // horizon
-    ctx.strokeStyle = K.rgba(INK, 0.22); ctx.lineWidth = 1 * Lt.u;
-    ctx.beginPath(); ctx.moveTo(Lt.cx - Lt.R, Lt.cy); ctx.lineTo(Lt.cx + Lt.R, Lt.cy); ctx.stroke();
+    if (!bare) {
+      ctx.strokeStyle = K.rgba(INK, 0.22); ctx.lineWidth = 1 * Lt.u;
+      ctx.beginPath(); ctx.moveTo(Lt.cx - Lt.R, Lt.cy); ctx.lineTo(Lt.cx + Lt.R, Lt.cy); ctx.stroke();
+    }
 
     // the portal
     const cf = state.configs;
@@ -1077,7 +1233,8 @@
     const involved = {};
     const all = [cf.primary, ...cf.secondary].filter(Boolean);
     all.forEach(c => { involved[c.a] = Math.max(involved[c.a] || 0, c.power); involved[c.b] = Math.max(involved[c.b] || 0, c.power); });
-    const pos = placeBodies(state, Lt);
+    const clusters = conjunctionClusters(state);
+    const pos = placeBodies(state, Lt, clusters);
     // spokes from the planets feeding the primary figure to the pole — mercury owns rays
     const npos = drawNatal(ctx, state, Lt, lw);
     if (cf.primary) {
@@ -1123,19 +1280,19 @@
     const stars = constellation(geos, Rp);
     drawStars(ctx, stars, Lt, E, t);
 
-    drawBodies(ctx, state, Lt, pos, E, lw, t, involved);
+    drawBodies(ctx, state, Lt, pos, E, lw, t, involved, clusters);
 
     drawGuardians(ctx, state, Lt, E);
 
-    // optics after everything inside the sky: pluto bends, neptune diffuses
+    // optics after everything inside the sky: pluto occults, neptune diffuses
     const pl = pos.pluto;
     const plPower = planetPower(state, 'pluto', involved.pluto);
     const plStrength = (0.7 + 0.3 * Math.min(1, involved.pluto || 0)) * (B.pluto.retro ? 0.8 : 1);
-    lens(ctx, pl.x, pl.y, Lt.S * 0.038 * (0.8 + 0.7 * plPower), Math.min(1, plStrength));
-    if (involved.pluto) lens(ctx, Lt.cx, Lt.cy, Rp * 0.3, Math.min(1, involved.pluto) * 0.6);
+    occult(ctx, pl.x, pl.y, Lt.S * 0.0145 * (0.95 + 0.5 * plPower) * 2.1, Math.min(1, plStrength), Lt.u);   // the disc is its state ring
+    if (involved.pluto) occult(ctx, Lt.cx, Lt.cy, Rp * 0.3, Math.min(1, involved.pluto) * 0.6, Lt.u);      // in the figure: its heart goes into eclipse
     // the outer planets have no number, so a station of theirs is an optic at the portal's rim, not hour-marks
-    if (B.pluto.station) {                                // pluto: the whole portal bends
-      lens(ctx, Lt.cx, Lt.cy, Rp * 1.2, 0.35);
+    if (B.pluto.station) {                                // pluto: a corona around the whole portal
+      occult(ctx, Lt.cx, Lt.cy, Rp * 1.2, 0.35, Lt.u, false);
       ctx.save(); ctx.strokeStyle = K.rgba(INK, 0.14); ctx.lineWidth = Lt.u; ctx.beginPath(); ctx.arc(Lt.cx, Lt.cy, Rp * 1.2, 0, TAU); ctx.stroke(); ctx.restore();
     }
     if (B.neptune.station) {                              // neptune: the rim dissolves into white
@@ -1166,8 +1323,9 @@
     // the sigil layer: veil the sky, draw the figure of the moment in solid ink to be copied
     if (opts.sigil && cf.primary) {
       ctx.save();
-      ctx.fillStyle = 'rgba(2,3,10,0.82)'; ctx.beginPath(); ctx.arc(Lt.cx, Lt.cy, Lt.R + 1, 0, TAU); ctx.fill();
-      ctx.beginPath(); ctx.arc(Lt.cx, Lt.cy, Lt.R, 0, TAU); ctx.clip();
+      ctx.fillStyle = 'rgba(2,3,10,0.82)';
+      if (bare) ctx.fillRect(0, 0, W, H); else { ctx.beginPath(); ctx.arc(Lt.cx, Lt.cy, Lt.R + 1, 0, TAU); ctx.fill(); }
+      if (!bare) { ctx.beginPath(); ctx.arc(Lt.cx, Lt.cy, Lt.R, 0, TAU); ctx.clip(); }
       PURE = true;
       try {
         if (cf.cut) {
@@ -1183,9 +1341,11 @@
       ctx.restore();
     }
 
-    drawRete(ctx, state, Lt, lw);
-    drawFrame(ctx, state, Lt, lw);
-    if (opts.caption !== false) drawCaption(ctx, state, Lt);
+    if (!bare) {
+      drawRete(ctx, state, Lt, lw);
+      drawFrame(ctx, state, Lt, lw);
+      if (opts.caption !== false) drawCaption(ctx, state, Lt);
+    }
     return { mode: 'clock', sigil: !!opts.sigil, layout: Lt, positions: pos, stars, rippleCol, Rp, E, lw, weave, state };
   }
 
@@ -1254,20 +1414,20 @@
     ctx.strokeStyle = K.rgba(INK, 0.35); ctx.lineWidth = u;
     for (const r of [Lt.R, r1]) { ctx.beginPath(); ctx.arc(Lt.cx, Lt.cy, r, 0, TAU); ctx.stroke(); }
 
-    // equal houses from the ascendant; the meridian drawn separately
+    // houses: the cusps (Regiomontanus unless set otherwise), the angles stronger, the number mid-house
     const rIn = Lt.R * 0.34;
+    const am = eclAngle(state, state.mc);
     ctx.font = `400 ${Math.round(17 * u * Lt.ts)}px ${MONO}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     for (let h = 1; h <= 12; h++) {
-      const a = eclAngle(state, state.asc + (h - 1) * 30);
-      const p0 = polar(Lt, a, rIn), p1 = polar(Lt, a, Lt.R);
-      ctx.strokeStyle = K.rgba(INK, h === 1 || h === 7 ? 0.6 : 0.16); ctx.lineWidth = (h === 1 || h === 7 ? 1.6 : 1) * u;
+      const a = eclAngle(state, state.cusps[h]);
+      const angle = h % 3 === 1;
+      const p0 = polar(Lt, a, rIn), p1 = polar(Lt, a, angle ? r1 : Lt.R);
+      ctx.strokeStyle = K.rgba(INK, angle ? 0.6 : 0.16); ctx.lineWidth = (angle ? 1.6 : 1) * u;
       ctx.beginPath(); ctx.moveTo(p0.x, p0.y); ctx.lineTo(p1.x, p1.y); ctx.stroke();
-      const lp = polar(Lt, eclAngle(state, state.asc + (h - 1) * 30 + 15), rIn + 22 * u);
+      const span = E_.norm360(state.cusps[h % 12 + 1] - state.cusps[h]);
+      const lp = polar(Lt, eclAngle(state, state.cusps[h] + span / 2), rIn + 22 * u);
       ctx.fillStyle = K.rgba(INK, 0.4); ctx.fillText(String(h), lp.x, lp.y);
     }
-    const am = eclAngle(state, state.mc);
-    ctx.strokeStyle = K.rgba(INK, 0.6); ctx.lineWidth = 1.6 * u;
-    for (const a of [am, am + Math.PI]) { const p0 = polar(Lt, a, rIn), p1 = polar(Lt, a, r1); ctx.beginPath(); ctx.moveTo(p0.x, p0.y); ctx.lineTo(p1.x, p1.y); ctx.stroke(); }
     ctx.strokeStyle = K.rgba(INK, 0.2); ctx.lineWidth = u; ctx.beginPath(); ctx.arc(Lt.cx, Lt.cy, rIn, 0, TAU); ctx.stroke();
 
     // aspects, each in its own colour; width by exactness
@@ -1324,10 +1484,15 @@
   }
 
   function render(ctx, state, S, t, opts = {}) {
-    FAST = !!opts.fast; ENGRAVE = !!opts.engrave;
+    FAST = !!opts.fast; ENGRAVE = !!opts.engrave; LUMINOUS = !!opts.luminous;
     try { return (opts.mode === 'chart' ? renderChart : renderClock)(ctx, state, S, t, opts); }
-    finally { FAST = false; ENGRAVE = false; }
+    finally { FAST = false; ENGRAVE = false; LUMINOUS = false; }
+  }
+  /* a wallpaper: the sky without its wheel, the field running to the edges of a W × H canvas. the dial is sized to the width. */
+  function renderWallpaper(ctx, state, W, H, t, opts = {}) {
+    const S = Math.round(Math.min(W, H) / 0.74);
+    return render(ctx, state, S, t, { ...opts, mode: 'clock', bare: { W, H }, caption: false });
   }
 
-  CW.render = { render, overlay, ground, captionLines, layout, signColorAt, coreColor, presence, hardness, figureColor, supportsFilter };
+  CW.render = { render, renderWallpaper, overlay, ground, captionLines, layout, signColorAt, coreColor, presence, hardness, figureColor, supportsFilter };
 })(window.CW = window.CW || {});

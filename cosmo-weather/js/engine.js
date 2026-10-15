@@ -74,6 +74,27 @@
     c[8] = norm360(c2 + 180); c[9] = norm360(c3 + 180); c[10] = mc; c[11] = c11; c[12] = c12;
     return c;
   }
+  /* Regiomontanus cusps (Lilly's system): the equator divided into twelve from the meridian, each division carried
+     to the ecliptic by a great circle through the north and south points of the horizon. Such a circle is the horizon
+     of a latitude whose tangent is tan(lat)·sin(H), so each cusp is an ascendant computed for that pole. */
+  function regiomontanus(ramc, lat, eps, asc, mc) {
+    const phi = lat * D2R;
+    const cuspAt = H => {
+      const pole = Math.atan(Math.tan(phi) * Math.sin(H * D2R));
+      const R = (ramc + H - 90) * D2R;
+      return norm360(Math.atan2(Math.cos(R), -(Math.sin(R) * Math.cos(eps) + Math.tan(pole) * Math.sin(eps))) * R2D);
+    };
+    const c = [];
+    c[1] = asc; c[10] = mc; c[11] = cuspAt(30); c[12] = cuspAt(60); c[2] = cuspAt(120); c[3] = cuspAt(150);
+    c[4] = norm360(mc + 180); c[7] = norm360(asc + 180);
+    c[5] = norm360(c[11] + 180); c[6] = norm360(c[12] + 180); c[8] = norm360(c[2] + 180); c[9] = norm360(c[3] + 180);
+    return c;
+  }
+  function equalHouses(asc) { const c = []; for (let k = 1; k <= 12; k++) c[k] = norm360(asc + (k - 1) * 30); return c; }
+  function houseIn(cusps, lon) {
+    for (let k = 1; k <= 12; k++) { const a = cusps[k], b = cusps[k % 12 + 1]; if (norm360(lon - a) < norm360(b - a)) return k; }
+    return 1;
+  }
 
   /* ---------- dignity ---------- */
   function dignity(key, signIdx, deg, isDay) {
@@ -428,6 +449,8 @@
     const obs = new A.Observer(loc.lat, loc.lon, 0);
     const eps = A.e_tilt(t).tobl * D2R;
     const ang = angles(t, loc, eps);
+    const houses = opts.houses || 'regiomontanus';
+    const cusps = houses === 'equal' ? equalHouses(ang.asc) : houses === 'placidus' ? placidus(ang.ramc, loc.lat, eps, ang.asc, ang.mc) : regiomontanus(ang.ramc, loc.lat, eps, ang.asc, ang.mc);
     const sunLon = eclipticOfDate(A.Body.Sun, t);
     const t1 = t.AddDays(0.5), t0 = t.AddDays(-0.5);
     const B = {};
@@ -451,7 +474,7 @@
       const angular = Math.min(sep(lon, ang.asc), sep(lon, ang.asc + 180), sep(lon, ang.mc), sep(lon, ang.mc + 180)) < 5;   // conjunct an angle, by longitude
       B[key] = {
         key, lon, speed, retro, station, slow: key === 'sun' || key === 'moon' ? 0 : slow,
-        ra, dec, alt: hor.altitude, az: hor.azimuth, H, dsa, p, house: 1 + Math.floor(norm360(lon - ang.asc) / 30), angular,
+        ra, dec, alt: hor.altitude, az: hor.azimuth, H, dsa, p, house: houseIn(cusps, lon), angular,
         sign: signIdx, deg, combust: key !== 'sun' && dSun < 8.5 && dSun >= 0.2833, cazimi: key !== 'sun' && key !== 'moon' && dSun < 0.2833,
         beams: key !== 'sun' && dSun >= 8.5 && dSun < 17,
         decan: C.decanOf(lon), mansion: C.mansionOf(lon)
@@ -487,12 +510,11 @@
     const events = findEvents(t, B, aspects, opts.light);
     const configs = selectConfigs(aspects, events, B);
     const lunar = moonCondition(B, eps);
-    const cusps = placidus(ang.ramc, loc.lat, eps, ang.asc, ang.mc);
-    const st = { date, loc, eps, ...ang, bodies: B, sect: isDay ? 'day' : 'night', moon: { ...moon, ...lunar }, hour, aspects, events, configs, cusps };
+    const st = { date, loc, eps, ...ang, bodies: B, sect: isDay ? 'day' : 'night', moon: { ...moon, ...lunar }, hour, aspects, events, configs, cusps, houses };
     st.chord = chordOf(st);
     st.windows = windowsOf(st);
     return st;
   }
 
-  CW.engine = { compute, computeTransits, nextChordShift, norm360, norm180, sep, houseOf, mundane, semiArc, dignity, placidus, synodic, rarity };
+  CW.engine = { compute, computeTransits, nextChordShift, norm360, norm180, sep, houseOf, houseIn, mundane, semiArc, dignity, placidus, regiomontanus, equalHouses, synodic, rarity };
 })(window.CW = window.CW || {});

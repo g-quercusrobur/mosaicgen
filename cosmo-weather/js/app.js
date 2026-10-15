@@ -57,6 +57,8 @@
     natal: store.get('natal', null),                        // { date, place, unknownTime } — stays on this device
     lang: params.get('lang') || store.get('lang', null) || ((navigator.language || 'en').toLowerCase().startsWith('es') ? 'es' : 'en'),
     field: params.get('field') || 'waves',
+    houses: params.get('houses') || 'regiomontanus',            // lilly's system; ?houses=equal or placidus to compare
+    luminous: params.get('bodies') === 'luminous',               // prototype: planets as lights
     state: null,
     lastCompute: 0
   };
@@ -79,7 +81,7 @@
     if (!S.natal) return null;
     const key = JSON.stringify(S.natal);
     if (natalCache.key !== key) {
-      const st = CW.engine.compute(new Date(S.natal.date), S.natal.place);
+      const st = CW.engine.compute(new Date(S.natal.date), S.natal.place, { houses: S.houses });
       st.natalView = true; st.nextChord = null;
       natalCache.key = key; natalCache.state = st;
     }
@@ -90,7 +92,7 @@
 
   function recompute() {
     const busy = S.playing || S.dragging;
-    S.state = CW.engine.compute(now(), S.place, { light: busy });
+    S.state = CW.engine.compute(now(), S.place, { light: busy, houses: S.houses });
     if (!busy) S.state.nextChord = CW.engine.nextChordShift(S.state.date, S.place);
     if (S.mode === 'synastry' && S.natal) {                 // the sky of now against the nativity: the figure is the strongest transit
       const ns = natalState(), tr = CW.engine.computeTransits(S.state, ns).filter(x => x.power > 0.04);
@@ -139,7 +141,7 @@
     (function chunk() {
       if (token !== scan.token) return;
       for (let k = 0; k < 24 && i <= N; k++, i++) {
-        const st = CW.engine.compute(new Date(b + i * scan.step * 60000), S.place, { light: true });
+        const st = CW.engine.compute(new Date(b + i * scan.step * 60000), S.place, { light: true, houses: S.houses });
         out.push(st.windows);
       }
       if (i <= N) return setTimeout(chunk, 0);
@@ -206,7 +208,7 @@
       pctx.setTransform(1, 0, 0, 1, 0, 0); pctx.clearRect(0, 0, plate.width, plate.height);
       pctx.setTransform(S.dpr * view.z, 0, 0, S.dpr * view.z, S.dpr * view.x, S.dpr * view.y);   // the view: zoom and pan
       const busy = S.playing || S.dragging || view.pinching;
-      info = CW.render.render(pctx, viewState(), S.side, t, { mode: S.mode === 'chart' || S.mode === 'natalchart' ? 'chart' : 'clock', fieldRes: busy ? 110 : 200, caption: S.side >= 560, plate: true, fast: busy, field: S.field, sigil: S.sigil, engrave: S.engrave });
+      info = CW.render.render(pctx, viewState(), S.side, t, { mode: S.mode === 'chart' || S.mode === 'natalchart' ? 'chart' : 'clock', fieldRes: busy ? 110 : 200, caption: S.side >= 560, plate: true, fast: busy, field: S.field, sigil: S.sigil, engrave: S.engrave, luminous: S.luminous });
       S.dirty = false; lastPlate = ts;
     }
     ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -284,20 +286,16 @@
   function exportPNG(px) {
     const st = viewState(), cv = document.createElement('canvas');
     cv.width = cv.height = px;
-    CW.render.render(cv.getContext('2d'), st, px, (performance.now() - t0) / 1000, { mode: S.mode === 'chart' || S.mode === 'natalchart' ? 'chart' : 'clock', fieldRes: px >= 3000 ? 420 : 300, field: S.field, sigil: S.sigil, engrave: S.engrave });
+    CW.render.render(cv.getContext('2d'), st, px, (performance.now() - t0) / 1000, { mode: S.mode === 'chart' || S.mode === 'natalchart' ? 'chart' : 'clock', fieldRes: px >= 3000 ? 420 : 300, field: S.field, sigil: S.sigil, engrave: S.engrave, luminous: S.luminous });
     download(cv, `cosmo-weather_${st.loc.name}_${stampOf(st)}_${px}.png`);
   }
   /* a wallpaper at this screen's size: the square render set in a portrait field of the same ground */
   function exportWallpaper() {
     const st = viewState(), dpr = window.devicePixelRatio || 1;
     const W = Math.round((screen.width || 1080) * dpr), H = Math.round((screen.height || 2340) * dpr);
-    const side = Math.min(W, H), cv = document.createElement('canvas');
+    const cv = document.createElement('canvas');
     cv.width = W; cv.height = H;
-    const c = cv.getContext('2d');
-    c.fillStyle = CW.render.ground(st); c.fillRect(0, 0, W, H);
-    const sq = document.createElement('canvas'); sq.width = sq.height = side;
-    CW.render.render(sq.getContext('2d'), st, side, 3, { mode: 'clock', fieldRes: 300, sigil: S.sigil, engrave: S.engrave });
-    c.drawImage(sq, (W - side) / 2, (H - side) / 2);
+    CW.render.renderWallpaper(cv.getContext('2d'), st, W, H, 3, { fieldRes: 300, field: S.field, sigil: S.sigil, engrave: S.engrave, luminous: S.luminous });
     download(cv, `cosmo-weather_wallpaper_${st.loc.name}_${stampOf(st)}.png`);
   }
 

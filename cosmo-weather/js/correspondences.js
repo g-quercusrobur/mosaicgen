@@ -1,13 +1,14 @@
 /*  cosmo weather — correspondences
-    One authority per channel:
-      planet colour   heraldic tinctures / metals (= GD Queen scale, Sephiroth)
-      sign colour     GD King scale of the paths = Itten's 12-step circle
-      planet number   Sephirah = order of the kamea (Agrippa)
-      outer planets   Dion Fortune: Neptune Kether, Uranus Chokmah, Pluto Daath
-                      rendered as optics, not pigments
-      letters         Golden Dawn order. No Crowley swaps.
-      dignities       Lilly: domicile 5, exaltation 4, triplicity 3, term 2, face 1,
-                      detriment -5, fall -4, peregrine -5. Egyptian terms. Chaldean faces.
+    Renaissance core, two declared modern windows.
+      core     astrology     Lilly (1647): dignities, terms (Egyptian), faces (Chaldean), solar phase
+               kabbalah      Agrippa III (1533): the seven planets on the seven lower Sephiroth, Kircher's Tree (1652)
+               number        Sephirah = order of the planet's magic square (Agrippa II.22)
+               planet colour heraldic tinctures by planet (Ferne 1586); agrees with the GD Queen scale
+               timing        planetary hours and angels (Heptameron); 28 lunar mansions (Agrippa II.33)
+               outer planets no place on the Tree, no number, no dignity: optics in the sky only
+      window 1 sign colour   GD King scale of the paths (1880s) = Itten's 12-step circle; sound by Case's scale
+      window 2 tarot         decans as Chaldean faces with their minor cards and Book T titles (GD); trumps on signs and planets
+      letters  Golden Dawn order. No Crowley swaps.
 */
 (function (CW) {
   'use strict';
@@ -36,9 +37,9 @@
     mars:    { name: 'mars',    kind: 'pigment', tincture: '#c9262e', metal: 'iron',        sephira: 'geburah',   number: 5,    angel: 'samael',   body: 'Mars',    period: 686.98,  owns: 'points' },
     jupiter: { name: 'jupiter', kind: 'pigment', tincture: '#2f6fd6', metal: 'tin',         sephira: 'chesed',    number: 4,    angel: 'sachiel',  body: 'Jupiter', period: 4332.59, owns: 'halos' },
     saturn:  { name: 'saturn',  kind: 'pigment', tincture: '#040507', rim: '#4d525c', metal: 'lead', sephira: 'binah', number: 3, angel: 'cassiel', body: 'Saturn', period: 10759.2, owns: 'container' },
-    uranus:  { name: 'uranus',  kind: 'optic',   tincture: '#d8e4ee', optic: 'iridescence', sephira: 'chokmah',   number: 2,    body: 'Uranus',  period: 30688.5, owns: 'lattice' },
-    neptune: { name: 'neptune', kind: 'optic',   tincture: '#eef3ff', optic: 'brilliance',  sephira: 'kether',    number: 1,    body: 'Neptune', period: 60182,   owns: 'diffusion' },
-    pluto:   { name: 'pluto',   kind: 'optic',   tincture: '#1a0f12', optic: 'lensing',     sephira: 'daath',     number: null, body: 'Pluto',   period: 90560,   owns: 'core' }
+    uranus:  { name: 'uranus',  kind: 'optic',   tincture: '#d8e4ee', optic: 'iridescence', sephira: null, number: null, body: 'Uranus',  period: 30688.5, owns: 'lattice' },
+    neptune: { name: 'neptune', kind: 'optic',   tincture: '#eef3ff', optic: 'brilliance',  sephira: null, number: null, body: 'Neptune', period: 60182,   owns: 'diffusion' },
+    pluto:   { name: 'pluto',   kind: 'optic',   tincture: '#1a0f12', optic: 'lensing',     sephira: null, number: null, body: 'Pluto',   period: 90560,   owns: 'core' }
   };
   const ORDER = ['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune', 'pluto'];
   const CHALDEAN = ['saturn', 'jupiter', 'mars', 'sun', 'venus', 'mercury', 'moon'];
@@ -72,6 +73,34 @@
   /* Faces: Chaldean order from Mars at 0° Aries, one per decan */
   const faceRuler = decanIndex => CHALDEAN[(2 + decanIndex) % 7];
 
+  /* Window 2 — tarot. The 36 decans with their minor cards and Book T titles (Golden Dawn).
+     Cardinal signs take 2–3–4, fixed 5–6–7, mutable 8–9–10; the suit follows the element. */
+  const SUIT = { fire: 'wands', earth: 'pentacles', air: 'swords', water: 'cups' };
+  const CARD_BASE = { cardinal: 2, fixed: 5, mutable: 8 };
+  const NUMBER_NAME = ['', '', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten'];
+  const TITLES = {
+    wands:     { 2: 'dominion', 3: 'established strength', 4: 'perfected work', 5: 'strife', 6: 'victory', 7: 'valour', 8: 'swiftness', 9: 'great strength', 10: 'oppression' },
+    cups:      { 2: 'love', 3: 'abundance', 4: 'blended pleasure', 5: 'loss in pleasure', 6: 'pleasure', 7: 'illusionary success', 8: 'abandoned success', 9: 'material happiness', 10: 'perfected success' },
+    swords:    { 2: 'peace restored', 3: 'sorrow', 4: 'rest from strife', 5: 'defeat', 6: 'earned success', 7: 'unstable effort', 8: 'shortened force', 9: 'despair and cruelty', 10: 'ruin' },
+    pentacles: { 2: 'harmonious change', 3: 'material works', 4: 'earthly power', 5: 'material trouble', 6: 'material success', 7: 'success unfulfilled', 8: 'prudence', 9: 'material gain', 10: 'wealth' }
+  };
+  const DECANS = [];
+  for (let i = 0; i < 12; i++) for (let d = 0; d < 3; d++) {
+    const sg = SIGNS[i], suit = SUIT[sg.element], num = CARD_BASE[sg.mode] + d;
+    DECANS.push({ index: i * 3 + d, sign: i, decan: d + 1, ruler: faceRuler(i * 3 + d), suit, num, card: `${NUMBER_NAME[num]} of ${suit}`, title: `lord of ${TITLES[suit][num]}` });
+  }
+  const decanOf = lon => DECANS[Math.floor((((lon % 360) + 360) % 360) / 10)];
+
+  /* Trumps on the paths, Golden Dawn attribution (Strength VIII to Leo, Justice XI to Libra, the Star to Aquarius). */
+  const TRUMP_SIGN = ['the emperor', 'the hierophant', 'the lovers', 'the chariot', 'strength', 'the hermit', 'justice', 'death', 'temperance', 'the devil', 'the star', 'the moon'];
+  const TRUMP_PLANET = { saturn: 'the universe', jupiter: 'the wheel of fortune', mars: 'the tower', sun: 'the sun', venus: 'the empress', mercury: 'the magician', moon: 'the high priestess' };
+  const TRUMP_ELEMENT = { air: 'the fool', water: 'the hanged man', fire: 'judgement' };
+
+  /* The 28 mansions of the moon, 12°51′26″ each from 0° aries, names after Agrippa II.33 (first spelling of each). */
+  const MANSIONS = ['alnath', 'allothaim', 'achaomazon', 'aldebaram', 'alchatay', 'alhanna', 'aldimiach', 'alnaza', 'archaam', 'algelioche', 'azobra', 'alzarpha', 'alhaire', 'achureth',
+    'agrapha', 'azubene', 'alchil', 'alchas', 'allatha', 'abnahaya', 'abeda', 'sadahacha', 'zabadola', 'sadabath', 'sadalabra', 'alpharg', 'alcharya', 'albotham'];
+  const mansionOf = lon => { const i = Math.floor((((lon % 360) + 360) % 360) / (360 / 28)); return { index: i + 1, name: MANSIONS[i] }; };
+
   /* Aspects as fractions of the circle: angle = k·360/n  →  star polygon {n/k} */
   const ASPECTS = [
     { key: 'conjunction',  angle: 0,     n: 1,  k: 0, weight: 1.00, orb: 8,   nature: 'fusion' },
@@ -97,6 +126,8 @@
   /* Sound. Paul Foster Case's colour–note scale: the King-scale wheel read as the chromatic scale,
      red = C. So the zodiac's colours and its notes are the same circle. */
   const NOTES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];   // aries … pisces
+  /* one sign = one semitone, so the distance between two signs names the interval: a trine (4 signs) is a major third */
+  const INTERVALS = ['unison', 'minor second', 'major second', 'minor third', 'major third', 'perfect fourth', 'tritone'];
 
   /* The three mothers (Sefer Yetzirah) as the three kinds of window:
      aleph / air  = ideation · mem / water = incarnation (descent into form) · shin / fire = destruction */
@@ -111,6 +142,7 @@
 
   CW.corr = {
     SIGNS, PLANETS, ORDER, CHALDEAN, WEEKDAY_RULER, SYNODIC_OVERRIDE,
-    DOMICILE, EXALTATION, TRIPLICITY, TERMS, faceRuler, ASPECTS, ASPECT_GLYPH, BENEFIC, MALEFIC, NOTES, MOTHERS
+    DOMICILE, EXALTATION, TRIPLICITY, TERMS, faceRuler, ASPECTS, ASPECT_GLYPH, BENEFIC, MALEFIC, NOTES, INTERVALS, MOTHERS,
+    DECANS, decanOf, TRUMP_SIGN, TRUMP_PLANET, TRUMP_ELEMENT, MANSIONS, mansionOf
   };
 })(window.CW = window.CW || {});

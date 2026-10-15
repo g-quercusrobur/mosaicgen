@@ -52,6 +52,8 @@ select:focus-visible { outline: 1px solid var(--ink); outline-offset: 1px; }
 #sigil::before, #listen::before { content: ''; display: inline-block; width: 6px; height: 6px; border: 1px solid currentColor; border-radius: 50%; margin-right: 7px; vertical-align: 1px; }
 #sigil.on::before, #listen.on::before { background: currentColor; }
 #readout tr.sub td { color: var(--ink-3); padding-bottom: 6px; white-space: normal; }
+#readout .hours { white-space: normal; line-height: 1.9; }
+#readout .hours .now { color: var(--ink); border-bottom: 1px solid var(--ink-2); }
 
 #about { position: fixed; inset: 0; z-index: 10; background: var(--void); overflow-y: auto;
   padding: max(24px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) 64px max(16px, env(safe-area-inset-left, 0px)); }

@@ -948,34 +948,38 @@
       l3: `sun in the ${ordinal(B.sun.house)} house · ${dms(B.sun.deg)} ${sunSign}`,
       fig: fig ? `${fig.a} ${fig.aspect} ${fig.b}${fig.event ? ' · ' + fig.event : ''}` : 'quiet sky',
       moon: moonLine(state),
-      chord: `chord ${state.chord.name}${state.chord.notes.length > 1 && !state.chord.dyad ? ' · ' + state.chord.notes.join(' ') : ''}`,
+      chord: `chord ${state.chord.name}${state.chord.interval ? ' · ' + state.chord.interval : state.chord.notes.length > 1 ? ' · ' + state.chord.notes.join(' ') : ''}`,
+      decan: `decan of ${state.bodies.sun.decan.ruler} · ${state.bodies.sun.decan.card} · ${state.bodies.sun.decan.title}`,
+      mansion: `moon in the ${ordinal(state.bodies.moon.mansion.index)} mansion · ${state.bodies.moon.mansion.name}`,
       next: state.nextChord ? `next chord ${state.nextChord.to} · ${fmtShort(state.nextChord.at, state.loc)}` : ''
     };
   }
   function drawCaption(ctx, state, Lt) {
     const u = Lt.u, m = Lt.S * 0.0625, k = u * Lt.ts;     // type scales up on small screens; the 2048 export is unchanged
     const c = captionLines(state);
-    const row = i => Lt.capY + (8 + 38 * i) * k;
+    const row = i => Lt.capY + (8 + 34 * i) * k;
     ctx.save();
     ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'left';
     ctx.strokeStyle = K.rgba(INK, 0.22); ctx.lineWidth = 1 * u;
     ctx.beginPath(); ctx.moveTo(m, Lt.capY - 30 * u); ctx.lineTo(Lt.S - m, Lt.capY - 30 * u); ctx.stroke();
-    ctx.fillStyle = K.rgba(INK, 0.95); ctx.font = `500 ${Math.round(28 * k)}px ${SANS}`;
+    ctx.fillStyle = K.rgba(INK, 0.95); ctx.font = `500 ${Math.round(26 * k)}px ${SANS}`;
     ctx.fillText(c.l1, m, row(0));
-    ctx.fillStyle = K.rgba(INK, 0.74); ctx.font = `400 ${Math.round(25 * k)}px ${SANS}`;
+    ctx.fillStyle = K.rgba(INK, 0.74); ctx.font = `400 ${Math.round(23 * k)}px ${SANS}`;
     ctx.fillText(c.l2, m, row(1));
     ctx.fillText(c.l3, m, row(2));
     ctx.fillText(c.chord, m, row(3));
+    ctx.fillText(c.decan, m, row(4));
     ctx.textAlign = 'right';
-    ctx.fillStyle = K.rgba(INK, 0.95); ctx.font = `500 ${Math.round(28 * k)}px ${SANS}`;
+    ctx.fillStyle = K.rgba(INK, 0.95); ctx.font = `500 ${Math.round(26 * k)}px ${SANS}`;
     if ('letterSpacing' in ctx) ctx.letterSpacing = `${(5 * k).toFixed(1)}px`;
     ctx.fillText('cosmo weather', Lt.S - m, row(0));
     if ('letterSpacing' in ctx) ctx.letterSpacing = '0px';
-    ctx.fillStyle = K.rgba(INK, 0.55); ctx.font = `400 ${Math.round(20 * k)}px ${MONO}`;
+    ctx.fillStyle = K.rgba(INK, 0.55); ctx.font = `400 ${Math.round(19 * k)}px ${MONO}`;
     ctx.fillText(c.fig, Lt.S - m, row(1));
     ctx.fillStyle = K.rgba(INK, state.moon.verdict === 'void' || state.moon.verdict === 'unripe' ? 0.9 : 0.55);
     ctx.fillText(`${c.moon} · ${Math.round(state.moon.illum * 100)}%`, Lt.S - m, row(2));
     if (c.next) { ctx.fillStyle = K.rgba(INK, 0.55); ctx.fillText(c.next, Lt.S - m, row(3)); }
+    ctx.fillStyle = K.rgba(INK, 0.55); ctx.fillText(c.mansion, Lt.S - m, row(4));
     ctx.restore();
   }
 
@@ -1069,9 +1073,22 @@
     const plStrength = (0.45 + 0.55 * Math.min(1, involved.pluto || 0)) * (B.pluto.retro ? 0.7 : 1);
     lens(ctx, pl.x, pl.y, Lt.S * 0.028, Math.min(1, plStrength));
     if (involved.pluto) lens(ctx, Lt.cx, Lt.cy, Rp * 0.3, Math.min(1, involved.pluto) * 0.6);
-    if (B.pluto.station) {                                // pluto stations: the whole portal bends at its rim
+    // the outer planets have no number, so a station of theirs is an optic at the portal's rim, not hour-marks
+    if (B.pluto.station) {                                // pluto: the whole portal bends
       lens(ctx, Lt.cx, Lt.cy, Rp * 1.2, 0.55);
       ctx.save(); ctx.strokeStyle = K.rgba(INK, 0.14); ctx.lineWidth = Lt.u; ctx.beginPath(); ctx.arc(Lt.cx, Lt.cy, Rp * 1.2, 0, TAU); ctx.stroke(); ctx.restore();
+    }
+    if (B.neptune.station) {                              // neptune: the rim dissolves into white
+      ctx.save(); ctx.globalCompositeOperation = 'screen';
+      const g = ctx.createRadialGradient(Lt.cx, Lt.cy, Rp * 1.08, Lt.cx, Lt.cy, Rp * 1.3);
+      g.addColorStop(0, 'rgba(238,243,255,0)'); g.addColorStop(0.45, 'rgba(238,243,255,0.22)'); g.addColorStop(1, 'rgba(238,243,255,0)');
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(Lt.cx, Lt.cy, Rp * 1.3, 0, TAU); ctx.fill(); ctx.restore();
+    }
+    if (B.uranus.station && ctx.createConicGradient) {    // uranus: an iridescent rim
+      ctx.save(); ctx.globalCompositeOperation = 'screen';
+      const g = ctx.createConicGradient(t * 0.3, Lt.cx, Lt.cy);
+      for (let i = 0; i <= 6; i++) g.addColorStop(i / 6, K.rgba(K.hueShift('#c9f0ff', i * 60), 0.5));
+      ctx.strokeStyle = g; ctx.lineWidth = lw * 1.2; ctx.beginPath(); ctx.arc(Lt.cx, Lt.cy, Rp * 1.16, 0, TAU); ctx.stroke(); ctx.restore();
     }
     const nep = (0.18 + 0.5 * Math.min(1, involved.neptune || 0)) * (B.neptune.retro ? 0.4 : 1);
     if (!FAST && !ENGRAVE && supportsFilter && nep > 0.05) {

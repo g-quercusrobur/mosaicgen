@@ -79,7 +79,7 @@
     S.dirty = true;
     document.documentElement.style.setProperty('--ground', CW.render.ground(S.state));
     const c = CW.render.captionLines(S.state);
-    $('caption').innerHTML = `<p class="l1">${c.l1}</p><p>${c.l2}</p><p>${c.l3}</p><p>${c.chord}</p><p class="mono">${c.next}</p><p class="mono">${c.fig}</p><p class="mono">${c.moon}</p>`;
+    $('caption').innerHTML = `<p class="l1">${c.l1}</p><p>${c.l2}</p><p>${c.l3}</p><p>${c.chord}</p><p>${c.decan}</p><p class="mono">${c.next}</p><p class="mono">${c.fig}</p><p class="mono">${c.moon}</p><p class="mono">${c.mansion}</p>`;
     if (!busy) scanIfNeeded();
     drawStrip();
     if (!busy) updateReadout();                            // the heavy parts wait until the clock rests
@@ -261,6 +261,8 @@
     }, 'image/png');
   }
 
+  const ordinalWord = n => n + (n % 100 >= 11 && n % 100 <= 13 ? 'th' : ['th', 'st', 'nd', 'rd'][n % 10] || 'th');
+
   /* ---------- readout: every mark traceable ---------- */
   function updateReadout() {
     const st = S.state, C = CW.corr;
@@ -272,7 +274,17 @@
     }).join('');
     const cf = st.configs;
     const figs = [cf.primary, ...cf.secondary].filter(Boolean).map((a, i) =>
-      `<tr><td>${i ? 'ring' : 'figure'}</td><td>${a.a} ${a.aspect} ${a.b}</td><td>{${a.n}/${a.k}}</td><td>orb ${a.orb.toFixed(2)}° ${a.applying ? 'applying' : 'separating'}</td><td>${a.power.toFixed(2)}${a.event ? ' · ' + a.event : ''}</td></tr>`).join('');
+      `<tr><td>${i ? 'ring' : 'figure'}</td><td>${a.a} ${a.aspect} ${a.b}</td><td>{${a.n}/${a.k}}</td><td>orb ${a.orb.toFixed(2)}° ${a.applying ? 'applying' : 'separating'}${a.dissociate ? ' · out of sign' : ''}</td><td>${a.power.toFixed(2)}${a.event ? ' · ' + a.event : ''}</td></tr>`).join('');
+    const tz = S.place.tz || 'UTC';
+    const hm = d => new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: tz }).format(d);
+    const dec = b => `${['first', 'second', 'third'][b.decan.decan - 1]} decan of ${C.SIGNS[b.sign].name} · ${b.decan.ruler}`;
+    const tarot = `<table>
+      <tr><td>sun</td><td>${dec(st.bodies.sun)}</td><td>${st.bodies.sun.decan.card} · ${st.bodies.sun.decan.title}</td></tr>
+      <tr><td>moon</td><td>${dec(st.bodies.moon)}</td><td>${st.bodies.moon.decan.card} · ${st.bodies.moon.decan.title}</td></tr>
+      <tr><td>ascendant</td><td>${C.SIGNS[Math.floor(st.asc / 30)].name}</td><td>${C.TRUMP_SIGN[Math.floor(st.asc / 30)]}</td></tr>
+      <tr><td>day</td><td>${st.hour.dayRuler}</td><td>${C.TRUMP_PLANET[st.hour.dayRuler]}</td></tr>
+      <tr><td>hour</td><td>${st.hour.hourRuler}</td><td>${C.TRUMP_PLANET[st.hour.hourRuler]}</td></tr></table>`;
+    const hours = st.hour.table ? st.hour.table.map(h => `<span${h.index === st.hour.index ? ' class="now"' : ''}>${h.index + 1} ${h.ruler} ${hm(h.start)}</span>`).join(' · ') : 'polar day or night: equal hours assumed';
     const top = st.aspects.slice(0, 12).map(a =>
       `<tr><td>${a.a} ${a.aspect} ${a.b}</td><td>${a.orb.toFixed(2)}°</td><td>${a.applying ? 'app' : 'sep'}</td><td>${a.power.toFixed(3)}</td></tr>`).join('');
     const ev = st.events.map(e => e.type + (e.planet ? ' ' + e.planet : '') + (e.kind ? ' ' + e.kind : '') + (e.direction ? ' ' + e.direction : '')).join(' · ') || '—';
@@ -281,9 +293,12 @@
       <h3>the figure</h3><table>${figs || '<tr><td>quiet sky</td></tr>'}</table>
       <h3>portal</h3><p>scale ×${(cf.scale || 1).toFixed(2)} (jupiter widens, saturn narrows)${cf.cut ? ` · cut by ${cf.cut.by} ${cf.cut.aspect} ${cf.cut.target}, ${Math.round(cf.cut.width)}°` : ' · whole'}</p>
       <p>guardians ${st.hour.dayRuler}${st.hour.dayRuler === st.hour.hourRuler ? ' alone: one pure figure' : ' and ' + st.hour.hourRuler}</p>
-      <h3>sound</h3><p>${st.nextChord ? `next shift ${st.nextChord.from} → ${st.nextChord.to} at ${st.nextChord.at.toISOString().slice(0, 16).replace('T', ' ')} utc · ` : ''}${st.chord.name}${st.chord.notes.length ? ' · ' + st.chord.notes.join(' ') : ''}${st.chord.planets ? ' · from ' + st.chord.planets.join(', ') : ''}</p>
+      <h3>sound</h3><p>${st.chord.name}${st.chord.interval ? ' · ' + st.chord.interval : ''}${st.chord.notes.length ? ' · notes ' + st.chord.notes.join(' ') : ''}${st.chord.planets ? ' · from ' + st.chord.planets.join(', ') : ''}${st.nextChord ? ` · next ${st.nextChord.to} at ${hm(st.nextChord.at)}` : ''}</p>
+      <h3>tarot</h3>${tarot}
       <h3>windows</h3><p>ideation ${st.windows.ideation.toFixed(2)} · incarnation ${st.windows.incarnation.toFixed(2)} · destruction ${st.windows.destruction.toFixed(2)}</p>
       <h3>moon</h3><p>${st.moon.verdict} · ${st.moon.next ? `next ${st.moon.next.aspect} ${st.moon.next.planet} in ${(st.moon.next.days * 24).toFixed(1)}h` : 'void of course'}${st.moon.flags.filter(f => f !== 'void of course').map(f => ' · ' + f).join('')}</p>
+      <p>${ordinalWord(st.bodies.moon.mansion.index)} mansion · ${st.bodies.moon.mansion.name} (agrippa II.33)</p>
+      <h3>hours of the day</h3><p class="hours">${hours}</p>
       <h3>events</h3><p>${ev}</p>
       <h3>hierarchy</h3><table>${top}</table>
       <p class="dim">sect ${st.sect} · asc ${Math.floor(st.asc % 30)}° ${C.SIGNS[Math.floor(st.asc / 30)].name} · mc ${Math.floor(st.mc % 30)}° ${C.SIGNS[Math.floor(st.mc / 30)].name} · day ${st.hour.dayRuler} / ${st.hour.dayAngel} · hour ${st.hour.index + 1} ${st.hour.hourRuler} / ${st.hour.angel}</p>`;

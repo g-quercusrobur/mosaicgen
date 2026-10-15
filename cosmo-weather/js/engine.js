@@ -104,7 +104,7 @@
     }
     return new Date(date.getTime() + loc.lon / 15 * 3600e3).getUTCDay();
   }
-  function planetaryHour(t, obs, loc) {
+  function planetaryHour(t, obs, loc, full) {
     const S = A.Body.Sun;
     let rise = A.SearchRiseSet(S, obs, +1, t.AddDays(-1.1), 1.2);
     if (!rise) return fallbackHour(t, loc);
@@ -115,18 +115,29 @@
     const set = A.SearchRiseSet(S, obs, -1, rise, 1.2);
     if (!set) return fallbackHour(t, loc);
     const dayRuler = C.WEEKDAY_RULER[weekdayAt(rise.date, loc)];
-    let isDay, start, len, idx;
+    let isDay, start, len, idx, next = null;
     if (t.ut < set.ut) {
       isDay = true; start = rise.ut; len = (set.ut - rise.ut) / 12; idx = Math.floor((t.ut - start) / len);
     } else {
-      const next = A.SearchRiseSet(S, obs, +1, set, 1.2);
+      next = A.SearchRiseSet(S, obs, +1, set, 1.2);
       if (!next) return fallbackHour(t, loc);
       isDay = false; start = set.ut; len = (next.ut - set.ut) / 12; idx = 12 + Math.floor((t.ut - start) / len);
     }
     idx = Math.max(0, Math.min(23, idx));
-    const ruler = C.CHALDEAN[(C.CHALDEAN.indexOf(dayRuler) + idx) % 7];
+    const first = C.CHALDEAN.indexOf(dayRuler);
+    const ruler = C.CHALDEAN[(first + idx) % 7];
+    let table = null;
+    if (full) {                                            // the day's 24 hours, for the readout
+      if (!next) next = A.SearchRiseSet(S, obs, +1, set, 1.2);
+      const dl = (set.ut - rise.ut) / 12, nl = next ? (next.ut - set.ut) / 12 : dl;
+      table = [];
+      for (let i = 0; i < 24; i++) {
+        const ut = i < 12 ? rise.ut + i * dl : set.ut + (i - 12) * nl;
+        table.push({ index: i, ruler: C.CHALDEAN[(first + i) % 7], start: new Date(Date.UTC(2000, 0, 1, 12) + ut * 864e5), isDay: i < 12 });   // ut = days since J2000
+      }
+    }
     return { dayRuler, hourRuler: ruler, index: idx, isDay, angel: C.PLANETS[ruler].angel, dayAngel: C.PLANETS[dayRuler].angel,
-      sunrise: rise.date, sunset: set.date, hourLengthMin: len * 1440 };
+      sunrise: rise.date, sunset: set.date, nextSunrise: next ? next.date : null, hourLengthMin: len * 1440, table };
   }
   function fallbackHour(t, loc) {
     const local = new Date(t.date.getTime() + loc.lon / 15 * 3600e3);
@@ -173,7 +184,11 @@
       const isMoon = a.key === 'moon' || b.key === 'moon';
       const windowT = Math.exp(-0.5 * Math.pow(days / (isMoon ? MOON_WINDOW_DAYS : WINDOW_DAYS), 2));
       const rar = rarity(a.key, b.key);
-      let mods = applying ? 1.2 : 0.8;
+      // a whole-sign aspect that does not hold by sign (29° aries – 1° virgo) is dissociate: half weight
+      const wholeSigns = best.asp.angle % 30 === 0 ? best.asp.angle / 30 : null;
+      const signDist = Math.min((b.sign - a.sign + 12) % 12, (a.sign - b.sign + 12) % 12);
+      const dissociate = wholeSigns !== null && signDist !== wholeSigns;
+      let mods = (applying ? 1.2 : 0.8) * (dissociate ? 0.5 : 1);
       if (a.station || b.station) mods *= 1.5;
       if ((a.key === 'sun' || b.key === 'sun') && !(a.key === 'moon' || b.key === 'moon')) mods *= 1.2;
       const sky = (0.2 + 0.8 * rar) * best.asp.weight * (0.3 * Math.pow(exact, 1.5) + 0.7 * windowT) * mods;   // the sky's own weight
@@ -182,7 +197,7 @@
       out.push({
         a: a.key, b: b.key, aspect: best.asp.key, n: best.asp.n, k: best.asp.k, nature: best.asp.nature,
         angle: best.asp.angle, orb: best.orb, orbMax: best.orbMax, exact, applying, rarity: rar, power, sky, days, window: windowT,
-        moon: a.key === 'moon' || b.key === 'moon'
+        moon: a.key === 'moon' || b.key === 'moon', dissociate, signs: signDist
       });
     }
     return out.sort((x, y) => y.power - x.power);
@@ -302,7 +317,7 @@
 
   /* The chord of the moment. Each planet of the two strongest figures sounds the note of the sign it stands in
      (Case's colour–note scale). Three or more notes forming a known chord are named; otherwise the
-     figure's two planets give a dyad, first > second. */
+     figure's two planets give a dyad written lower note first, with the interval named: C–E · major third. */
   const CHORDS = [
     [[0, 4, 7, 11], 'maj7'], [[0, 4, 7, 10], '7'], [[0, 3, 7, 10], '-7'], [[0, 3, 6, 10], 'ø'], [[0, 3, 6, 9], 'dim7'],
     [[0, 4, 7], ''], [[0, 3, 7], '-'], [[0, 3, 6], 'dim'], [[0, 4, 8], '+'], [[0, 5, 7], 'sus4'], [[0, 2, 7], 'sus2']
@@ -321,8 +336,11 @@
         if (set.join() === pcs.join()) return { name: N[root] + suffix, notes: pcs.map(i => N[i]), planets, root, pcs };
       }
     }
-    const ra = st.bodies[figs[0].a].sign, rb = st.bodies[figs[0].b].sign, a = N[ra], b = N[rb];
-    return { name: a === b ? a : `${a}>${b}`, notes: pcs.map(i => N[i]), planets, dyad: true, root: ra, pcs: ra === rb ? [ra] : [ra, rb] };
+    const ra = st.bodies[figs[0].a].sign, rb = st.bodies[figs[0].b].sign;
+    let lo = ra, hi = rb, d = (rb - ra + 12) % 12;
+    if (d > 6) { lo = rb; hi = ra; d = 12 - d; }
+    const interval = C.INTERVALS[d];
+    return { name: d === 0 ? N[lo] : `${N[lo]}–${N[hi]}`, interval, notes: pcs.map(i => N[i]), planets, dyad: true, root: lo, pcs: d === 0 ? [lo] : [lo, hi] };
   }
 
   /* The three windows: how far the moment serves ideation, incarnation, destruction (0..1).
@@ -399,19 +417,33 @@
       // slowness drives blur: full when retrograde, ramps in as a direct planet slows toward station
       const slow = retro ? 1 : Math.max(0, Math.min(1, 1 - speed / (0.5 * meanSpeed)));
       const dSun = sep(lon, sunLon);
-      const angular = [0, 3, 6, 9].some(c => Math.abs(norm180((p - c) * 30)) < 0.35 * 30);
+      const angular = Math.min(sep(lon, ang.asc), sep(lon, ang.asc + 180), sep(lon, ang.mc), sep(lon, ang.mc + 180)) < 5;   // conjunct an angle, by longitude
       B[key] = {
         key, lon, speed, retro, station, slow: key === 'sun' || key === 'moon' ? 0 : slow,
         ra, dec, alt: hor.altitude, az: hor.azimuth, H, dsa, p, house: 1 + Math.floor(norm360(lon - ang.asc) / 30), angular,
         sign: signIdx, deg, combust: key !== 'sun' && dSun < 8.5 && dSun >= 0.2833, cazimi: key !== 'sun' && key !== 'moon' && dSun < 0.2833,
-        beams: key !== 'sun' && dSun >= 8.5 && dSun < 17
+        beams: key !== 'sun' && dSun >= 8.5 && dSun < 17,
+        decan: C.decanOf(lon), mansion: C.mansionOf(lon)
       };
     }
     const isDay = B.sun.alt > -0.833;
+    for (const key of C.ORDER) B[key].dignity = dignity(key, B[key].sign, B[key].deg, isDay);
+    // mutual reception by domicile or by exaltation (Lilly): each planet stands in the other's dignity.
+    // Lilly counts it as strengthening; here it lifts the peregrine penalty [CW scoring].
+    const seven = C.CHALDEAN;
+    for (let i = 0; i < 7; i++) for (let j = i + 1; j < 7; j++) {
+      const a = seven[i], b = seven[j], sa = C.SIGNS[B[a].sign].key, sb = C.SIGNS[B[b].sign].key;
+      const byDom = (C.DOMICILE[b] || []).includes(sa) && (C.DOMICILE[a] || []).includes(sb);
+      const byEx = C.EXALTATION[b] === sa && C.EXALTATION[a] === sb;
+      if (!byDom && !byEx) continue;
+      for (const [k, o] of [[a, b], [b, a]]) {
+        const D = B[k].dignity;
+        D.labels.push(`reception with ${o}`);
+        if (D.peregrine) { D.peregrine = false; D.score += 5; D.labels.splice(D.labels.indexOf('peregrine'), 1); }
+      }
+    }
     for (const key of C.ORDER) {
       const b = B[key];
-      b.dignity = key === 'sun' || key === 'moon' || C.PLANETS[key].kind === 'pigment' || C.PLANETS[key].kind === 'optic'
-        ? dignity(key, b.sign, b.deg, isDay) : { score: 0, labels: [] };
       let clarity = Math.max(0.18, Math.min(1, 0.62 + b.dignity.score / 16));
       if (b.combust) clarity *= 0.6;
       else if (b.beams) clarity *= 0.85;                  // under the sun's beams: weakened, less than combust
@@ -419,7 +451,7 @@
     }
     const phaseAngle = A.MoonPhase(t);
     const moon = { phaseAngle, illum: (1 - Math.cos(phaseAngle * D2R)) / 2, waxing: phaseAngle < 180 };
-    const hour = planetaryHour(t, obs, loc);
+    const hour = planetaryHour(t, obs, loc, !opts.light);
     const aspects = findAspects(B);
     const events = findEvents(t, B, aspects, opts.light);
     const configs = selectConfigs(aspects, events, B);

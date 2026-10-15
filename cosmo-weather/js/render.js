@@ -15,7 +15,7 @@
   const C = CW.corr, K = CW.color, G = CW.glyphs, E_ = CW.engine;
   const TAU = Math.PI * 2;
   const INK = '#ebe7dc';            // off-white, the only colour the frame owns
-  const MIDNIGHT = '#070c26';
+  const MIDNIGHT = '#050a20';
   const VOID = '#02030a';
   const STAR = '#ffffff';            // reserved for constellations
 
@@ -23,7 +23,7 @@
     try { const c = document.createElement('canvas').getContext('2d'); c.filter = 'blur(2px)'; return c.filter === 'blur(2px)'; }
     catch (e) { return false; }
   })();
-  let FAST = false;                       // scrubbing at speed: skip blurs and the neptune pass
+  let FAST = false, PURE = false;                    // PURE: the sigil layer — solid ink, no glow, no fill                       // scrubbing at speed: skip blurs and the neptune pass
   function withBlur(ctx, px, fn) {
     if (FAST || px < 0.35) return fn();
     if (supportsFilter) { ctx.save(); ctx.filter = `blur(${px.toFixed(2)}px)`; fn(); ctx.restore(); return; }
@@ -67,18 +67,18 @@
   function layout(S) {
     const u = S / 2048;
     return {
-      S, u, cx: S / 2, cy: S * 0.452,
-      Rb: S * 0.404,                  // dodecagon circumradius — the container
-      Rz: S * 0.358,                  // bezel inner edge / zodiac ring outer
-      Rzi: S * 0.338,                 // zodiac ring inner
-      R: S * 0.333,                   // sky
-      capY: S * 0.893
+      S, u, cx: S / 2, cy: S * 0.44,
+      Rb: S * 0.395,                  // dodecagon circumradius — the container: equal houses from the ascendant
+      Rz: S * 0.35,                   // bezel inner edge / zodiac ring outer
+      Rzi: S * 0.33,                  // zodiac ring inner
+      R: S * 0.325,                   // sky
+      capY: S * 0.872
     };
   }
   /* mundane placement: angle = Placidian time position, radius = altitude */
   function skyPoint(Lt, b) {
-    const th = Math.PI - b.p * Math.PI / 6;
-    const r = Lt.R * (0.56 + 0.39 * clamp(Math.abs(b.alt) / 90));
+    const th = Math.PI + (b.lon - Lt.asc) * Math.PI / 180;   // the same projection as the rete: one sky, one angle
+    const r = Lt.R * (0.62 + 0.33 * clamp(Math.abs(b.alt) / 90));
     return { x: Lt.cx + r * Math.cos(th), y: Lt.cy - r * Math.sin(th), th, r };
   }
   /* ecliptic placement: the rete, rotated so the ascendant sits on the eastern horizon */
@@ -138,15 +138,15 @@
       let r = base[0], gg = base[1], b = base[2];
       for (const l of L) {
         const dx = x - l.pos.x, dy = y - l.pos.y;
-        const f = 0.95 * l.w * Math.exp(-(dx * dx + dy * dy) / (2 * l.sigma * l.sigma));
+        const f = 1.35 * l.w * Math.exp(-(dx * dx + dy * dy) / (2 * l.sigma * l.sigma));
         r += l.lin[0] * f; gg += l.lin[1] * f; b += l.lin[2] * f;
       }
-      const under = 1 - 0.22 * smooth(0, 0.35, y);           // below the horizon: under the earth
-      const vig = 0.72 + 0.28 * (1 - Math.min(1, rr));
+      const under = 1 - 0.32 * smooth(0, 0.35, y);           // below the horizon: under the earth
+      const vig = 0.55 + 0.45 * (1 - Math.min(1, rr));
       const k = E * under * vig;
-      img.data[o] = 255 * Math.pow(1 - Math.exp(-r * k * 2.2), 1 / 2.2);
-      img.data[o + 1] = 255 * Math.pow(1 - Math.exp(-gg * k * 2.2), 1 / 2.2);
-      img.data[o + 2] = 255 * Math.pow(1 - Math.exp(-b * k * 2.2), 1 / 2.2);
+      img.data[o] = 255 * Math.pow(1 - Math.exp(-r * k * 2.6), 1 / 2.2);
+      img.data[o + 1] = 255 * Math.pow(1 - Math.exp(-gg * k * 2.6), 1 / 2.2);
+      img.data[o + 2] = 255 * Math.pow(1 - Math.exp(-b * k * 2.6), 1 / 2.2);
       img.data[o + 3] = 255;
     }
     g.putImageData(img, 0, 0);
@@ -207,6 +207,11 @@
     return cv;
   }
 
+  /* ---------- the luminaries' field ----------
+     Sun = source, moon = sink. In the plane, the streamlines of a source and a sink are exactly the circles
+     through both points (the pencil Frieda Harris drew), and the equipotentials are the Apollonian circles
+     around each. So the weave is the sun's outflow arriving in the moon's cup. The flow runs gold to silver;
+     its pace follows how full the cup is (the moon's light); the cup is drawn as rings around the moon. */
   /* ---------- Harris weave: one figure spanning the two luminaries ----------
      The circles through both sun and moon, drawn only between them: a spindle of arcs,
      gold at the sun, silver at the moon. Tight at new moon, spanning the dial at full. */
@@ -218,6 +223,7 @@
     const c = Math.hypot(dx, dy) / 2;
     const sunC = K.mixLight(C.PLANETS.sun.tincture, signColorAt(B.sun.lon), 0.35, 0.05);
     const moonC = K.mixLight(C.PLANETS.moon.tincture, signColorAt(B.moon.lon), 0.35, 0.05);
+    const arcs = [];
     ctx.save();
     ctx.globalCompositeOperation = 'screen';
     ctx.lineWidth = lw * 0.75;
@@ -225,19 +231,48 @@
       if (c < Lt.R * 0.03) {                            // conjunction: the spindle closes to rings
         ctx.strokeStyle = K.rgba(K.mixLight(sunC, moonC, 0.5, 0), 0.2 * E);
         for (let i = 1; i <= 4; i++) { ctx.beginPath(); ctx.arc(mx, my, Lt.R * 0.03 * i, 0, TAU); ctx.stroke(); }
-        return;
+        return;   // new moon: source and sink coincide, nothing flows
       }
+      // the cup: equipotential rings closing around the moon
+      ctx.save();
+      ctx.strokeStyle = K.rgba(moonC, 0.3 * E);
+      for (let i = 1; i <= 4; i++) {
+        const sh = 0.55 + i * 0.32, cth = Math.cosh(sh) / Math.sinh(sh), r = c / Math.sinh(sh);
+        const ux0 = dx / (2 * c), uy0 = dy / (2 * c);
+        ctx.beginPath(); ctx.arc(mx + ux0 * c * cth, my + uy0 * c * cth, r, 0, TAU); ctx.stroke();
+      }
+      ctx.restore();
       const g = ctx.createLinearGradient(s.x, s.y, m.x, m.y);
       g.addColorStop(0, K.rgba(sunC, 0.36 * E)); g.addColorStop(1, K.rgba(moonC, 0.36 * E));
       ctx.strokeStyle = g;
       const ux = dx / (2 * c), uy = dy / (2 * c), nx = -uy, ny = ux;
       ctx.beginPath(); ctx.moveTo(s.x, s.y); ctx.lineTo(m.x, m.y); ctx.stroke();
+      arcs.push({ line: true, s, m });
       for (let i = 1; i <= 8; i++) for (const sg of [-1, 1]) {
         const a = i * Math.PI / 18, t = sg * c / Math.tan(a), r = c / Math.sin(a);
         const ox = mx + nx * t, oy = my + ny * t;
         const a1 = Math.atan2(s.y - oy, s.x - ox), a2 = Math.atan2(m.y - oy, m.x - ox);
         let d = a2 - a1; while (d > Math.PI) d -= TAU; while (d <= -Math.PI) d += TAU;
         ctx.beginPath(); ctx.arc(ox, oy, r, a1, a1 + d, d < 0); ctx.stroke();
+        arcs.push({ ox, oy, r, a1, d });
+      }
+    });
+    ctx.restore();
+    return { arcs, sunC, moonC, s, m };
+  }
+  /* the flow: particles leaving the sun along every streamline and arriving in the moon */
+  function drawFlow(ctx, weave, state, Lt, E, t) {
+    if (!weave || !weave.arcs.length) return;
+    const pace = 0.03 + 0.09 * state.moon.illum, per = 1 + Math.round(2 * state.bodies.sun.clarity);
+    ctx.save(); ctx.globalCompositeOperation = 'screen';
+    weave.arcs.forEach((A, i) => {
+      for (let j = 0; j < per; j++) {
+        const f = ((t * pace + i * 0.618 + j / per) % 1 + 1) % 1;
+        const x = A.line ? A.s.x + (A.m.x - A.s.x) * f : A.ox + A.r * Math.cos(A.a1 + A.d * f);
+        const y = A.line ? A.s.y + (A.m.y - A.s.y) * f : A.oy + A.r * Math.sin(A.a1 + A.d * f);
+        const fade = Math.sin(Math.PI * f);
+        ctx.fillStyle = K.rgba(K.mixLight(weave.sunC, weave.moonC, f, 0.1), 0.85 * fade * E);
+        ctx.beginPath(); ctx.arc(x, y, Lt.u * 3.2, 0, TAU); ctx.fill();
       }
     });
     ctx.restore();
@@ -272,6 +307,7 @@
 
   /* A line holds its colour: core drawn over, glow screened. Black (saturn) is carved, edged by the other force. */
   function strokeGlow(ctx, path, color, lw, alpha, E, accent) {
+    if (PURE) { ctx.globalCompositeOperation = 'source-over'; ctx.strokeStyle = '#fbf8f0'; ctx.lineWidth = Math.max(lw * 1.25, 2); ctx.stroke(path); return; }
     const dark = lightness(color) < 0.22;
     if (dark) {
       ctx.globalCompositeOperation = 'source-over';
@@ -280,12 +316,13 @@
       return;
     }
     ctx.globalCompositeOperation = 'screen';
-    ctx.strokeStyle = K.rgba(color, 0.12 * alpha * E); ctx.lineWidth = lw * 4.5; ctx.stroke(path);
+    ctx.strokeStyle = K.rgba(color, 0.18 * alpha * E); ctx.lineWidth = lw * 5; ctx.stroke(path);
     ctx.globalCompositeOperation = 'source-over';
-    ctx.strokeStyle = K.rgba(color, 0.88 * alpha); ctx.lineWidth = lw; ctx.stroke(path);
+    ctx.strokeStyle = K.rgba(color, Math.min(1, alpha)); ctx.lineWidth = lw; ctx.stroke(path);
   }
   /* an edge that passes from one planet to the other: a smooth passage when soft, a hard split when hard */
   function strokeEdge(ctx, a, b, path, cA, cB, hard, lw, alpha, E) {
+    if (PURE) return strokeGlow(ctx, path, cA, lw, alpha, E);
     const dA = lightness(cA) < 0.22, dB = lightness(cB) < 0.22;
     if (dA || dB) {                                       // saturn's half is a groove
       ctx.globalCompositeOperation = 'source-over';
@@ -374,6 +411,7 @@
 
     // stained glass: the relationship as a translucent fill (harris)
     const facet = path => {
+      if (PURE) return;
       ctx.save();
       const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, R);
       if (dark) { g.addColorStop(0, 'rgba(0,0,0,0.42)'); g.addColorStop(1, 'rgba(0,0,0,0.05)'); ctx.globalCompositeOperation = 'source-over'; }
@@ -476,7 +514,8 @@
     let tint = K.mixLight(K.mixLight(dc === '#040507' ? '#9aa0ab' : dc, hc === '#040507' ? '#9aa0ab' : hc, 0.5, 0), '#fff4dc', 0.6, 0);
     if (v === 'unripe') tint = K.mixLight(tint, '#7d889c', 0.7, -0.08);
     const level = { ripe: 1.25, open: 0.9, unripe: 0.45, void: 0 }[v];
-    if (level > 0) {
+    if (PURE) { /* the sigil carries the stars only */ }
+    else if (level > 0) {
       const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, rg * 2.6);
       g.addColorStop(0, K.rgba(tint, 0.55 * E * level)); g.addColorStop(0.35, K.rgba(tint, 0.18 * E * level)); g.addColorStop(1, K.rgba(tint, 0));
       ctx.globalCompositeOperation = 'screen'; ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, rg * 2.6, 0, TAU); ctx.fill();
@@ -495,7 +534,7 @@
       const c = key === 'moon' ? '#dfe6ee' : C.PLANETS[key].tincture;
       ctx.lineJoin = 'round'; ctx.lineCap = 'round';
       ctx.globalCompositeOperation = 'source-over';
-      ctx.strokeStyle = 'rgba(2,3,10,0.45)'; ctx.lineWidth = lw * 2.6; ctx.stroke(p);   // a dark bed so any tincture reads on any light
+      if (!PURE) { ctx.strokeStyle = 'rgba(2,3,10,0.45)'; ctx.lineWidth = lw * 2.6; ctx.stroke(p); }   // a dark bed so any tincture reads on any light
       strokeGlow(ctx, p, c, lw * 1.1, alpha, E, '#9aa0ab');
     };
     if (d === hr) star(d, ghost);
@@ -561,7 +600,7 @@
   /* ---------- the intelligences ---------- */
   function placeBodies(state, Lt) {
     const pts = C.ORDER.map(k => ({ key: k, ...skyPoint(Lt, state.bodies[k]) }));
-    const min = Lt.S * 0.04;
+    const min = Lt.S * 0.05;
     for (let it = 0; it < 24; it++) {                     // nudge apart along the orbit, never radially
       let moved = false;
       for (let i = 0; i < pts.length; i++) for (let j = i + 1; j < pts.length; j++) {
@@ -594,9 +633,14 @@
     ctx.restore();
   }
 
-  /* state ring: the planet's condition, read from the ring's form.
-     colour = sign · purity = dignity · whole = domicile · doubled = exaltation · thin = minor dignity
-     faint = peregrine · broken = detriment (exile) · broken and drawn in = fall */
+  /* ---------- the intelligences as polygons ----------
+     core   = the planet's own polygon (saturn 3, jupiter 4, mars 5, sun 6, venus 7, mercury 8), point up,
+              in its tincture. the moon keeps its phase disc; the outer planets keep their optics.
+     ring   = the same polygon, larger. its form is the planet's condition, its rotation is the alignment:
+              domicile and exaltation sit aligned with the core; minor dignity a quarter-step off;
+              peregrine half-off; detriment and fall a full half-step: vertex against edge, out of tune.
+     size   = power: dignity, angularity, and the planet's part in the figure. */
+  const POLY = { sun: 6, venus: 7, mercury: 8, mars: 5, jupiter: 4, saturn: 3, moon: 9 };
   function stateOf(b, key) {
     const L = b.dignity.labels;
     if (L.includes('detriment')) return 'detriment';
@@ -606,10 +650,22 @@
     if (L.some(l => l === 'triplicity' || l === 'term' || l === 'face')) return 'minor';
     return C.PLANETS[key].kind === 'optic' ? 'neutral' : 'peregrine';
   }
+  function polyPath(x, y, r, n, rot) {
+    const p = new Path2D();
+    if (!n || n < 3) { p.arc(x, y, r, 0, TAU); return p; }
+    for (let i = 0; i <= n; i++) { const a = rot + i * TAU / n; const px = x + r * Math.cos(a), py = y - r * Math.sin(a); i ? p.lineTo(px, py) : p.moveTo(px, py); }
+    p.closePath(); return p;
+  }
+  function planetPower(state, key, inv) {
+    const b = state.bodies[key];
+    const dig = C.PLANETS[key].kind === 'optic' ? 0.5 : (b.dignity.score + 5) / 15;   // −5 … +10 → 0 … 1
+    return clamp(0.45 * dig + 0.5 * Math.min(1, inv || 0) + (b.angular ? 0.2 : 0) + (b.station ? 0.2 : 0), 0, 1.2);
+  }
   function drawStateRing(ctx, state, Lt, key, q, coreR, lw, E, dim, t) {
-    const b = state.bodies[key], P = C.PLANETS[key];
+    const b = state.bodies[key];
     const st = stateOf(b, key);
-    let rr = coreR * (key === 'sun' ? 1.9 : key === 'moon' ? 2.0 : 2.4);
+    const n = POLY[key];
+    let rr = coreR * (key === 'sun' ? 1.75 : key === 'moon' ? 1.8 : 2.1);
     let col = K.clarify(signColorAt(b.lon), b.clarity);
     if (b.combust) col = K.mixLight(col, '#fff1c8', 0.5, 0.04);
     let stroke = K.rgba(col, 1);
@@ -621,21 +677,23 @@
       stroke = g;
     }
     const spec = {
-      domicile: { w: 1.5, a: 0.95 }, exaltation: { w: 1.3, a: 0.95, double: true }, minor: { w: 0.9, a: 0.8 },
-      peregrine: { w: 0.7, a: 0.5 }, neutral: { w: 0.8, a: 0.55 },
-      detriment: { w: 1.4, a: 0.9, broken: true }, fall: { w: 1.2, a: 0.75, broken: true, inward: true }
+      domicile: { w: 1.6, a: 1, off: 0 }, exaltation: { w: 1.4, a: 1, off: 0, double: true }, minor: { w: 1.0, a: 0.85, off: 0.25 },
+      peregrine: { w: 0.8, a: 0.55, off: 0.5 }, neutral: { w: 0.9, a: 0.6, off: 0 },
+      detriment: { w: 1.4, a: 0.9, off: 1, broken: true }, fall: { w: 1.2, a: 0.75, off: 1, broken: true, inward: true }
     }[st];
-    if (spec.inward) rr *= 0.9;
+    if (spec.inward) rr *= 0.92;
+    const rot = Math.PI / 2 + (n ? spec.off * Math.PI / n : 0);
     withBlur(ctx, 3 * Lt.u * b.slow, () => {             // retrograde: the ring loses focus
       ctx.save();
       ctx.globalCompositeOperation = 'source-over';
       ctx.globalAlpha = spec.a * dim;
-      ctx.strokeStyle = stroke; ctx.lineWidth = lw * spec.w; ctx.lineCap = 'butt';
-      if (spec.broken) { const seg = TAU * rr / 12; ctx.setLineDash([seg * 0.62, seg * 0.38]); }
-      ctx.beginPath(); ctx.arc(q.x, q.y, rr, 0, TAU); ctx.stroke();
-      if (spec.double) { ctx.lineWidth = lw * 0.7; ctx.beginPath(); ctx.arc(q.x, q.y, rr * 1.32, 0, TAU); ctx.stroke(); }
+      ctx.strokeStyle = stroke; ctx.lineWidth = lw * spec.w; ctx.lineJoin = 'round';
+      if (spec.broken) { const per = n ? 2 * rr * Math.sin(Math.PI / n) : TAU * rr / 12; ctx.setLineDash([per * 0.55, per * 0.45]); }
+      ctx.stroke(polyPath(q.x, q.y, rr, n, rot));
+      if (spec.double) { ctx.lineWidth = lw * 0.8; ctx.stroke(polyPath(q.x, q.y, rr * 1.3, n, rot)); }
       ctx.restore();
     });
+    return rr;
   }
 
   function drawBodies(ctx, state, Lt, pos, E, lw, t, involved) {
@@ -643,64 +701,67 @@
     for (const key of C.ORDER.slice().reverse()) {
       const b = B[key], P = C.PLANETS[key], q = pos[key];
       const up = b.alt > 0;
-      const dim = up ? 1 : 0.55;
+      const dim = up ? 1 : 0.6;
       const core = coreColor(state, key);
       const aura = signColorAt(b.lon);
-      const inv = involved[key] || 0;
-      const auraR = Lt.S * (key === 'sun' ? 0.06 : key === 'moon' ? 0.046 : 0.025 + 0.02 * Math.min(1, inv));
-      const coreR = Lt.S * (key === 'sun' ? 0.0155 : key === 'moon' ? 0.0142 : 0.0092);
+      const pw = planetPower(state, key, involved[key]);
+      const k = 0.85 + 0.6 * pw;                           // a powerful planet stands larger
+      const coreR = Lt.S * (key === 'sun' ? 0.019 : key === 'moon' ? 0.017 : 0.0125) * k;
+      const auraR = coreR * (key === 'sun' ? 4.2 : 3.6);
+      const n = POLY[key];
 
-      // aura: sign colour, purity from dignity
+      // aura: sign colour, purity and brightness from dignity
       if (!(key === 'sun' && !up)) {
         const ac = K.shade(K.clarify(aura, b.clarity), -0.15 * (1 - b.clarity));
-        const aw = 0.4 + 0.6 * b.clarity;                    // a weak planet's aura is fainter
+        const aw = 0.35 + 0.65 * b.clarity;
         withBlur(ctx, 4 * Lt.u * b.slow, () => {
           ctx.save(); ctx.globalCompositeOperation = 'screen';
           const g = ctx.createRadialGradient(q.x, q.y, 0, q.x, q.y, auraR);
-          g.addColorStop(0, K.rgba(ac, 0.45 * E * dim * aw)); g.addColorStop(0.4, K.rgba(ac, 0.12 * E * dim)); g.addColorStop(1, K.rgba(ac, 0));
+          g.addColorStop(0, K.rgba(ac, 0.6 * E * dim * aw)); g.addColorStop(0.4, K.rgba(ac, 0.18 * E * dim * aw)); g.addColorStop(1, K.rgba(ac, 0));
           ctx.fillStyle = g; ctx.beginPath(); ctx.arc(q.x, q.y, auraR, 0, TAU); ctx.fill();
           ctx.restore();
         });
       }
-      drawStateRing(ctx, state, Lt, key, q, coreR, lw, E, (key === 'sun' && !up) ? 0.4 : dim, t);
+      const rr = drawStateRing(ctx, state, Lt, key, q, coreR, lw, E, (key === 'sun' && !up) ? 0.4 : dim, t);
 
       ctx.save();
       ctx.globalCompositeOperation = 'source-over';
       ctx.globalAlpha = dim;
       if (key === 'sun' && !up) {                         // below the horizon the sun is switched off
-        ctx.strokeStyle = K.rgba(C.PLANETS.sun.tincture, 0.55); ctx.lineWidth = lw;
-        ctx.beginPath(); ctx.arc(q.x, q.y, coreR, 0, TAU); ctx.stroke();
+        ctx.strokeStyle = K.rgba(C.PLANETS.sun.tincture, 0.6); ctx.lineWidth = lw;
+        ctx.stroke(polyPath(q.x, q.y, coreR, 6, Math.PI / 2));
       } else if (key === 'moon') {
         drawMoonDisc(ctx, q.x, q.y, coreR, state.moon.phaseAngle, core);
       } else if (key === 'saturn') {
-        ctx.fillStyle = '#000'; ctx.beginPath(); ctx.arc(q.x, q.y, coreR * 1.25, 0, TAU); ctx.fill();
-        ctx.strokeStyle = P.rim; ctx.lineWidth = lw * 0.9; ctx.stroke();
+        const p = polyPath(q.x, q.y, coreR * 1.25, 3, Math.PI / 2);
+        ctx.fillStyle = '#000'; ctx.fill(p); ctx.strokeStyle = P.rim; ctx.lineWidth = lw * 0.9; ctx.lineJoin = 'round'; ctx.stroke(p);
       } else if (key === 'uranus') {
-        ctx.fillStyle = '#dcebf3'; ctx.beginPath(); ctx.arc(q.x, q.y, coreR * 0.7, 0, TAU); ctx.fill();
+        ctx.fillStyle = '#dcebf3'; ctx.beginPath(); ctx.arc(q.x, q.y, coreR * 0.6, 0, TAU); ctx.fill();
       } else if (key === 'neptune') {
         const g = ctx.createRadialGradient(q.x, q.y, 0, q.x, q.y, coreR * 2.2);
-        g.addColorStop(0, 'rgba(255,255,255,0.95)'); g.addColorStop(0.35, 'rgba(235,242,255,0.35)'); g.addColorStop(1, 'rgba(235,242,255,0)');
+        g.addColorStop(0, 'rgba(255,255,255,1)'); g.addColorStop(0.35, 'rgba(235,242,255,0.4)'); g.addColorStop(1, 'rgba(235,242,255,0)');
         ctx.globalCompositeOperation = 'screen'; ctx.fillStyle = g; ctx.beginPath(); ctx.arc(q.x, q.y, coreR * 2.2, 0, TAU); ctx.fill();
       } else if (key === 'pluto') {
-        // pluto has no body colour: its place is marked only by the lens drawn later
+        // no body colour: pluto is the lens drawn later
       } else {
+        const p = polyPath(q.x, q.y, coreR * 1.12, n, Math.PI / 2);
         if (key === 'sun') {
-          const g = ctx.createRadialGradient(q.x - coreR * 0.3, q.y - coreR * 0.3, 0, q.x, q.y, coreR);
-          g.addColorStop(0, '#fff1c4'); g.addColorStop(0.55, core); g.addColorStop(1, K.shade(core, -0.12));
+          const g = ctx.createRadialGradient(q.x - coreR * 0.3, q.y - coreR * 0.3, 0, q.x, q.y, coreR * 1.1);
+          g.addColorStop(0, '#fff3cc'); g.addColorStop(0.55, core); g.addColorStop(1, K.shade(core, -0.14));
           ctx.fillStyle = g;
         } else ctx.fillStyle = core;
-        ctx.beginPath(); ctx.arc(q.x, q.y, coreR, 0, TAU); ctx.fill();
+        ctx.fill(p);
       }
       if (b.cazimi) {
-        ctx.strokeStyle = 'rgba(255,240,200,0.9)'; ctx.lineWidth = lw * 1.2;
-        ctx.beginPath(); ctx.arc(q.x, q.y, coreR * 3.2, 0, TAU); ctx.stroke();
+        ctx.strokeStyle = 'rgba(255,240,200,0.95)'; ctx.lineWidth = lw * 1.3;
+        ctx.beginPath(); ctx.arc(q.x, q.y, rr * 1.5, 0, TAU); ctx.stroke();
       }
       ctx.restore();
 
       // glyph, outward of the body
-      const gr = Lt.S * 0.0185, off = coreR * 2.6 + gr * 0.75;
+      const gr = Lt.S * 0.022, off = rr + gr * 0.85;
       const gx = q.x + Math.cos(q.th) * off, gy = q.y - Math.sin(q.th) * off;
-      const ink = K.rgba(INK, (up ? 0.82 : 0.45));
+      const ink = K.rgba(INK, (up ? 0.9 : 0.5));
       withBlur(ctx, 2.5 * Lt.u * b.slow, () => G.planet(ctx, key, gx, gy, gr, ink, 0.11));
     }
   }
@@ -760,7 +821,7 @@
     for (let i = 0; i < 12; i++) {
       const a = Math.PI - i * Math.PI / 6;
       const p0 = polar(Lt, a, Lt.Rz), p1 = polar(Lt, a, Lt.Rb);
-      const angle = i % 3 === 0;
+      const angle = i % 6 === 0;
       ctx.strokeStyle = K.rgba(INK, angle ? 0.55 : 0.16); ctx.lineWidth = (angle ? 1.4 : 1) * u;
       ctx.beginPath(); ctx.moveTo(p0.x, p0.y); ctx.lineTo(p1.x, p1.y); ctx.stroke();
       const house = 12 - i;                               // face between vertex i and i+1, going clockwise above the horizon
@@ -773,8 +834,15 @@
     // cardinal labels outside the container
     ctx.font = `400 ${Math.round(18 * u)}px "IBM Plex Sans", sans-serif`;
     ctx.fillStyle = K.rgba(INK, 0.55);
-    const lab = [['asc', Math.PI], ['mc', Math.PI / 2], ['dsc', 0], ['ic', -Math.PI / 2]];
-    for (const [s, a] of lab) { const p = polar(Lt, a, Lt.Rb + 26 * u); ctx.fillText(s, p.x, p.y); }
+    const am = eclAngle(state, state.mc);
+    const lab = [['asc', Math.PI], ['dsc', 0], ['mc', am], ['ic', am + Math.PI]];
+    for (const [s, a] of lab) {
+      const rOut = Lt.Rb / Math.cos(((a % (Math.PI / 6)) + Math.PI / 6) % (Math.PI / 6) - Math.PI / 12);  // to the dodecagon edge
+      const p = polar(Lt, a, Math.min(rOut, Lt.Rb) + 26 * u); ctx.fillText(s, p.x, p.y);
+    }
+    // the meridian: the mc degree, drawn across the container
+    ctx.strokeStyle = K.rgba(INK, 0.6); ctx.lineWidth = 1.4 * u;
+    for (const a of [am, am + Math.PI]) { const p0 = polar(Lt, a, Lt.Rz), p1 = polar(Lt, a, Lt.Rb * 0.97); ctx.beginPath(); ctx.moveTo(p0.x, p0.y); ctx.lineTo(p1.x, p1.y); ctx.stroke(); }
     ctx.restore();
   }
 
@@ -837,7 +905,8 @@
       l2: `day of ${H.dayRuler} · hour of ${H.hourRuler} · angel of the hour ${H.angel}`,
       l3: `sun in the ${ordinal(B.sun.house)} house · ${dms(B.sun.deg)} ${sunSign}`,
       fig: fig ? `${fig.a} ${fig.aspect} ${fig.b}${fig.event ? ' · ' + fig.event : ''}` : 'quiet sky',
-      moon: moonLine(state)
+      moon: moonLine(state),
+      chord: `chord ${state.chord.name}${state.chord.notes.length > 1 && !state.chord.dyad ? ' · ' + state.chord.notes.join(' ') : ''}`
     };
   }
   function drawCaption(ctx, state, Lt) {
@@ -852,6 +921,7 @@
     ctx.fillStyle = K.rgba(INK, 0.74); ctx.font = `400 ${Math.round(26 * u)}px "IBM Plex Sans", sans-serif`;
     ctx.fillText(c.l2, m, Lt.capY + 50 * u);
     ctx.fillText(c.l3, m, Lt.capY + 88 * u);
+    ctx.fillText(c.chord, m, Lt.capY + 126 * u);
     ctx.textAlign = 'right';
     ctx.fillStyle = K.rgba(INK, 0.92); ctx.font = `500 ${Math.round(30 * u)}px Jost, sans-serif`;
     if ('letterSpacing' in ctx) ctx.letterSpacing = `${(4 * u).toFixed(1)}px`;
@@ -865,11 +935,11 @@
   }
 
   /* ---------- clock mode ---------- */
-  const ground = state => K.mixLight(VOID, MIDNIGHT, 0.25 + 0.5 * state.moon.illum, 0);
+  const ground = state => K.mixLight(VOID, MIDNIGHT, 0.12 + 0.4 * state.moon.illum, 0);
   function renderClock(ctx, state, S, t, opts) {
-    const Lt = layout(S);
+    const Lt = layout(S); Lt.asc = state.asc;
     const E = 0.62 + 0.38 * state.moon.illum;
-    const lw = Lt.u * (1.5 + 1.1 * state.moon.illum);   // the full moon inflates the marks
+    const lw = Lt.u * (1.9 + 1.3 * state.moon.illum);   // the full moon inflates the marks
     const B = state.bodies;
 
     // ground
@@ -887,7 +957,8 @@
     ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
     ctx.drawImage(field, -Lt.R * 1.08, -Lt.R * 1.08, Lt.R * 2.16, Lt.R * 2.16);
     ctx.restore();
-    drawWeave(ctx, state, Lt, lw, E);
+    const weave = drawWeave(ctx, state, Lt, lw, E);
+    if (!opts.plate) drawFlow(ctx, weave, state, Lt, E, t);
     // horizon
     ctx.strokeStyle = K.rgba(INK, 0.22); ctx.lineWidth = 1 * Lt.u;
     ctx.beginPath(); ctx.moveTo(Lt.cx - Lt.R, Lt.cy); ctx.lineTo(Lt.cx + Lt.R, Lt.cy); ctx.stroke();
@@ -895,7 +966,7 @@
     // the portal
     const cf = state.configs;
     const quiet = cf.primary && cf.primary.power < 0.25;
-    const Rp = Lt.R * 0.5 * (cf.scale || 1) * (quiet ? 0.85 : 1);   // jupiter widens, saturn narrows
+    const Rp = Lt.R * 0.56 * (cf.scale || 1) * (quiet ? 0.88 : 1);   // jupiter widens, saturn narrows
     const geos = [];
     const involved = {};
     const all = [cf.primary, ...cf.secondary].filter(Boolean);
@@ -969,10 +1040,30 @@
     }
     ctx.restore(); // sky clip
 
+    // the sigil layer: veil the sky, draw the figure of the moment in solid ink to be copied
+    if (opts.sigil && cf.primary) {
+      ctx.save();
+      ctx.fillStyle = 'rgba(2,3,10,0.82)'; ctx.beginPath(); ctx.arc(Lt.cx, Lt.cy, Lt.R + 1, 0, TAU); ctx.fill();
+      ctx.beginPath(); ctx.arc(Lt.cx, Lt.cy, Lt.R, 0, TAU); ctx.clip();
+      PURE = true;
+      try {
+        if (cf.cut) {
+          const th = eclAngle(state, B[cf.cut.by].lon), w = cf.cut.width * Math.PI / 360;
+          const clip = new Path2D(); clip.rect(0, 0, S, S);
+          const p0 = polar(Lt, th - w, Rp * 2), p1 = polar(Lt, th + w, Rp * 2);
+          clip.moveTo(Lt.cx, Lt.cy); clip.lineTo(p0.x, p0.y); clip.lineTo(p1.x, p1.y); clip.closePath();
+          ctx.save(); ctx.clip(clip, 'evenodd'); drawFigure(ctx, state, Lt, cf.primary, Rp, 'primary', lw, E, 0); ctx.restore();
+        } else drawFigure(ctx, state, Lt, cf.primary, Rp, 'primary', lw, E, 0);
+        drawGuardians(ctx, state, Lt, E);
+        ctx.strokeStyle = '#fbf8f0'; ctx.lineWidth = Math.max(lw, 2); ctx.beginPath(); ctx.arc(Lt.cx, Lt.cy, Rp * 1.12, 0, TAU); ctx.stroke();
+      } finally { PURE = false; }
+      ctx.restore();
+    }
+
     drawRete(ctx, state, Lt, lw);
     drawFrame(ctx, state, Lt, lw);
     if (opts.caption !== false) drawCaption(ctx, state, Lt);
-    return { mode: 'clock', layout: Lt, positions: pos, stars, rippleCol, Rp, E, lw };
+    return { mode: 'clock', sigil: !!opts.sigil, layout: Lt, positions: pos, stars, rippleCol, Rp, E, lw, weave, state };
   }
 
   function drawRipple(ctx, Lt, Rp, col, lw, E, t) {
@@ -989,6 +1080,7 @@
     ctx.save();
     ctx.beginPath(); ctx.arc(Lt.cx, Lt.cy, Lt.R, 0, TAU); ctx.clip();
     if (info.rippleCol) drawRipple(ctx, Lt, info.Rp, info.rippleCol, info.lw, info.E, t);
+    if (!info.sigil) drawFlow(ctx, info.weave, info.state, Lt, info.E, t);
     ctx.globalCompositeOperation = 'lighter';
     info.stars.forEach((s, i) => {
       const a = 0.18 * (0.5 + 0.5 * Math.sin(t * 1.7 + i * 2.1));
@@ -1000,91 +1092,109 @@
     ctx.restore();
   }
 
-  /* ---------- chart mode: the plain instrument ---------- */
+  /* ---------- chart mode: the plain instrument ----------
+     no field. signs as full sectors, equal houses from the ascendant, aspects in their own colours. */
+  const ASPECT_INK = {
+    conjunction: '#e9c45c', opposition: '#e5483d', square: '#ef7a3a', trine: '#3f86f2', sextile: '#2fbfa6',
+    quincunx: '#a6cf3e', semisquare: '#c85a44', sesquisquare: '#c85a44',
+    quintile: '#a77bff', biquintile: '#a77bff', septile: '#d873cf', biseptile: '#d873cf', triseptile: '#d873cf', novile: '#9fb2cf'
+  };
+  const ASPECT_DASH = { quincunx: [10, 7], semisquare: [3, 6], sesquisquare: [3, 6], quintile: [2, 5], biquintile: [2, 5], septile: [2, 5], biseptile: [2, 5], triseptile: [2, 5], novile: [2, 5] };
   function renderChart(ctx, state, S, t, opts) {
-    const Lt = layout(S);
+    const Lt = layout(S); Lt.asc = state.asc;
     const u = Lt.u, B = state.bodies;
-    const E = 0.62 + 0.38 * state.moon.illum;
-    ctx.fillStyle = ground(state);
-    ctx.fillRect(0, 0, S, S);
-    ctx.save();
-    ctx.beginPath(); ctx.arc(Lt.cx, Lt.cy, Lt.R, 0, TAU); ctx.clip();
-    ctx.fillStyle = MIDNIGHT; ctx.fillRect(0, 0, S, S);
-    ctx.globalAlpha = 0.45;
-    const field = buildField(state, Lt, opts.fieldRes || 180);
-    ctx.drawImage(field, Lt.cx - Lt.R * 1.08, Lt.cy - Lt.R * 1.08, Lt.R * 2.16, Lt.R * 2.16);
-    ctx.globalAlpha = 1;
-    ctx.restore();
+    ctx.fillStyle = ground(state); ctx.fillRect(0, 0, S, S);
+    // plain ground inside: midnight, slightly lifted at the centre
+    const bg = ctx.createRadialGradient(Lt.cx, Lt.cy, 0, Lt.cx, Lt.cy, Lt.R);
+    bg.addColorStop(0, '#0b1230'); bg.addColorStop(1, '#04071a');
+    ctx.fillStyle = bg; ctx.beginPath(); ctx.arc(Lt.cx, Lt.cy, Lt.R, 0, TAU); ctx.fill();
 
-    drawRete(ctx, state, Lt, u);
-    // outer black ring with degree ticks
-    const outer = new Path2D(); outer.arc(Lt.cx, Lt.cy, Lt.Rb * 0.97, 0, TAU); outer.arc(Lt.cx, Lt.cy, Lt.Rz, 0, TAU, true);
-    ctx.fillStyle = VOID; ctx.fill(outer, 'evenodd');
-    ctx.strokeStyle = K.rgba(INK, 0.3);
-    for (let d = 0; d < 360; d++) {
-      const a = eclAngle(state, d), l = d % 10 === 0 ? 16 : d % 5 === 0 ? 10 : 5;
-      const p0 = polar(Lt, a, Lt.Rz), p1 = polar(Lt, a, Lt.Rz + l * u);
-      ctx.lineWidth = (d % 10 === 0 ? 1.4 : 0.8) * u; ctx.beginPath(); ctx.moveTo(p0.x, p0.y); ctx.lineTo(p1.x, p1.y); ctx.stroke();
-    }
-    // house cusps
-    const rIn = Lt.R * 0.36;
-    for (let h = 1; h <= 12; h++) {
-      const a = eclAngle(state, state.cusps[h]);
-      const ang = h === 1 || h === 4 || h === 7 || h === 10;
-      const p0 = polar(Lt, a, rIn), p1 = polar(Lt, a, ang ? Lt.Rb * 0.97 : Lt.Rzi);
-      ctx.strokeStyle = K.rgba(INK, ang ? 0.6 : 0.2); ctx.lineWidth = (ang ? 1.6 : 1) * u;
+    // zodiac band: twelve sectors with full boundaries, glyphs, degree scale
+    const r0 = Lt.Rzi - 18 * u, r1 = Lt.Rb * 0.97;
+    const band = new Path2D(); band.arc(Lt.cx, Lt.cy, r1, 0, TAU); band.arc(Lt.cx, Lt.cy, Lt.R, 0, TAU, true);
+    ctx.fillStyle = VOID; ctx.fill(band, 'evenodd');
+    for (let i = 0; i < 12; i++) {
+      const a0 = eclAngle(state, i * 30), am = eclAngle(state, i * 30 + 15);
+      const p0 = polar(Lt, a0, Lt.R), p1 = polar(Lt, a0, r1);
+      ctx.strokeStyle = K.rgba(INK, 0.55); ctx.lineWidth = 1.4 * u;
       ctx.beginPath(); ctx.moveTo(p0.x, p0.y); ctx.lineTo(p1.x, p1.y); ctx.stroke();
-      const nxt = state.cusps[h % 12 + 1];
-      const mid = state.cusps[h] + E_.norm360(nxt - state.cusps[h]) / 2;
-      const lp = polar(Lt, eclAngle(state, mid), rIn + 22 * u);
-      ctx.fillStyle = K.rgba(INK, 0.35); ctx.font = `400 ${Math.round(16 * u)}px "IBM Plex Mono", monospace`;
-      ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(String(h), lp.x, lp.y);
+      const g = polar(Lt, am, (Lt.Rz + r1) / 2 + 4 * u);
+      G.sign(ctx, i, g.x, g.y, 40 * u, K.rgba(C.SIGNS[i].color, 0.95), 0.1);
     }
-    ctx.strokeStyle = K.rgba(INK, 0.2); ctx.lineWidth = u;
-    ctx.beginPath(); ctx.arc(Lt.cx, Lt.cy, rIn, 0, TAU); ctx.stroke();
+    for (let d = 0; d < 360; d++) {
+      if (d % 30 === 0) continue;
+      const a = eclAngle(state, d), l = d % 10 === 0 ? 14 : d % 5 === 0 ? 9 : 5;
+      const p0 = polar(Lt, a, Lt.R), p1 = polar(Lt, a, Lt.R + l * u);
+      ctx.strokeStyle = K.rgba(INK, d % 10 === 0 ? 0.5 : 0.28); ctx.lineWidth = (d % 10 === 0 ? 1.2 : 0.8) * u;
+      ctx.beginPath(); ctx.moveTo(p0.x, p0.y); ctx.lineTo(p1.x, p1.y); ctx.stroke();
+    }
+    ctx.strokeStyle = K.rgba(INK, 0.35); ctx.lineWidth = u;
+    for (const r of [Lt.R, r1]) { ctx.beginPath(); ctx.arc(Lt.cx, Lt.cy, r, 0, TAU); ctx.stroke(); }
 
-    // aspects: Itten chords — light for soft, pigment for hard
+    // equal houses from the ascendant; the meridian drawn separately
+    const rIn = Lt.R * 0.34;
+    ctx.font = `400 ${Math.round(17 * u)}px "IBM Plex Mono", monospace`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    for (let h = 1; h <= 12; h++) {
+      const a = eclAngle(state, state.asc + (h - 1) * 30);
+      const p0 = polar(Lt, a, rIn), p1 = polar(Lt, a, Lt.R);
+      ctx.strokeStyle = K.rgba(INK, h === 1 || h === 7 ? 0.6 : 0.16); ctx.lineWidth = (h === 1 || h === 7 ? 1.6 : 1) * u;
+      ctx.beginPath(); ctx.moveTo(p0.x, p0.y); ctx.lineTo(p1.x, p1.y); ctx.stroke();
+      const lp = polar(Lt, eclAngle(state, state.asc + (h - 1) * 30 + 15), rIn + 22 * u);
+      ctx.fillStyle = K.rgba(INK, 0.4); ctx.fillText(String(h), lp.x, lp.y);
+    }
+    const am = eclAngle(state, state.mc);
+    ctx.strokeStyle = K.rgba(INK, 0.6); ctx.lineWidth = 1.6 * u;
+    for (const a of [am, am + Math.PI]) { const p0 = polar(Lt, a, rIn), p1 = polar(Lt, a, r1); ctx.beginPath(); ctx.moveTo(p0.x, p0.y); ctx.lineTo(p1.x, p1.y); ctx.stroke(); }
+    ctx.strokeStyle = K.rgba(INK, 0.2); ctx.lineWidth = u; ctx.beginPath(); ctx.arc(Lt.cx, Lt.cy, rIn, 0, TAU); ctx.stroke();
+
+    // aspects, each in its own colour; width by exactness
     const pts = {};
     for (const k of C.ORDER) pts[k] = polar(Lt, eclAngle(state, B[k].lon), rIn);
-    ctx.save();
+    ctx.save(); ctx.lineCap = 'round';
     for (const a of state.aspects.slice().reverse()) {
-      if (a.n > 6 && a.n !== 12 && a.power < 0.2) continue;
-      const col = figureColor(state, a);
-      const p0 = pts[a.a], p1 = pts[a.b];
-      ctx.globalCompositeOperation = lightness(col) < 0.22 ? 'source-over' : 'lighter';
-      ctx.strokeStyle = K.rgba(lightness(col) < 0.22 ? C.PLANETS.saturn.rim : col, 0.25 + 0.6 * a.exact);
-      ctx.lineWidth = u * (0.8 + 2.6 * Math.min(1, a.power));
-      ctx.setLineDash(a.nature === 'hard' ? [] : a.nature === 'soft' ? [] : [4 * u, 6 * u]);
+      if (a.aspect === 'conjunction') continue;           // conjunctions read from the planets' closeness
+      const col = ASPECT_INK[a.aspect], p0 = pts[a.a], p1 = pts[a.b];
+      ctx.strokeStyle = K.rgba(col, 0.35 + 0.6 * a.exact);
+      ctx.lineWidth = u * (1 + 2.6 * a.exact);
+      ctx.setLineDash((ASPECT_DASH[a.aspect] || []).map(v => v * u));
       ctx.beginPath(); ctx.moveTo(p0.x, p0.y); ctx.lineTo(p1.x, p1.y); ctx.stroke();
     }
     ctx.restore();
 
-    // planets on a track, nudged apart
-    const track = Lt.R * 0.78;
-    const items = C.ORDER.map(k => ({ k, a: eclAngle(state, B[k].lon) })).sort((x, y) => x.a - y.a);
-    const minA = 0.075;
-    for (let it = 0; it < 30; it++) for (let i = 0; i < items.length; i++) {
+    // planets: exact notch on the band, glyph on a track with a leader line, degree and sign beside it
+    const track = Lt.R * 0.8;
+    const items = C.ORDER.map(k => ({ k, a0: eclAngle(state, B[k].lon), a: eclAngle(state, B[k].lon) })).sort((x, y) => x.a - y.a);
+    const minA = 0.085;
+    for (let it = 0; it < 40; it++) for (let i = 0; i < items.length; i++) {
       const A = items[i], Bn = items[(i + 1) % items.length];
-      let d = E_.norm180((Bn.a - A.a) * 180 / Math.PI) * Math.PI / 180;
+      const d = E_.norm180((Bn.a - A.a) * 180 / Math.PI) * Math.PI / 180;
       if (d >= 0 && d < minA) { A.a -= (minA - d) / 2; Bn.a += (minA - d) / 2; }
     }
+    ctx.font = `400 ${Math.round(16 * u)}px "IBM Plex Mono", monospace`;
     for (const it of items) {
       const b = B[it.k];
-      const p = polar(Lt, it.a, track), tick = polar(Lt, eclAngle(state, b.lon), Lt.Rzi), tick2 = polar(Lt, eclAngle(state, b.lon), Lt.Rzi - 10 * u);
-      ctx.strokeStyle = K.rgba(INK, 0.4); ctx.lineWidth = u;
-      ctx.beginPath(); ctx.moveTo(tick.x, tick.y); ctx.lineTo(tick2.x, tick2.y); ctx.stroke();
-      const col = it.k === 'saturn' ? '#9aa0ab' : C.PLANETS[it.k].kind === 'optic' ? INK : K.mixLight(coreColor(state, it.k), INK, 0.25, 0.05);
-      G.planet(ctx, it.k, p.x, p.y, 40 * u, col, 0.1);
-      const dp = polar(Lt, it.a, track - 44 * u);
-      ctx.fillStyle = K.rgba(INK, 0.6); ctx.font = `400 ${Math.round(15 * u)}px "IBM Plex Mono", monospace`;
-      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      const n0 = polar(Lt, it.a0, Lt.R), n1 = polar(Lt, it.a0, Lt.R - 16 * u), lead = polar(Lt, it.a, track + 30 * u);
+      ctx.strokeStyle = K.rgba(INK, 0.85); ctx.lineWidth = 2.4 * u; ctx.beginPath(); ctx.moveTo(n0.x, n0.y); ctx.lineTo(n1.x, n1.y); ctx.stroke();
+      ctx.strokeStyle = K.rgba(INK, 0.3); ctx.lineWidth = u; ctx.beginPath(); ctx.moveTo(n1.x, n1.y); ctx.lineTo(lead.x, lead.y); ctx.stroke();
+      const p = polar(Lt, it.a, track);
+      const col = it.k === 'saturn' ? '#aab0bb' : C.PLANETS[it.k].kind === 'optic' ? INK : K.mixLight(coreColor(state, it.k), INK, 0.3, 0.08);
+      G.planet(ctx, it.k, p.x, p.y, 46 * u, col, 0.1);
+      const dp = polar(Lt, it.a, track - 50 * u);
+      ctx.fillStyle = K.rgba(INK, 0.7);
       ctx.fillText(`${Math.floor(b.deg)}°${b.retro ? 'r' : ''}`, dp.x, dp.y);
+      G.sign(ctx, b.sign, polar(Lt, it.a, track - 76 * u).x, polar(Lt, it.a, track - 76 * u).y, 18 * u, K.rgba(C.SIGNS[b.sign].color, 0.9), 0.12);
     }
     // labels
-    ctx.font = `400 ${Math.round(18 * u)}px "IBM Plex Sans", sans-serif`; ctx.fillStyle = K.rgba(INK, 0.55);
-    for (const [s, h] of [['asc', 1], ['mc', 10], ['dsc', 7], ['ic', 4]]) {
-      const p = polar(Lt, eclAngle(state, state.cusps[h]), Lt.Rb + 12 * u);
-      ctx.fillText(s, p.x, p.y);
+    ctx.font = `400 ${Math.round(18 * u)}px "IBM Plex Sans", sans-serif`; ctx.fillStyle = K.rgba(INK, 0.6);
+    for (const [s, a] of [['asc', Math.PI], ['dsc', 0], ['mc', am], ['ic', am + Math.PI]]) { const p = polar(Lt, a, r1 + 22 * u); ctx.fillText(s, p.x, p.y); }
+    // legend
+    ctx.font = `400 ${Math.round(15 * u)}px "IBM Plex Mono", monospace`; ctx.textAlign = 'left';
+    const leg = [['opposition', 'opp'], ['square', 'sq'], ['trine', 'tri'], ['sextile', 'sxt'], ['quincunx', 'qx'], ['semisquare', '45/135'], ['quintile', 'quint'], ['septile', 'sept']];
+    let lx = Lt.S * 0.0625; const ly = Lt.capY - 62 * u;
+    for (const [k, l] of leg) {
+      ctx.strokeStyle = ASPECT_INK[k]; ctx.lineWidth = 3 * u; ctx.setLineDash((ASPECT_DASH[k] || []).map(v => v * u));
+      ctx.beginPath(); ctx.moveTo(lx, ly); ctx.lineTo(lx + 30 * u, ly); ctx.stroke(); ctx.setLineDash([]);
+      ctx.fillStyle = K.rgba(INK, 0.6); ctx.fillText(l, lx + 38 * u, ly + 1); lx += 38 * u + ctx.measureText(l).width + 30 * u;
     }
     if (opts.caption !== false) drawCaption(ctx, state, Lt);
     return { mode: 'chart', layout: Lt };

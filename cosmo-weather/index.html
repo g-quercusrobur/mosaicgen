@@ -16,6 +16,7 @@
     <nav class="group">
       <button data-mode="clock">clock</button>
       <button data-mode="chart">chart</button>
+      <button id="sigil" title="the figure of the moment, lit for copying (s)">sigil</button>
     </nav>
     <nav class="group">
       <button id="info" title="readout (i)">readout</button>
@@ -23,7 +24,15 @@
     </nav>
   </header>
 
-  <main id="stage"><canvas id="dial" aria-label="the sky of the moment, as a dial"></canvas><div id="caption"></div></main>
+  <main id="stage">
+    <canvas id="dial" aria-label="the sky of the moment, as a dial"></canvas>
+    <div id="caption"></div>
+    <section id="ahead" aria-label="the next 24 hours">
+      <canvas id="strip" aria-label="ideation, incarnation and destruction over the next 24 hours"></canvas>
+      <input id="preview" type="range" min="0" max="1440" step="10" value="0" aria-label="preview the next 24 hours">
+      <div id="nexts"></div>
+    </section>
+  </main>
 
   <aside id="readout" aria-live="polite"></aside>
 

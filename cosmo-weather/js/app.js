@@ -21,6 +21,8 @@
     offsetMs: 0,
     fixed: params.get('t') ? new Date(params.get('t')) : null,
     playing: false,
+    preview: 0,                                            // minutes ahead, from the 24-hour strip
+    sigil: params.get('sigil') === '1',
     field: params.get('field') || 'waves',
     state: null,
     lastCompute: 0
@@ -34,7 +36,8 @@
   const pctx = plate.getContext('2d');
   let info = null, lastPlate = 0;
 
-  function now() { return S.fixed ? new Date(S.fixed.getTime() + S.offsetMs) : new Date(Date.now() + S.offsetMs); }
+  function base() { return S.fixed ? new Date(S.fixed.getTime() + S.offsetMs) : new Date(Date.now() + S.offsetMs); }
+  function now() { return new Date(base().getTime() + S.preview * 60000); }
 
   function recompute() {
     S.state = CW.engine.compute(now(), S.place);
@@ -42,14 +45,19 @@
     S.dirty = true;
     document.documentElement.style.setProperty('--ground', CW.render.ground(S.state));
     const c = CW.render.captionLines(S.state);
-    $('caption').innerHTML = `<p class="l1">${c.l1}</p><p>${c.l2}</p><p>${c.l3}</p><p class="mono">${c.fig}</p><p class="mono">${c.moon}</p>`;
+    $('caption').innerHTML = `<p class="l1">${c.l1}</p><p>${c.l2}</p><p>${c.l3}</p><p>${c.chord}</p><p class="mono">${c.fig}</p><p class="mono">${c.moon}</p>`;
+    scanIfNeeded();
+    drawStrip();
     updateReadout();
     updateControls();
   }
 
   function size() {
     const box = $('stage').getBoundingClientRect();
-    const side = Math.floor(Math.min(box.width, box.height));
+    const small = box.width < 560;
+    const reserve = small ? 0 : 110;                        // room for the 24-hour strip under the dial
+    const side = Math.floor(Math.min(box.width - 16, small ? box.width : box.height - reserve - 16));
+    $('ahead').style.width = side + 'px';
     const dpr = Math.min(2, window.devicePixelRatio || 1);
     canvas.style.width = canvas.style.height = side + 'px';
     canvas.width = canvas.height = Math.round(side * dpr);
@@ -57,6 +65,71 @@
     plate.width = plate.height = canvas.width;
     S.dirty = true;
     document.body.classList.toggle('small', side < 560);
+    const st = $('strip'); st.width = Math.round(side * dpr); st.height = Math.round(34 * dpr);
+    drawStrip();
+  }
+
+  /* ---------- the next 24 hours: ideation (aleph), incarnation (mem), destruction (shin) ---------- */
+  const MOTHER_INK = { ideation: '#f2e8a0', incarnation: '#4a7ef0', destruction: '#ff5a2a' };   // king scale of the mother letters
+  const scan = { key: null, t0: 0, step: 20, vals: null, nexts: null, token: 0 };
+  function scanIfNeeded() {
+    const b = base().getTime();
+    const key = S.place.name + S.place.lat + S.place.lon;
+    if (scan.key === key && Math.abs(b - scan.t0) < 30 * 60000) return;
+    scan.key = key; scan.t0 = b; scan.vals = null; scan.nexts = null;
+    const token = ++scan.token, N = 7 * 72, out = [];
+    let i = 0;
+    (function chunk() {
+      if (token !== scan.token) return;
+      for (let k = 0; k < 24 && i <= N; k++, i++) {
+        const st = CW.engine.compute(new Date(b + i * scan.step * 60000), S.place, { light: true });
+        out.push(st.windows);
+      }
+      if (i <= N) return setTimeout(chunk, 0);
+      scan.vals = out;
+      scan.nexts = {};
+      for (const m of Object.keys(MOTHER_INK)) {
+        const v = out.map(w => w[m]), sorted = v.slice().sort((x, y) => x - y);
+        const T = Math.max(0.12, sorted[Math.floor(sorted.length * 0.85)]);
+        let j = v.findIndex((x, n) => n > 0 && x >= T);
+        if (j > 0) { while (j + 1 < v.length && v[j + 1] >= v[j]) j++; scan.nexts[m] = { at: new Date(b + j * scan.step * 60000), v: v[j] }; }
+      }
+      drawStrip(); drawNexts();
+    })();
+  }
+  function drawStrip() {
+    const cv = $('strip'); if (!cv || !cv.width) return;
+    const c = cv.getContext('2d'), W = cv.width, H = cv.height, d = S.dpr || 1;
+    c.clearRect(0, 0, W, H);
+    c.strokeStyle = 'rgba(235,231,220,0.18)'; c.lineWidth = d;
+    c.beginPath(); c.moveTo(0, H - 0.5 * d); c.lineTo(W, H - 0.5 * d); c.stroke();
+    for (let h = 0; h <= 24; h += 6) { const x = Math.min(W - d, h / 24 * W); c.beginPath(); c.moveTo(x, H); c.lineTo(x, H - 5 * d); c.stroke(); }
+    if (scan.vals) {
+      const n = 72, vals = scan.vals.slice(0, n + 1);
+      const peak = Math.max(0.2, ...vals.flatMap(w => Object.values(w)));
+      for (const [m, col] of Object.entries(MOTHER_INK)) {
+        c.strokeStyle = col; c.lineWidth = 1.6 * d; c.globalAlpha = 0.9;
+        c.beginPath();
+        vals.forEach((w, i) => { const x = i / n * W, y = H - 2 * d - (w[m] / peak) * (H - 6 * d); i ? c.lineTo(x, y) : c.moveTo(x, y); });
+        c.stroke();
+      }
+      c.globalAlpha = 1;
+    }
+    const x = S.preview / 1440 * W;
+    c.fillStyle = 'rgba(235,231,220,0.9)'; c.fillRect(Math.min(W - 2 * d, x), 0, 2 * d, H);
+  }
+  function fmtAt(d) {
+    return new Intl.DateTimeFormat('en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: S.place.tz || 'UTC' }).format(d).toLowerCase();
+  }
+  function drawNexts() {
+    const el = $('nexts');
+    if (!scan.nexts) { el.innerHTML = '<span>reading the next seven days…</span>'; return; }
+    el.innerHTML = Object.entries(MOTHER_INK).map(([m, col]) => {
+      const n = scan.nexts[m];
+      return n ? `<button data-jump="${n.at.toISOString()}" title="go to this moment"><i style="background:${col}"></i>${m} · ${fmtAt(n.at)}</button>`
+               : `<span><i style="background:${col}"></i>${m} · not this week</span>`;
+    }).join('');
+    el.querySelectorAll('[data-jump]').forEach(b => b.addEventListener('click', () => { S.fixed = new Date(b.dataset.jump); S.offsetMs = 0; S.preview = 0; $('preview').value = 0; recompute(); }));
   }
 
   let t0 = performance.now(), lastFrame = 0;
@@ -69,7 +142,7 @@
     const t = (ts - t0) / 1000;
     if (S.dirty && (!S.playing || ts - lastPlate > 140)) {
       pctx.setTransform(S.dpr, 0, 0, S.dpr, 0, 0);
-      info = CW.render.render(pctx, S.state, S.side, t, { mode: S.mode, fieldRes: S.playing ? 110 : 200, caption: S.side >= 560, plate: true, fast: S.playing, field: S.field });
+      info = CW.render.render(pctx, S.state, S.side, t, { mode: S.mode, fieldRes: S.playing ? 110 : 200, caption: S.side >= 560, plate: true, fast: S.playing, field: S.field, sigil: S.sigil });
       S.dirty = false; lastPlate = ts;
     }
     ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -83,7 +156,7 @@
     const cv = document.createElement('canvas');
     cv.width = cv.height = px;
     const c = cv.getContext('2d');
-    CW.render.render(c, S.state, px, (performance.now() - t0) / 1000, { mode: S.mode, fieldRes: px >= 3000 ? 420 : 300, field: S.field });
+    CW.render.render(c, S.state, px, (performance.now() - t0) / 1000, { mode: S.mode, fieldRes: px >= 3000 ? 420 : 300, field: S.field, sigil: S.sigil });
     const d = S.state.date;
     const stamp = d.toISOString().slice(0, 16).replace(/[:T]/g, '');
     cv.toBlob(b => {
@@ -114,6 +187,8 @@
       <h3>the figure</h3><table>${figs || '<tr><td>quiet sky</td></tr>'}</table>
       <h3>portal</h3><p>scale ×${(cf.scale || 1).toFixed(2)} (jupiter widens, saturn narrows)${cf.cut ? ` · cut by ${cf.cut.by} ${cf.cut.aspect} ${cf.cut.target}, ${Math.round(cf.cut.width)}°` : ' · whole'}</p>
       <p>guardians ${st.hour.dayRuler}${st.hour.dayRuler === st.hour.hourRuler ? ' alone: one pure figure' : ' and ' + st.hour.hourRuler}</p>
+      <h3>sound</h3><p>${st.chord.name}${st.chord.notes.length ? ' · ' + st.chord.notes.join(' ') : ''}${st.chord.planets ? ' · from ' + st.chord.planets.join(', ') : ''}</p>
+      <h3>windows</h3><p>ideation ${st.windows.ideation.toFixed(2)} · incarnation ${st.windows.incarnation.toFixed(2)} · destruction ${st.windows.destruction.toFixed(2)}</p>
       <h3>moon</h3><p>${st.moon.verdict} · ${st.moon.next ? `next ${st.moon.next.aspect} ${st.moon.next.planet} in ${(st.moon.next.days * 24).toFixed(1)}h` : 'void of course'}${st.moon.flags.filter(f => f !== 'void of course').map(f => ' · ' + f).join('')}</p>
       <h3>events</h3><p>${ev}</p>
       <h3>hierarchy</h3><table>${top}</table>
@@ -128,11 +203,12 @@
     $('play').classList.toggle('on', S.playing);
     document.querySelectorAll('[data-place]').forEach(b => b.classList.toggle('on', b.dataset.place === S.place.name));
     document.querySelectorAll('[data-mode]').forEach(b => b.classList.toggle('on', b.dataset.mode === S.mode));
+    $('sigil').classList.toggle('on', S.sigil);
   }
 
   function bind() {
     document.querySelectorAll('[data-step]').forEach(b => b.addEventListener('click', () => { S.offsetMs += Number(b.dataset.step) * 3600e3; recompute(); }));
-    $('live').addEventListener('click', () => { S.offsetMs = 0; S.fixed = null; S.playing = false; recompute(); });
+    $('live').addEventListener('click', () => { S.offsetMs = 0; S.fixed = null; S.playing = false; S.preview = 0; $('preview').value = 0; recompute(); });
     $('play').addEventListener('click', () => { S.playing = !S.playing; updateControls(); });
     $('when').addEventListener('change', e => {
       const v = new Date(e.target.value);
@@ -152,6 +228,8 @@
     }));
     document.querySelectorAll('[data-mode]').forEach(b => b.addEventListener('click', () => { S.mode = b.dataset.mode; store.set('mode', S.mode); S.dirty = true; updateControls(); }));
     $('save').addEventListener('click', () => exportPNG(2048));
+    $('sigil').addEventListener('click', () => { S.sigil = !S.sigil; S.dirty = true; updateControls(); });
+    $('preview').addEventListener('input', e => { S.preview = Number(e.target.value); recompute(); });
     $('save-hd').addEventListener('click', () => exportPNG(4096));
     $('info').addEventListener('click', () => document.body.classList.toggle('reading'));
     $('full').addEventListener('click', () => {
@@ -163,6 +241,7 @@
       if (e.target.tagName === 'INPUT') return;
       if (e.key === 'f') $('full').click();
       if (e.key === 'i') $('info').click();
+      if (e.key === 's') $('sigil').click();
       if (e.key === ' ') { e.preventDefault(); $('play').click(); }
       if (e.key === 'ArrowRight') { S.offsetMs += (e.shiftKey ? 24 : 1) * 3600e3; recompute(); }
       if (e.key === 'ArrowLeft') { S.offsetMs -= (e.shiftKey ? 24 : 1) * 3600e3; recompute(); }
@@ -176,7 +255,7 @@
     try {
       await Promise.all(['500 20px Jost', '400 20px "IBM Plex Sans"', '500 20px "IBM Plex Sans"', '400 20px "IBM Plex Mono"'].map(f => document.fonts.load(f)));
     } catch (e) { /* fonts are a nicety */ }
-    bind(); size(); recompute();
+    bind(); size(); recompute(); drawNexts();
     requestAnimationFrame(frame);
   }
   CW.app = { start, exportPNG, S };

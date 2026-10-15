@@ -186,9 +186,9 @@
     return out.sort((x, y) => y.power - x.power);
   }
 
-  function findEvents(t, B, aspects) {
+  function findEvents(t, B, aspects, light) {
     const ev = [];
-    try {
+    if (!light) try {
       const le = A.SearchLunarEclipse(t.AddDays(-1));
       if (le && Math.abs(le.peak.ut - t.ut) < 1) ev.push({ type: 'eclipse', kind: 'lunar', priority: 100, at: le.peak.date });
       const se = A.SearchGlobalSolarEclipse(t.AddDays(-1));
@@ -298,8 +298,66 @@
     return { next, flags, ripe, verdict };
   }
 
+  /* The chord of the moment. Each planet of the figure sounds the note of the sign it stands in
+     (Case's colour–note scale). Three or more notes forming a known chord are named; otherwise the
+     figure's two planets give a dyad, first > second. */
+  const CHORDS = [
+    [[0, 4, 7, 11], 'maj7'], [[0, 4, 7, 10], '7'], [[0, 3, 7, 10], '-7'], [[0, 3, 6, 10], 'ø'], [[0, 3, 6, 9], 'dim7'],
+    [[0, 4, 7], ''], [[0, 3, 7], '-'], [[0, 3, 6], 'dim'], [[0, 4, 8], '+'], [[0, 5, 7], 'sus4'], [[0, 2, 7], 'sus2']
+  ];
+  function chordOf(st) {
+    const cf = st.configs, figs = [cf.primary, ...cf.secondary].filter(Boolean);
+    if (!figs.length) return { name: 'none', notes: [] };
+    const planets = [...new Set(figs.flatMap(f => [f.a, f.b]))];
+    const pcs = [...new Set(planets.map(k => st.bodies[k].sign))].sort((a, b) => a - b);
+    const N = C.NOTES;
+    for (const [tmpl, suffix] of CHORDS) {
+      if (tmpl.length !== pcs.length) continue;
+      for (const root of pcs) {
+        const set = tmpl.map(i => (root + i) % 12).sort((a, b) => a - b);
+        if (set.join() === pcs.join()) return { name: N[root] + suffix, notes: pcs.map(i => N[i]), planets };
+      }
+    }
+    const a = N[st.bodies[cf.primary.a].sign], b = N[st.bodies[cf.primary.b].sign];
+    return { name: a === b ? a : `${a}>${b}`, notes: pcs.map(i => N[i]), planets, dyad: true };
+  }
+
+  /* The three windows: how far the moment serves ideation, incarnation, destruction (0..1).
+     The figure's planets and their signs must belong to the mother, the figure's nature must match it,
+     and the moment must be beautiful for that work: whole, with harmonious guardians and a ripe moon
+     (destruction takes the cut, the clash and the waning moon instead). */
+  function windowsOf(st) {
+    const cf = st.configs, p = cf.primary, out = {};
+    const figs = [p, ...cf.secondary].filter(Boolean);
+    const gcd = (a, b) => (b ? gcd(b, a % b) : a);
+    const nd = C.PLANETS[st.hour.dayRuler].number, nh = C.PLANETS[st.hour.hourRuler].number;
+    const guard = st.hour.dayRuler === st.hour.hourRuler ? 1 : gcd(nd, nh) > 1 ? 0.85 : 0.6;
+    for (const [key, M] of Object.entries(C.MOTHERS)) {
+      if (!p) { out[key] = 0; continue; }
+      let fam = 0, el = 0, n = 0;
+      for (const f of figs) {
+        const w = f === p ? 1 : 0.5;
+        for (const k of [f.a, f.b]) {
+          fam += w * (M.planets[k] || 0);
+          el += w * (M.elements.includes(C.SIGNS[st.bodies[k].sign].element) ? 1 : 0);
+          n += w;
+        }
+      }
+      fam /= n; el /= n;
+      const soft = p.nature !== 'hard';
+      const nature = M.wants === 'hard' ? (soft ? 0.35 : 1) : (soft ? 1 : 0.3);
+      const v = st.moon.verdict;
+      let beauty;
+      if (key === 'destruction') beauty = (cf.cut ? 1 : 0.8) * (guard < 0.7 ? 1 : 0.85) * ({ ripe: 0.6, open: 0.8, unripe: 1, void: 0.3 }[v]) * (st.moon.waxing ? 0.8 : 1);
+      else beauty = (cf.cut ? 0.55 : 1) * guard * ({ ripe: 1, open: 0.75, unripe: 0.4, void: 0.15 }[v]) * (key === 'incarnation' ? (st.moon.waxing ? 1 : 0.8) : 1);
+      const strength = Math.min(1, Math.sqrt(p.power));
+      out[key] = Math.min(1, strength * (0.25 + 0.75 * fam) * (0.4 + 0.6 * el) * nature * beauty * 1.6);
+    }
+    return out;
+  }
+
   /* ---------- the whole state ---------- */
-  function compute(date, loc) {
+  function compute(date, loc, opts = {}) {
     const t = A.MakeTime(date);
     const obs = new A.Observer(loc.lat, loc.lon, 0);
     const eps = A.e_tilt(t).tobl * D2R;
@@ -327,7 +385,7 @@
       const angular = [0, 3, 6, 9].some(c => Math.abs(norm180((p - c) * 30)) < 0.35 * 30);
       B[key] = {
         key, lon, speed, retro, station, slow: key === 'sun' || key === 'moon' ? 0 : slow,
-        ra, dec, alt: hor.altitude, az: hor.azimuth, H, dsa, p, house: houseOf(p), angular,
+        ra, dec, alt: hor.altitude, az: hor.azimuth, H, dsa, p, house: 1 + Math.floor(norm360(lon - ang.asc) / 30), angular,
         sign: signIdx, deg, combust: key !== 'sun' && dSun < 8.5 && dSun >= 0.2833, cazimi: key !== 'sun' && key !== 'moon' && dSun < 0.2833
       };
     }
@@ -344,11 +402,14 @@
     const moon = { phaseAngle, illum: (1 - Math.cos(phaseAngle * D2R)) / 2, waxing: phaseAngle < 180 };
     const hour = planetaryHour(t, obs, loc);
     const aspects = findAspects(B);
-    const events = findEvents(t, B, aspects);
+    const events = findEvents(t, B, aspects, opts.light);
     const configs = selectConfigs(aspects, events, B);
     const lunar = moonCondition(B, eps);
     const cusps = placidus(ang.ramc, loc.lat, eps, ang.asc, ang.mc);
-    return { date, loc, eps, ...ang, bodies: B, sect: isDay ? 'day' : 'night', moon: { ...moon, ...lunar }, hour, aspects, events, configs, cusps };
+    const st = { date, loc, eps, ...ang, bodies: B, sect: isDay ? 'day' : 'night', moon: { ...moon, ...lunar }, hour, aspects, events, configs, cusps };
+    st.chord = chordOf(st);
+    st.windows = windowsOf(st);
+    return st;
   }
 
   CW.engine = { compute, norm360, norm180, sep, houseOf, mundane, semiArc, dignity, placidus, synodic, rarity };

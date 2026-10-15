@@ -94,11 +94,23 @@
     sesquisquare: '⚼', semisquare: '∠', quintile: 'Q', biquintile: 'bQ', septile: 'S7', biseptile: 'S7²', triseptile: 'S7³', novile: 'N'
   };
 
+  /* Sound. Paul Foster Case's colour–note scale: the King-scale wheel read as the chromatic scale,
+     red = C. So the zodiac's colours and its notes are the same circle. */
+  const NOTES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];   // aries … pisces
+
+  /* The three mothers (Sefer Yetzirah) as the three kinds of window:
+     aleph / air  = ideation · mem / water = incarnation (descent into form) · shin / fire = destruction */
+  const MOTHERS = {
+    ideation:    { letter: 'aleph', planets: { mercury: 1, jupiter: 0.7, sun: 0.7, uranus: 0.8 }, elements: ['air', 'fire'], wants: 'soft' },
+    incarnation: { letter: 'mem',   planets: { venus: 1, moon: 0.9, jupiter: 0.7, saturn: 0.5 }, elements: ['earth', 'water'], wants: 'soft' },
+    destruction: { letter: 'shin',  planets: { mars: 1, pluto: 1, saturn: 0.8, uranus: 0.5 }, elements: ['fire', 'water'], wants: 'hard' }
+  };
+
   const BENEFIC = { venus: 1, jupiter: 1, sun: 0.3, moon: 0.4 };
   const MALEFIC = { mars: 1, saturn: 1, pluto: 0.6, uranus: 0.4 };
 
   CW.corr = {
     SIGNS, PLANETS, ORDER, CHALDEAN, WEEKDAY_RULER, SYNODIC_OVERRIDE,
-    DOMICILE, EXALTATION, TRIPLICITY, TERMS, faceRuler, ASPECTS, ASPECT_GLYPH, BENEFIC, MALEFIC
+    DOMICILE, EXALTATION, TRIPLICITY, TERMS, faceRuler, ASPECTS, ASPECT_GLYPH, BENEFIC, MALEFIC, NOTES, MOTHERS
   };
 })(window.CW = window.CW || {});

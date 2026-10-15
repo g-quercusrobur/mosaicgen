@@ -42,13 +42,20 @@ input[type="datetime-local"] {
   font-family: var(--mono); font-size: 12px; letter-spacing: 0; color: var(--ink);
   border-color: var(--ink-3); color-scheme: dark; cursor: text;
 }
-#stage { grid-area: stage; display: grid; place-items: center; min-height: 0; min-width: 0; padding: 8px; }
+#stage { grid-area: stage; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; min-height: 0; min-width: 0; padding: 8px; }
 #dial { display: block; }
 #caption { display: none; }
 body.small #caption { display: block; width: 100%; padding: 12px 8px 4px; font: 400 13px/1.55 var(--sans); color: var(--ink-2); }
 body.small #caption .l1 { color: var(--ink); font-weight: 500; }
 body.small #caption .mono { font: 400 11px/1.8 var(--mono); }
-body.small #stage { place-items: start center; align-content: start; }
+body.small #stage { justify-content: flex-start; }
+#ahead { display: grid; gap: 4px; }
+#strip { width: 100%; height: 34px; display: block; }
+#preview { width: 100%; min-height: 20px; padding: 0; accent-color: var(--ink); background: none; cursor: pointer; }
+#nexts { display: flex; flex-wrap: wrap; gap: 2px 14px; font: 400 12px/1.4 var(--mono); }
+#nexts button { font: 400 12px/1.3 var(--mono); padding: 4px 0; min-height: 0; letter-spacing: 0; }
+#nexts i { font-style: normal; display: inline-block; width: 18px; height: 2px; vertical-align: middle; margin-right: 6px; }
+body.bare #ahead { display: none; }
 
 #readout {
   grid-area: side; width: 0; overflow: hidden auto; border-left: 1px solid transparent;

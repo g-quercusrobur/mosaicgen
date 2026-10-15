@@ -80,6 +80,7 @@
     const s = C.SIGNS[signIdx], labels = [];
     let score = 0, positive = false;
     const P = C.PLANETS[key];
+    if (P.kind === 'optic') return { score: 0, labels: [], peregrine: false };   // the outer planets have no essential dignity
     if ((C.DOMICILE[key] || []).includes(s.key)) { score += 5; labels.push('domicile'); positive = true; }
     const opp = C.SIGNS[(signIdx + 6) % 12].key;
     if ((C.DOMICILE[key] || []).includes(opp)) { score -= 5; labels.push('detriment'); }
@@ -402,7 +403,8 @@
       B[key] = {
         key, lon, speed, retro, station, slow: key === 'sun' || key === 'moon' ? 0 : slow,
         ra, dec, alt: hor.altitude, az: hor.azimuth, H, dsa, p, house: 1 + Math.floor(norm360(lon - ang.asc) / 30), angular,
-        sign: signIdx, deg, combust: key !== 'sun' && dSun < 8.5 && dSun >= 0.2833, cazimi: key !== 'sun' && key !== 'moon' && dSun < 0.2833
+        sign: signIdx, deg, combust: key !== 'sun' && dSun < 8.5 && dSun >= 0.2833, cazimi: key !== 'sun' && key !== 'moon' && dSun < 0.2833,
+        beams: key !== 'sun' && dSun >= 8.5 && dSun < 17
       };
     }
     const isDay = B.sun.alt > -0.833;
@@ -412,6 +414,7 @@
         ? dignity(key, b.sign, b.deg, isDay) : { score: 0, labels: [] };
       let clarity = Math.max(0.18, Math.min(1, 0.62 + b.dignity.score / 16));
       if (b.combust) clarity *= 0.6;
+      else if (b.beams) clarity *= 0.85;                  // under the sun's beams: weakened, less than combust
       b.clarity = clarity;
     }
     const phaseAngle = A.MoonPhase(t);

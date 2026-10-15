@@ -7,7 +7,7 @@
 <title>cosmo weather</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400&family=IBM+Plex+Sans:wght@400;500&family=Jost:wght@500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500&family=Geist+Mono:wght@400&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -22,6 +22,7 @@
       <button id="listen" title="sound the chord of the moment (l)">listen</button>
       <button id="info" title="readout (i)">readout</button>
       <button id="full" title="screen (f)">screen</button>
+      <button id="about-open" title="concept, history, use and methods">about</button>
     </nav>
   </header>
 
@@ -37,6 +38,158 @@
 
   <aside id="readout" aria-live="polite"></aside>
 
+  <section id="about" hidden aria-label="about cosmo weather">
+    <article>
+      <button id="about-close" aria-label="close">close</button>
+      <h1>Cosmo Weather: a cosmic clock of the present moment</h1>
+      <p class="meta">working paper · v0.6 · october 2026</p>
+      <p class="abstract">A clock that draws the sky of the present moment as a geometric figure. Planetary positions are computed from an ephemeris. A fixed set of rules turns them into colour, number, geometry and sound. Every mark on the dial can be traced to a rule and a source. Rules invented for this instrument are marked <code>[CW]</code>.</p>
+
+      <h2>1 · CONCEPT</h2>
+      <ul>
+        <li>The dial is an instrument, not an illustration. The frame is Bauhaus (grid, one typeface family, no ornament); the content inside the circle is computed light.</li>
+        <li>One astrological factor drives one visual channel. No channel carries two factors.</li>
+        <li>Aspects are divisions of the circle: an angle of k·360/n is drawn as the star polygon {n/k} [15, 16].</li>
+        <li>The figure at the centre is a yantra in the literal sense: an instrument. In the Western talismanic tradition, an image made at an elected moment holds that moment [4, 5, 6].</li>
+      </ul>
+
+      <h2>2 · BACKGROUND</h2>
+      <h3>2.1 Mechanical cosmic clocks</h3>
+      <ul>
+        <li>Antikythera mechanism, c. 2nd–1st century BCE: geared Sun, Moon and eclipse cycles [24].</li>
+        <li>Su Song's astronomical clock tower, Kaifeng, 1088–1092 [26].</li>
+        <li>Giovanni Dondi's Astrarium, Padua, 1364: one dial for each of the seven planets [25].</li>
+        <li>Prague Orloj, 1410: an astrolabe dial with day, twilight and night fields. The sun on its hand inspires the placement of bodies by altitude here.</li>
+      </ul>
+      <h3>2.2 Correspondence traditions</h3>
+      <ul>
+        <li>Hellenistic and Ptolemaic astrology [1, 19]. Medieval and Renaissance astrology [3]. Planetary magic [4, 5, 6, 7].</li>
+        <li>Hermetic Qabalah: the Sefer Yetzirah [8], the Golden Dawn [10], Crowley [9], Fortune [11], Case [12]. Modern compendia [20, 21, 22].</li>
+      </ul>
+      <h3>2.3 Visual lineage</h3>
+      <ul>
+        <li>Itten's twelve-step colour circle and his harmonic chords [13]. Albers on colour interaction [14].</li>
+        <li>Frieda Harris's projective backgrounds for the Thoth Tarot [27], after George Adams's projective geometry [28].</li>
+        <li>Rose-engine guilloché engraving on watch dials.</li>
+      </ul>
+
+      <h2>3 · METHODS</h2>
+      <h3>3.1 Ephemeris and frame</h3>
+      <ul>
+        <li>Astronomy Engine 2.1.19 [18]: positions to about one arcminute. Tropical zodiac, true ecliptic of date, geocentric longitudes. The Moon's altitude is topocentric.</li>
+        <li>Ascendant and MC from the local sidereal time and the obliquity [17]. Checked against the horizon: the Ascendant point has altitude 0.000°.</li>
+        <li>Projection: angle = ecliptic longitude, with the Ascendant on the eastern horizon; radius = altitude. The same projection is used for every body and for the zodiac ring.</li>
+      </ul>
+      <h3>3.2 Houses</h3>
+      <ul>
+        <li>Current: equal houses from the Ascendant [1]. With the Ascendant fixed on the left, the regular dodecagon frame <em>is</em> the equal-house figure. The MC is drawn where it falls.</li>
+        <li>Under review: whole-sign (Hellenistic) [19], Regiomontanus (Lilly's system) [3], Placidus (the modern default).</li>
+      </ul>
+      <h3>3.3 Condition of the planets</h3>
+      <div class="wrap"><table>
+        <tr><th>factor</th><th>rule</th><th>source</th></tr>
+        <tr><td>essential dignity</td><td>domicile +5 · exaltation +4 · triplicity +3 · term +2 · face +1 · detriment −5 · fall −4 · peregrine −5</td><td>Lilly [3]; Egyptian terms; Chaldean faces</td></tr>
+        <tr><td>outer planets</td><td>no essential dignity</td><td>traditional consensus [1, 3, 19]</td></tr>
+        <tr><td>solar phase</td><td>cazimi &lt; 17′ · combust &lt; 8.5° · under the beams &lt; 17°</td><td>[3]</td></tr>
+        <tr><td>motion</td><td>retrograde; stationary below 12% of mean speed</td><td>[CW threshold]</td></tr>
+      </table></div>
+      <h3>3.4 Aspects and the hierarchy of figures [CW]</h3>
+      <ul>
+        <li>Ptolemaic aspects, plus quincunx, semisquare, sesquisquare, quintiles, septiles and noviles, each with its own orb.</li>
+        <li>power = (0.2 + 0.8·rarity) × weight × (0.3·exactness<sup>1.5</sup> + 0.7·window) × modifiers.</li>
+        <li><em>rarity</em> = log of the pair's synodic period. <em>window</em> = time to exactness, not degrees: e<sup>−½(days/1.5)²</sup>; the Moon's window is 6 hours.</li>
+        <li>Modifiers: applying ×1.2, separating ×0.8, station ×1.5, Sun involved ×1.2, angular ×1.3. Events override the score: eclipse &gt; lunation &gt; cazimi &gt; exact outer contact &gt; station.</li>
+      </ul>
+      <h3>3.5 The figure [CW]</h3>
+      <ul>
+        <li>Each aspect is drawn as {n/k}. A conjunction is a rose with as many petals as the sum of the two planets' Sephirah numbers. An opposition is a vesica.</li>
+        <li>Soft aspects bow the edges and add a circle chain; hard aspects keep straight edges and points. Lines pass from one planet's colour to the other's.</li>
+        <li>Size: Jupiter widens the portal, Saturn narrows it. Cut: a hard aspect from a third planet removes a wedge, pointed at that planet.</li>
+        <li>Stars mark the points where vertices of two figures coincide. Two centred figures share gcd(n₁, n₂) vertices.</li>
+      </ul>
+      <h3>3.6 The Moon and ripeness</h3>
+      <ul>
+        <li>Void of course: no Ptolemaic aspect to a classical planet perfects before the Moon leaves its sign. Also tested: Via Combusta (15° Libra to 15° Scorpio), combust, applying to a malefic [3].</li>
+        <li>The verdict (ripe, open, unripe, void) sets the light at the pole [CW].</li>
+      </ul>
+      <h3>3.7 Time</h3>
+      <ul>
+        <li>The planetary day begins at local sunrise. Twelve unequal hours run from sunrise to sunset and twelve from sunset to sunrise, in Chaldean order. Angels of the days and hours from the Heptameron [7].</li>
+      </ul>
+      <h3>3.8 Windows [CW]</h3>
+      <ul>
+        <li>Three windows, after the three mother letters of the Sefer Yetzirah [8]: ideation (aleph, air), incarnation (mem, water: descent into form), destruction (shin, fire).</li>
+        <li>Each window is scored from the planets and signs of the figure, its nature (soft or hard), and the beauty of the moment: a whole figure, harmonious guardians and a ripe Moon. Destruction is scored the opposite way: a cut figure, clashing guardians, an unripe or waning Moon.</li>
+      </ul>
+      <h3>3.9 Colour, number, sound (under review)</h3>
+      <ul>
+        <li>Planets: heraldic tinctures, which agree with the Golden Dawn Queen scale of the Sephiroth [10]. Signs: the King scale of the paths, which is Itten's circle [9, 13].</li>
+        <li>Numbers: Sephirah numbers, which match the order of Agrippa's magic squares [4]. Outer planets after Fortune [11].</li>
+        <li>Sound: Case's colour–note scale, Aries = C [12]. The chord is made of the notes of the two strongest figures. A = 440.</li>
+      </ul>
+
+      <h2>4 · USE</h2>
+      <div class="wrap"><table>
+        <tr><th>you see</th><th>it means</th></tr>
+        <tr><td>polygon of a planet</td><td>its number: Saturn 3 … Mercury 8; the Moon is drawn by its phase</td></tr>
+        <tr><td>ring around a planet</td><td>whole = domicile · doubled = exaltation · thin = minor dignity · faint = peregrine · broken = detriment · broken and drawn in = fall. Out of alignment with the core = out of tune</td></tr>
+        <tr><td>blur</td><td>retrograde, or slowing toward a station</td></tr>
+        <tr><td>central figure</td><td>the ruling aspect; secondary figures fainter behind it</td></tr>
+        <tr><td>white stars</td><td>points where two figures meet exactly</td></tr>
+        <tr><td>light at the pole</td><td>the Moon's verdict: warm = ripe · cold = unripe · dark = void</td></tr>
+        <tr><td>star at the pole</td><td>the guardians: day ruler and hour ruler as their planetary stars</td></tr>
+        <tr><td>flow from gold to silver</td><td>the Sun's outflow arriving in the Moon's cup; its speed follows the Moon's light</td></tr>
+        <tr><td>strip below the dial</td><td>the three windows over the next 24 hours; tap a time to go there</td></tr>
+      </table></div>
+      <p>Turn the dial to travel in time: clockwise is forward, and one turn is one day. Run, pause and change speed from the bar below. The sigil layer isolates the figure, for copying by hand.</p>
+
+      <h2>5 · LIMITATIONS</h2>
+      <ul>
+        <li>Ephemeris accuracy is about one arcminute: the Moon's aspects can be off by a few minutes of time. Swiss Ephemeris is not used.</li>
+        <li>The hierarchy, windows, verdict colours and sound mapping are design rules [CW], not tradition.</li>
+        <li>The correspondences mix layers from different centuries: medieval heraldry, the Golden Dawn (19th c.), Case and Fortune (20th c.). They are under review.</li>
+        <li>No effect of any figure is claimed or measured. The instrument shows the sky; it does not act on it.</li>
+      </ul>
+
+      <h2>6 · VALIDATION</h2>
+      <ul>
+        <li>Ten timed historical moments were scored against 1,500 random moments at the same places, 1900–2030. Mean percentile of the ruling figure: 64 (chance = 50 ± 9; p ≈ 0.06). Five of the ten fall in the top fifth; the nuclear moments of 1942–45 score at or below chance. The sample was chosen by fame, which biases it.</li>
+      </ul>
+
+      <h2>REFERENCES</h2>
+      <ol class="refs">
+        <li>Ptolemy, <em>Tetrabiblos</em> (c. 150 CE), trans. F. E. Robbins, Loeb, 1940.</li>
+        <li>Vettius Valens, <em>Anthology</em> (2nd c. CE).</li>
+        <li>W. Lilly, <em>Christian Astrology</em>, London, 1647.</li>
+        <li>H. C. Agrippa, <em>Three Books of Occult Philosophy</em> (1533), ed. D. Tyson, Llewellyn, 1993.</li>
+        <li><em>Picatrix</em> (Arabic 10th–11th c.; Latin 13th c.), trans. D. Attrell &amp; D. Porreca, Penn State UP, 2019.</li>
+        <li>M. Ficino, <em>De vita libri tres</em> (1489), eds. C. Kaske &amp; J. Clark, 1989.</li>
+        <li><em>Heptameron</em>, attr. Pietro d'Abano, 16th-c. printing.</li>
+        <li><em>Sefer Yetzirah</em>, trans. A. Kaplan, Weiser, 1990.</li>
+        <li>A. Crowley, <em>777</em>, 1909.</li>
+        <li>I. Regardie, <em>The Golden Dawn</em> (1937–40), Llewellyn, 6th ed., 1989.</li>
+        <li>D. Fortune, <em>The Mystical Qabalah</em>, 1935.</li>
+        <li>P. F. Case, <em>The Tarot: A Key to the Wisdom of the Ages</em>, 1947.</li>
+        <li>J. Itten, <em>Kunst der Farbe</em>, 1961.</li>
+        <li>J. Albers, <em>Interaction of Color</em>, Yale UP, 1963.</li>
+        <li>J. Addey, <em>Harmonics in Astrology</em>, 1976.</li>
+        <li>J. Kepler, <em>Harmonices Mundi</em>, 1619.</li>
+        <li>J. Meeus, <em>Astronomical Algorithms</em>, 2nd ed., Willmann-Bell, 1998.</li>
+        <li>D. Cross, <em>Astronomy Engine</em>, MIT licence, github.com/cosinekitty/astronomy.</li>
+        <li>C. Brennan, <em>Hellenistic Astrology: The Study of Fate and Fortune</em>, Amor Fati, 2017.</li>
+        <li>S. Skinner, <em>The Complete Magician's Tables</em>, Golden Hoard, 2006.</li>
+        <li>S. Kynes, <em>Llewellyn's Complete Book of Correspondences</em>, Llewellyn, 2013.</li>
+        <li>L. M. DuQuette, <em>The Chicken Qabalah of Rabbi Lamed Ben Clifford</em>, Weiser, 2001.</li>
+        <li>J. McCarthy, <em>Quareia</em>, 2014–, quareia.com.</li>
+        <li>T. Freeth et al., "Decoding the ancient Greek astronomical calculator known as the Antikythera Mechanism", <em>Nature</em> 444, 2006.</li>
+        <li>S. A. Bedini &amp; F. R. Maddison, "Mechanical Universe: The Astrarium of Giovanni de' Dondi", <em>Trans. American Philosophical Society</em> 56/5, 1966.</li>
+        <li>Su Song, <em>Xin Yi Xiang Fa Yao</em>, 1092.</li>
+        <li>F. Harris &amp; A. Crowley, Thoth Tarot (painted 1938–43; published 1969).</li>
+        <li>G. Adams, <em>Physical and Ethereal Spaces</em>, Rudolf Steiner Press, 1965.</li>
+      </ol>
+    </article>
+  </section>
+
   <footer class="bar bottom">
     <nav class="group time">
       <button data-step="-24">−1d</button>
@@ -46,7 +199,7 @@
       <button data-step="24">+1d</button>
       <button id="play" title="run the clock, one hour per second (space)">run</button>
       <button id="speed" title="running speed">1h/s</button>
-      <input id="when" type="datetime-local" aria-label="moment">
+      <label class="when"><input id="when" type="text" inputmode="numeric" spellcheck="false" autocomplete="off" aria-label="moment, in the place's own time: year-month-day hour:minute" placeholder="yyyy-mm-dd hh:mm"><span id="zone"></span></label>
     </nav>
     <nav class="group">
       <button id="here" data-place="here" title="use this device's location">here</button>

@@ -53,6 +53,7 @@
     playing: false,
     preview: 0,                                            // minutes ahead, from the 24-hour strip
     sigil: params.get('sigil') === '1',
+    engrave: params.get('engrave') === '1',
     field: params.get('field') || 'waves',
     state: null,
     lastCompute: 0
@@ -70,16 +71,17 @@
   function now() { return new Date(base().getTime() + S.preview * 60000); }
 
   function recompute() {
-    S.state = CW.engine.compute(now(), S.place, { light: S.playing });
-    if (!S.playing) S.state.nextChord = CW.engine.nextChordShift(S.state.date, S.place);
+    const busy = S.playing || S.dragging;
+    S.state = CW.engine.compute(now(), S.place, { light: busy });
+    if (!busy) S.state.nextChord = CW.engine.nextChordShift(S.state.date, S.place);
     S.lastCompute = performance.now();
     S.dirty = true;
     document.documentElement.style.setProperty('--ground', CW.render.ground(S.state));
     const c = CW.render.captionLines(S.state);
     $('caption').innerHTML = `<p class="l1">${c.l1}</p><p>${c.l2}</p><p>${c.l3}</p><p>${c.chord}</p><p class="mono">${c.next}</p><p class="mono">${c.fig}</p><p class="mono">${c.moon}</p>`;
-    if (!S.playing) scanIfNeeded();
+    if (!busy) scanIfNeeded();
     drawStrip();
-    if (!S.playing) updateReadout();                       // the heavy parts wait until the clock rests
+    if (!busy) updateReadout();                            // the heavy parts wait until the clock rests
     followChord();
     updateControls();
   }
@@ -97,7 +99,7 @@
     plate.width = plate.height = canvas.width;
     S.dirty = true;
     document.body.classList.toggle('small', side < 560);
-    const st = $('strip'); st.width = Math.round(side * dpr); st.height = Math.round(34 * dpr);
+    const st = $('strip'); st.width = Math.round(side * dpr); st.height = Math.round(44 * dpr);
     drawStrip();
   }
 
@@ -139,14 +141,17 @@
     if (scan.vals) {
       const n = 72, vals = scan.vals.slice(0, n + 1);
       const peak = Math.max(0.2, ...vals.flatMap(w => Object.values(w)));
+      const top = 14 * d;                                     // room for the hour labels
       for (const [m, col] of Object.entries(MOTHER_INK)) {
         c.strokeStyle = col; c.lineWidth = 1.6 * d; c.globalAlpha = 0.9;
         c.beginPath();
-        vals.forEach((w, i) => { const x = i / n * W, y = H - 2 * d - (w[m] / peak) * (H - 6 * d); i ? c.lineTo(x, y) : c.moveTo(x, y); });
+        vals.forEach((w, i) => { const x = i / n * W, y = H - 2 * d - (w[m] / peak) * (H - 4 * d - top); i ? c.lineTo(x, y) : c.moveTo(x, y); });
         c.stroke();
       }
       c.globalAlpha = 1;
     }
+    c.font = `${10 * d}px "Geist Mono", monospace`; c.fillStyle = 'rgba(235,231,220,0.5)'; c.textBaseline = 'top';
+    [['now', 0], ['+6h', 6], ['+12h', 12], ['+18h', 18], ['+24h', 24]].forEach(([l, h]) => { c.textAlign = h === 0 ? 'left' : h === 24 ? 'right' : 'center'; c.fillText(l, h / 24 * W, 2 * d); });
     const x = S.preview / 1440 * W;
     c.fillStyle = 'rgba(235,231,220,0.9)'; c.fillRect(Math.min(W - 2 * d, x), 0, 2 * d, H);
   }
@@ -167,7 +172,7 @@
   let t0 = performance.now(), lastFrame = 0;
   function frame(ts) {
     requestAnimationFrame(frame);
-    if (!S.playing && ts - lastFrame < 1000 / 30) return;     // at rest 30 fps; running, every frame the screen gives
+    if (!S.playing && !S.dragging && ts - lastFrame < 1000 / 30) return;     // at rest 30 fps; running, every frame the screen gives
     const dt = Math.min(0.1, (ts - (lastFrame || ts)) / 1000);
     if (S.playing) { S.offsetMs += S.speed * 3600e3 * dt; recompute(); }   // smooth: time advances with the real frame interval
     else if (performance.now() - S.lastCompute > 20000) recompute();
@@ -175,7 +180,8 @@
     const t = (ts - t0) / 1000;
     if (S.dirty) {
       pctx.setTransform(S.dpr, 0, 0, S.dpr, 0, 0);
-      info = CW.render.render(pctx, S.state, S.side, t, { mode: S.mode, fieldRes: S.playing ? 110 : 200, caption: S.side >= 560, plate: true, fast: S.playing, field: S.field, sigil: S.sigil });
+      const busy = S.playing || S.dragging;
+      info = CW.render.render(pctx, S.state, S.side, t, { mode: S.mode, fieldRes: busy ? 110 : 200, caption: S.side >= 560, plate: true, fast: busy, field: S.field, sigil: S.sigil, engrave: S.engrave });
       S.dirty = false; lastPlate = ts;
     }
     ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -241,7 +247,7 @@
     const cv = document.createElement('canvas');
     cv.width = cv.height = px;
     const c = cv.getContext('2d');
-    CW.render.render(c, S.state, px, (performance.now() - t0) / 1000, { mode: S.mode, fieldRes: px >= 3000 ? 420 : 300, field: S.field, sigil: S.sigil });
+    CW.render.render(c, S.state, px, (performance.now() - t0) / 1000, { mode: S.mode, fieldRes: px >= 3000 ? 420 : 300, field: S.field, sigil: S.sigil, engrave: S.engrave });
     const d = S.state.date;
     const stamp = d.toISOString().slice(0, 16).replace(/[:T]/g, '');
     cv.toBlob(b => {
@@ -258,8 +264,9 @@
     const st = S.state, C = CW.corr;
     const rows = C.ORDER.map(k => {
       const b = st.bodies[k];
-      const flags = [b.retro ? 'rx' : '', b.station ? 'stn' : '', b.combust ? 'comb' : '', b.cazimi ? 'caz' : ''].filter(Boolean).join(' ');
-      return `<tr><td>${k}</td><td>${Math.floor(b.deg)}°${String(Math.floor((b.deg % 1) * 60)).padStart(2, '0')}′ ${C.SIGNS[b.sign].name.slice(0, 3)}</td><td>h${b.house}</td><td>${b.dignity.score > 0 ? '+' : ''}${b.dignity.score} ${b.dignity.labels.map(l => l.slice(0, 4)).join(' ')}</td><td>${flags}</td></tr>`;
+      const flags = [b.retro ? 'retrograde' : '', b.station ? 'stationary' : '', b.cazimi ? 'cazimi' : b.combust ? 'combust' : b.beams ? 'under the beams' : ''].filter(Boolean).join(', ');
+      const dig = C.PLANETS[k].kind === 'optic' ? 'no essential dignity' : `${b.dignity.score > 0 ? '+' : ''}${b.dignity.score} · ${b.dignity.labels.join(', ') || '—'}`;
+      return `<tr><td>${k}</td><td>${Math.floor(b.deg)}°${String(Math.floor((b.deg % 1) * 60)).padStart(2, '0')}′ ${C.SIGNS[b.sign].name}</td><td>house ${b.house}</td></tr><tr class="sub"><td></td><td colspan="2">${dig}${flags ? ' · ' + flags : ''}</td></tr>`;
     }).join('');
     const cf = st.configs;
     const figs = [cf.primary, ...cf.secondary].filter(Boolean).map((a, i) =>
@@ -281,9 +288,8 @@
   }
 
   function updateControls() {
-    const d = S.state.date;
-    const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
-    if (document.activeElement !== $('when')) $('when').value = local;
+    if (document.activeElement !== $('when')) $('when').value = placeStamp(S.state.date);
+    $('zone').textContent = offsetOf(S.place.tz || 'UTC', S.state.date);
     $('live').classList.toggle('on', S.offsetMs === 0 && !S.fixed && !S.playing);
     $('play').classList.toggle('on', S.playing);
     $('play').textContent = S.playing ? 'pause' : 'run';
@@ -306,10 +312,13 @@
     const fill = () => { $('city').innerHTML = ZONES.map(z => `<option value="${z.name}">${offsetOf(z.tz)} · ${z.name}</option>`).join('') + (PLACES[S.place.name] ? '' : `<option value="" selected>${S.place.name}</option>`); };
     fill();
     $('city').addEventListener('change', e => { if (!PLACES[e.target.value]) return; S.place = PLACES[e.target.value]; store.set('place', S.place); recompute(); });
-    $('when').addEventListener('change', e => {
-      const v = new Date(e.target.value);
-      if (!isNaN(v)) { S.fixed = v; S.offsetMs = 0; recompute(); }
-    });
+    const commit = e => {
+      const v = fromPlaceStamp(e.target.value.trim());
+      if (v) { S.playing = false; S.fixed = v; S.offsetMs = 0; S.preview = 0; $('preview').value = 0; recompute(); e.target.classList.remove('bad'); }
+      else e.target.classList.add('bad');
+    };
+    $('when').addEventListener('change', commit);
+    $('when').addEventListener('keydown', e => { if (e.key === 'Enter') { commit(e); e.target.blur(); } });
     $('here').addEventListener('click', () => locate(true));
     document.querySelectorAll('[data-mode]').forEach(b => b.addEventListener('click', () => { S.mode = b.dataset.mode; store.set('mode', S.mode); S.dirty = true; updateControls(); }));
     $('save').addEventListener('click', () => exportPNG(2048));
@@ -317,6 +326,8 @@
     $('preview').addEventListener('input', e => { S.preview = Number(e.target.value); recompute(); });
     $('save-hd').addEventListener('click', () => exportPNG(4096));
     $('info').addEventListener('click', () => document.body.classList.toggle('reading'));
+    $('about-open').addEventListener('click', () => { $('about').hidden = !$('about').hidden; $('about-open').classList.toggle('on', !$('about').hidden); });
+    $('about-close').addEventListener('click', () => { $('about').hidden = true; $('about-open').classList.remove('on'); });
     $('listen').addEventListener('click', () => listen(!audio.on));
     $('full').addEventListener('click', () => {
       document.body.classList.toggle('bare');
@@ -324,7 +335,7 @@
       else if (document.fullscreenElement) document.exitFullscreen();
     });
     window.addEventListener('keydown', e => {
-      if (e.target.tagName === 'INPUT') return;
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
       if (e.key === 'f') $('full').click();
       if (e.key === 'i') $('info').click();
       if (e.key === 's') $('sigil').click();
@@ -332,10 +343,55 @@
       if (e.key === ' ') { e.preventDefault(); $('play').click(); }
       if (e.key === 'ArrowRight') { S.offsetMs += (e.shiftKey ? 24 : 1) * 3600e3; recompute(); }
       if (e.key === 'ArrowLeft') { S.offsetMs -= (e.shiftKey ? 24 : 1) * 3600e3; recompute(); }
-      if (e.key === 'Escape') document.body.classList.remove('bare', 'reading');
+      if (e.key === 'Escape') { document.body.classList.remove('bare', 'reading'); $('about').hidden = true; $('about-open').classList.remove('on'); }
     });
     window.addEventListener('resize', size);
     if (params.get('hd') !== '1') $('save-hd').hidden = true;
+  }
+
+  /* the moment as the place reads it: yyyy-mm-dd hh:mm in the place's time zone */
+  function placeParts(d, tz) {
+    const f = new Intl.DateTimeFormat('en-GB', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: tz || 'UTC' });
+    return Object.fromEntries(f.formatToParts(d).map(p => [p.type, p.value]));
+  }
+  function placeStamp(d) { const p = placeParts(d, S.place.tz); return `${p.year}-${p.month}-${p.day} ${p.hour}:${p.minute}`; }
+  function fromPlaceStamp(txt) {
+    const m = txt.match(/^(\d{4})-(\d{1,2})-(\d{1,2})[ t](\d{1,2}):(\d{2})$/i);
+    if (!m) return null;
+    const want = Date.UTC(+m[1], m[2] - 1, +m[3], +m[4], +m[5]);
+    let t = want;                                           // the zone's offset at that moment, found by two corrections
+    for (let i = 0; i < 2; i++) { const p = placeParts(new Date(t), S.place.tz); t += want - Date.UTC(+p.year, p.month - 1, +p.day, +p.hour, +p.minute); }
+    return new Date(t);
+  }
+
+  /* ---------- the gesture: turn the dial to travel in time ----------
+     clockwise = forward. one full turn = one day. the wheel moves ten minutes a notch. */
+  function bindGesture() {
+    let drag = null;
+    const angleAt = e => {
+      const r = canvas.getBoundingClientRect(), Lt = CW.render.layout(S.side);
+      return { a: Math.atan2(e.clientY - r.top - Lt.cy, e.clientX - r.left - Lt.cx), d: Math.hypot(e.clientY - r.top - Lt.cy, e.clientX - r.left - Lt.cx), R: Lt.Rb };
+    };
+    canvas.addEventListener('pointerdown', e => {
+      const p = angleAt(e); if (p.d > p.R) return;
+      drag = { last: p.a, base: base().getTime() + S.preview * 60000, turned: 0 };
+      S.playing = false; S.dragging = true; canvas.setPointerCapture(e.pointerId); canvas.classList.add('turning');
+    });
+    canvas.addEventListener('pointermove', e => {
+      if (!drag) return;
+      const p = angleAt(e);
+      let d = p.a - drag.last; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI;
+      drag.last = p.a; drag.turned += d;                    // screen y points down: a positive delta is clockwise
+      S.fixed = new Date(drag.base + drag.turned / (2 * Math.PI) * 864e5); S.offsetMs = 0; S.preview = 0; $('preview').value = 0;
+      recompute();
+    });
+    const end = () => { if (!drag) return; drag = null; S.dragging = false; canvas.classList.remove('turning'); recompute(); };
+    canvas.addEventListener('pointerup', end); canvas.addEventListener('pointercancel', end);
+    canvas.addEventListener('wheel', e => {
+      e.preventDefault();
+      S.playing = false; S.fixed = new Date(base().getTime() + S.preview * 60000 + Math.sign(e.deltaY) * 600000); S.offsetMs = 0; S.preview = 0; $('preview').value = 0;
+      recompute();
+    }, { passive: false });
   }
 
   /* the device's position: asked once on the first visit, and whenever "here" is pressed */
@@ -351,9 +407,9 @@
 
   async function start() {
     try {
-      await Promise.all(['500 20px Jost', '400 20px "IBM Plex Sans"', '500 20px "IBM Plex Sans"', '400 20px "IBM Plex Mono"'].map(f => document.fonts.load(f)));
+      await Promise.all(['400 20px Geist', '500 20px Geist', '400 20px "Geist Mono"'].map(f => document.fonts.load(f)));
     } catch (e) { /* fonts are a nicety */ }
-    bind(); size(); recompute(); drawNexts();
+    bind(); bindGesture(); size(); recompute(); drawNexts();
     if (S.firstVisit || S.place.name === 'here') locate(false);
     requestAnimationFrame(frame);
   }

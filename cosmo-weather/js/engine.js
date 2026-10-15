@@ -317,11 +317,11 @@
       if (tmpl.length !== pcs.length) continue;
       for (const root of pcs) {
         const set = tmpl.map(i => (root + i) % 12).sort((a, b) => a - b);
-        if (set.join() === pcs.join()) return { name: N[root] + suffix, notes: pcs.map(i => N[i]), planets };
+        if (set.join() === pcs.join()) return { name: N[root] + suffix, notes: pcs.map(i => N[i]), planets, root, pcs };
       }
     }
-    const a = N[st.bodies[figs[0].a].sign], b = N[st.bodies[figs[0].b].sign];
-    return { name: a === b ? a : `${a}>${b}`, notes: pcs.map(i => N[i]), planets, dyad: true };
+    const ra = st.bodies[figs[0].a].sign, rb = st.bodies[figs[0].b].sign, a = N[ra], b = N[rb];
+    return { name: a === b ? a : `${a}>${b}`, notes: pcs.map(i => N[i]), planets, dyad: true, root: ra, pcs: ra === rb ? [ra] : [ra, rb] };
   }
 
   /* The three windows: how far the moment serves ideation, incarnation, destruction (0..1).

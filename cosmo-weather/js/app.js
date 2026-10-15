@@ -80,6 +80,7 @@
     if (!S.playing) scanIfNeeded();
     drawStrip();
     if (!S.playing) updateReadout();                       // the heavy parts wait until the clock rests
+    followChord();
     updateControls();
   }
 
@@ -183,6 +184,58 @@
     CW.render.overlay(ctx, info, t);
   }
 
+  /* ---------- sound: the chord as a slow organ drone ----------
+     Pure tones with their first overtones (the organ pipe; Pythagoras' and Kepler's music of the spheres),
+     each doubled with a slight detune so it breathes. A = 440. The root also sounds an octave below.
+     Swells in over 3 s, glides to the next chord when the sky shifts, fades over 3 s on stop. */
+  const audio = { ctx: null, bus: null, voices: [], key: null, on: false };
+  function reverb(ac) {
+    const len = ac.sampleRate * 3.2, buf = ac.createBuffer(2, len, ac.sampleRate);
+    for (let ch = 0; ch < 2; ch++) { const d = buf.getChannelData(ch); for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 3.2); }
+    const c = ac.createConvolver(); c.buffer = buf; return c;
+  }
+  function voicing(ch) {
+    if (!ch || !ch.pcs || !ch.pcs.length) return [];
+    const freq = (pc, oct) => 440 * Math.pow(2, (pc - 9) / 12 + (oct - 4));
+    const root = ch.root, out = [{ f: freq(root, 2), g: 0.5 }, { f: freq(root, 3), g: 1 }];
+    for (const pc of ch.pcs) if (pc !== root) out.push({ f: freq(pc, pc > root ? 3 : 4), g: 0.8 });
+    return out;
+  }
+  function soundChord(ch, fadeIn = 3) {
+    const ac = audio.ctx, now = ac.currentTime;
+    for (const v of audio.voices) { v.gain.gain.cancelScheduledValues(now); v.gain.gain.setValueAtTime(v.gain.gain.value, now); v.gain.gain.linearRampToValueAtTime(0, now + 3); v.oscs.forEach(o => o.stop(now + 3.1)); }
+    audio.voices = [];
+    for (const { f, g } of voicing(ch)) {
+      const gain = ac.createGain(); gain.gain.setValueAtTime(0, now); gain.gain.linearRampToValueAtTime(0.11 * g, now + fadeIn);
+      gain.connect(audio.bus);
+      const oscs = [];
+      for (const [mult, amp] of [[1, 1], [2, 0.32], [3, 0.14], [4, 0.06]]) for (const det of [-0.12, 0.12]) {
+        const o = ac.createOscillator(), a = ac.createGain();
+        o.type = 'sine'; o.frequency.value = f * mult + det * mult; a.gain.value = amp / 2;
+        o.connect(a).connect(gain); o.start(now); oscs.push(o);
+      }
+      audio.voices.push({ gain, oscs });
+    }
+    audio.key = ch ? ch.name : null;
+  }
+  function listen(on) {
+    if (on && !audio.ctx) {
+      const Ctx = window.AudioContext || window.webkitAudioContext; if (!Ctx) return;
+      const ac = audio.ctx = new Ctx();
+      const lp = ac.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 2200;
+      const master = ac.createGain(); master.gain.value = 0.9;
+      const wet = ac.createGain(); wet.gain.value = 0.55; const rv = reverb(ac);
+      audio.bus = lp; lp.connect(master); lp.connect(rv).connect(wet).connect(master); master.connect(ac.destination);
+    }
+    audio.on = on;
+    if (!audio.ctx) return;
+    if (on) { audio.ctx.resume(); soundChord(S.state.chord); }
+    else soundChord(null);
+    $('listen').classList.toggle('on', on);
+    $('listen').textContent = on ? 'listening' : 'listen';
+  }
+  function followChord() { if (audio.on && S.state && S.state.chord.name !== audio.key) soundChord(S.state.chord, 2.5); }
+
   /* ---------- export: square art ---------- */
   function exportPNG(px) {
     const cv = document.createElement('canvas');
@@ -264,6 +317,7 @@
     $('preview').addEventListener('input', e => { S.preview = Number(e.target.value); recompute(); });
     $('save-hd').addEventListener('click', () => exportPNG(4096));
     $('info').addEventListener('click', () => document.body.classList.toggle('reading'));
+    $('listen').addEventListener('click', () => listen(!audio.on));
     $('full').addEventListener('click', () => {
       document.body.classList.toggle('bare');
       if (document.body.classList.contains('bare') && document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(() => {});
@@ -274,6 +328,7 @@
       if (e.key === 'f') $('full').click();
       if (e.key === 'i') $('info').click();
       if (e.key === 's') $('sigil').click();
+      if (e.key === 'l') $('listen').click();
       if (e.key === ' ') { e.preventDefault(); $('play').click(); }
       if (e.key === 'ArrowRight') { S.offsetMs += (e.shiftKey ? 24 : 1) * 3600e3; recompute(); }
       if (e.key === 'ArrowLeft') { S.offsetMs -= (e.shiftKey ? 24 : 1) * 3600e3; recompute(); }

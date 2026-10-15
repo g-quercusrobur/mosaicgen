@@ -471,10 +471,21 @@
     const dc = C.PLANETS[d].tincture, hc = C.PLANETS[hr].tincture;
     ctx.save();
     // the light: warm white, tinted by the two guardians
-    const tint = K.mixLight(K.mixLight(dc === '#040507' ? '#9aa0ab' : dc, hc === '#040507' ? '#9aa0ab' : hc, 0.5, 0), '#fff4dc', 0.6, 0);
-    const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, rg * 2.6);
-    g.addColorStop(0, K.rgba(tint, 0.55 * E)); g.addColorStop(0.35, K.rgba(tint, 0.18 * E)); g.addColorStop(1, K.rgba(tint, 0));
-    ctx.globalCompositeOperation = 'screen'; ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, rg * 2.6, 0, TAU); ctx.fill();
+    // the light is the ripeness of the moment, read from the moon: warm when ripe, cold when unripe, out when void
+    const v = state.moon.verdict;
+    let tint = K.mixLight(K.mixLight(dc === '#040507' ? '#9aa0ab' : dc, hc === '#040507' ? '#9aa0ab' : hc, 0.5, 0), '#fff4dc', 0.6, 0);
+    if (v === 'unripe') tint = K.mixLight(tint, '#7d889c', 0.7, -0.08);
+    const level = { ripe: 1.25, open: 0.9, unripe: 0.45, void: 0 }[v];
+    if (level > 0) {
+      const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, rg * 2.6);
+      g.addColorStop(0, K.rgba(tint, 0.55 * E * level)); g.addColorStop(0.35, K.rgba(tint, 0.18 * E * level)); g.addColorStop(1, K.rgba(tint, 0));
+      ctx.globalCompositeOperation = 'screen'; ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, rg * 2.6, 0, TAU); ctx.fill();
+    } else {                                              // void: the door is closed — a dark pupil
+      const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, rg * 1.8);
+      g.addColorStop(0, 'rgba(2,3,10,0.75)'); g.addColorStop(1, 'rgba(2,3,10,0)');
+      ctx.globalCompositeOperation = 'source-over'; ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, rg * 1.8, 0, TAU); ctx.fill();
+    }
+    const ghost = v === 'void' ? 0.35 : v === 'unripe' ? 0.7 : 1;
     const lw = Lt.u * 1.6;
     const star = (key, alpha) => {
       const n = C.PLANETS[key].number, k = GUARD_K[n];
@@ -487,8 +498,8 @@
       ctx.strokeStyle = 'rgba(2,3,10,0.45)'; ctx.lineWidth = lw * 2.6; ctx.stroke(p);   // a dark bed so any tincture reads on any light
       strokeGlow(ctx, p, c, lw * 1.1, alpha, E, '#9aa0ab');
     };
-    if (d === hr) star(d, 1);
-    else { star(d, 0.9); star(hr, 0.9); }
+    if (d === hr) star(d, ghost);
+    else { star(d, 0.9 * ghost); star(hr, 0.9 * ghost); }
     ctx.restore();
   }
 
@@ -810,6 +821,12 @@
     }
     return { day: parts.weekday.toLowerCase(), date: `${parts.day} ${parts.month.toLowerCase()} ${parts.year}`, time: `${parts.hour}:${parts.minute}`, zone };
   }
+  function moonLine(state) {
+    const m = state.moon;
+    const head = m.next ? `moon applying ${m.next.aspect} ${m.next.planet}` : 'moon void of course';
+    const extra = m.flags.filter(f => f !== 'void of course')[0];
+    return extra ? `${head} · ${extra}` : head;
+  }
   function captionLines(state) {
     const T = fmtTime(state.date, state.loc), B = state.bodies, H = state.hour;
     const sunSign = C.SIGNS[B.sun.sign].name;
@@ -818,7 +835,8 @@
       l1: `${T.day} · ${T.date} · ${T.time} ${T.zone} · ${state.loc.name}`,
       l2: `day of ${H.dayRuler} · hour of ${H.hourRuler} · angel of the hour ${H.angel}`,
       l3: `sun in the ${ordinal(B.sun.house)} house · ${dms(B.sun.deg)} ${sunSign}`,
-      fig: fig ? `${fig.a} ${fig.aspect} ${fig.b}${fig.event ? ' · ' + fig.event : ''}` : 'quiet sky'
+      fig: fig ? `${fig.a} ${fig.aspect} ${fig.b}${fig.event ? ' · ' + fig.event : ''}` : 'quiet sky',
+      moon: moonLine(state)
     };
   }
   function drawCaption(ctx, state, Lt) {
@@ -840,7 +858,8 @@
     if ('letterSpacing' in ctx) ctx.letterSpacing = '0px';
     ctx.fillStyle = K.rgba(INK, 0.5); ctx.font = `400 ${Math.round(20 * u)}px "IBM Plex Mono", monospace`;
     ctx.fillText(c.fig, Lt.S - m, Lt.capY + 50 * u);
-    ctx.fillText(`moon ${Math.round(state.moon.illum * 100)}% ${state.moon.waxing ? 'waxing' : 'waning'}`, Lt.S - m, Lt.capY + 88 * u);
+    ctx.fillStyle = K.rgba(INK, state.moon.verdict === 'void' || state.moon.verdict === 'unripe' ? 0.85 : 0.5);
+    ctx.fillText(`${c.moon} · ${Math.round(state.moon.illum * 100)}%`, Lt.S - m, Lt.capY + 88 * u);
     ctx.restore();
   }
 

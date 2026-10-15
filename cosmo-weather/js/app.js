@@ -42,7 +42,7 @@
     S.dirty = true;
     document.documentElement.style.setProperty('--ground', CW.render.ground(S.state));
     const c = CW.render.captionLines(S.state);
-    $('caption').innerHTML = `<p class="l1">${c.l1}</p><p>${c.l2}</p><p>${c.l3}</p><p class="mono">${c.fig}</p>`;
+    $('caption').innerHTML = `<p class="l1">${c.l1}</p><p>${c.l2}</p><p>${c.l3}</p><p class="mono">${c.fig}</p><p class="mono">${c.moon}</p>`;
     updateReadout();
     updateControls();
   }
@@ -114,6 +114,7 @@
       <h3>the figure</h3><table>${figs || '<tr><td>quiet sky</td></tr>'}</table>
       <h3>portal</h3><p>scale ×${(cf.scale || 1).toFixed(2)} (jupiter widens, saturn narrows)${cf.cut ? ` · cut by ${cf.cut.by} ${cf.cut.aspect} ${cf.cut.target}, ${Math.round(cf.cut.width)}°` : ' · whole'}</p>
       <p>guardians ${st.hour.dayRuler}${st.hour.dayRuler === st.hour.hourRuler ? ' alone: one pure figure' : ' and ' + st.hour.hourRuler}</p>
+      <h3>moon</h3><p>${st.moon.verdict} · ${st.moon.next ? `next ${st.moon.next.aspect} ${st.moon.next.planet} in ${(st.moon.next.days * 24).toFixed(1)}h` : 'void of course'}${st.moon.flags.filter(f => f !== 'void of course').map(f => ' · ' + f).join('')}</p>
       <h3>events</h3><p>${ev}</p>
       <h3>hierarchy</h3><table>${top}</table>
       <p class="dim">sect ${st.sect} · asc ${Math.floor(st.asc % 30)}° ${C.SIGNS[Math.floor(st.asc / 30)].name} · mc ${Math.floor(st.mc % 30)}° ${C.SIGNS[Math.floor(st.mc / 30)].name} · day ${st.hour.dayRuler} / ${st.hour.dayAngel} · hour ${st.hour.index + 1} ${st.hour.hourRuler} / ${st.hour.angel}</p>`;

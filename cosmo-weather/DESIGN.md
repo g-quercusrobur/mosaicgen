@@ -27,6 +27,7 @@ Every mark on the dial is computed from the sky by a stated rule. Nothing is orn
 | retrograde / slowness | blur of the primitive the planet owns | see §6 |
 | station | the planet's number as hour-marks around the portal | pluto: an unbroken dark ring |
 | outer planets | optics | uranus iridescence · neptune brilliance and diffusion · pluto lensing |
+| moon's electional condition | the light at the pole | ripe warm · unripe cold · void dark (§6c) |
 | day ruler + hour ruler | the guardian star at the pole | their planetary stars, point up, in a soft light (§5b) |
 | jupiter vs saturn | portal size | scale 0.5–1.5: dignity of both, plus their part in the figure |
 | hard aspect from a third planet | a wedge cut from the figure | pointed at the afflicting planet, width 24–100° by power |
@@ -125,6 +126,23 @@ Blur is full while retrograde and ramps in as a direct planet slows toward its s
 
 Every planet wears a ring whose form is its essential condition: whole for domicile, doubled for exaltation, thin for minor dignity (triplicity, term, face), faint for peregrine, broken into segments for detriment (exile), broken and drawn in for fall. The colour is the sign, purity follows the dignity score, retrograde blurs it, combust bleaches it. Outer planets wear the same forms in their optics: uranus iridescent, neptune white, pluto a hairline.
 
+## 6c · Ripeness: the moon's electional condition
+
+Shown at the centre, where the rulers of the hour already sit, and stated in the caption.
+
+- **next aspect** = the first Ptolemaic aspect the moon will perfect with a classical planet before leaving its sign. None = **void of course**.
+- **afflicted**: applying to mars or saturn by conjunction, square or opposition. **under the beams** within 12° of the sun, **combust** within 8.5°. **via combusta** 15° libra – 15° scorpio.
+- **helped**: applying to venus or jupiter, or applying by trine or sextile.
+
+| verdict | centre |
+|---|---|
+| ripe | the light burns warm and bright |
+| open | normal light |
+| unripe | the light dims and turns cold, the guardians fade |
+| void | the light goes out: a dark pupil, the guardians as ghost hairlines. the door is closed |
+
+Caption, right column: `moon applying square saturn · 37%` or `moon void of course · 28%`. The planetary day begins at sunrise, so before dawn the caption can read "saturday · day of venus". That is correct.
+
 ## 7 · Hierarchy
 
 power = (0.2 + 0.8 · rarity) × aspect weight × (0.3 · exactness^1.5 + 0.7 · window) × modifiers
@@ -134,7 +152,7 @@ power = (0.2 + 0.8 · rarity) × aspect weight × (0.3 · exactness^1.5 + 0.7 ·
 - **aspect weights** conjunction 1.0 · opposition .9 · square .8 · trine .7 · sextile .5 · quincunx .35 · minor .26–.32
 - **modifiers** applying ×1.2, separating ×0.8, station ×1.5, sun involved ×1.2, angular ×1.3
 - **events override:** eclipse > lunation > cazimi > outer-planet exact > station
-- **the moon ripples, it never opens a portal alone.** Its strongest aspect is the expanding ring at the pole.
+- **the moon takes full part.** Its windows are hours (0.25 days), not days, so it rises only near exactness. It may cut the figure, but only by aspects it is applying to (hard aspects, or conjunction with mars or saturn). Flicker is accepted: it is true.
 - one primary figure, at most two secondary figures. Below 0.25 the primary shrinks: a quiet sky.
 
 ## 8 · Field

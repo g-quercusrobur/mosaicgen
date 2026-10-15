@@ -11,6 +11,7 @@
   const norm180 = x => { const y = norm360(x); return y > 180 ? y - 360 : y; };
   const sep = (a, b) => Math.abs(norm180(a - b));
   const WINDOW_DAYS = 1.5;   // "exact on that day": the portal is open within about a day and a half of exactness
+  const MOON_WINDOW_DAYS = 0.25;   // the moon's windows are hours: it moves a degree every two hours
 
   /* ---------- positions ---------- */
   function eclipticOfDate(body, t) {
@@ -168,7 +169,8 @@
       // so they open the portal only in the days around the exact pass
       const rate = Math.abs(d1 - d) * 24;                              // degrees per day
       const days = best.orb < 0.1 ? 0 : best.orb / Math.max(rate, 1e-4);
-      const windowT = Math.exp(-0.5 * Math.pow(days / WINDOW_DAYS, 2));
+      const isMoon = a.key === 'moon' || b.key === 'moon';
+      const windowT = Math.exp(-0.5 * Math.pow(days / (isMoon ? MOON_WINDOW_DAYS : WINDOW_DAYS), 2));
       const rar = rarity(a.key, b.key);
       let mods = applying ? 1.2 : 0.8;
       if (a.station || b.station) mods *= 1.5;
@@ -222,7 +224,6 @@
     }
     for (const a of aspects) {
       if (configs.length >= 3) break;
-      if (a.moon) continue;                         // the Moon ripples, it does not open portals alone
       if (configs.find(c => c.a === a.a && c.b === a.b)) continue;
       if (a.power < 0.08) continue;
       configs.push(a);
@@ -247,7 +248,9 @@
     const scale = Math.max(0.5, Math.min(1.5, 1 + 0.45 * e));
     let cut = null;
     for (const a of aspects) {
-      if (a.nature !== 'hard' || a.moon) continue;
+      const malefic = (a.a === 'mars' || a.a === 'saturn' || a.b === 'mars' || a.b === 'saturn');
+      if (a.nature !== 'hard' && !(a.aspect === 'conjunction' && malefic)) continue;
+      if (a.moon && !a.applying) continue;                // the moon afflicts by what it moves toward
       const ia = inv(a.a), ib = inv(a.b);
       if (ia === ib) continue;                             // exactly one planet of the figure
       if (a.power < 0.06) continue;
@@ -255,6 +258,44 @@
         width: Math.max(24, Math.min(100, 24 + 70 * Math.min(1, a.power * 1.5))) };
     }
     return { scale, expansion: e, cut };
+  }
+
+  /* The moon's electional condition: is the moment ripe?
+     next = the first Ptolemaic aspect the moon will perfect with a classical planet before leaving its sign.
+     none = void of course. Applying to mars or saturn by conjunction, square or opposition = afflicted.
+     Within 12° of the sun = under the beams (combust within 8.5°). 15° libra – 15° scorpio = via combusta. */
+  function moonCondition(B, eps) {
+    const m = B.moon, left = 30 - m.deg;
+    const angles = [['conjunction', 0], ['sextile', 60], ['square', 90], ['trine', 120], ['opposition', 180]];
+    let next = null;
+    for (const k of ['sun', 'mercury', 'venus', 'mars', 'jupiter', 'saturn']) {
+      const p = B[k], rel = m.speed - p.speed;
+      if (rel <= 0) continue;
+      for (const [name, A] of angles) for (const sgn of A === 0 || A === 180 ? [1] : [1, -1]) {
+        const target = p.lon + sgn * A;
+        const dist = norm360(target - m.lon);                // ahead of the moon
+        const days = dist / rel;
+        if (dist > 0.01 && m.speed * days <= left && (!next || days < next.days)) next = { planet: k, aspect: name, days };
+      }
+    }
+    const dSun = sep(m.lon, B.sun.lon);
+    const flags = [];
+    if (!next) flags.push('void of course');
+    if (dSun < 8.5) flags.push('combust'); else if (dSun < 12) flags.push('under the beams');
+    if (m.lon >= 195 && m.lon < 225) flags.push('via combusta');
+    let ripe = 0;
+    if (!next) ripe -= 1;
+    else {
+      const mal = next.planet === 'mars' || next.planet === 'saturn', ben = next.planet === 'venus' || next.planet === 'jupiter';
+      const hardA = next.aspect === 'square' || next.aspect === 'opposition' || (next.aspect === 'conjunction' && mal);
+      if (mal && hardA) ripe -= 0.7; else if (hardA) ripe -= 0.35;
+      if (ben || next.aspect === 'trine' || next.aspect === 'sextile') ripe += 0.6;
+    }
+    if (dSun < 8.5) ripe -= 0.7; else if (dSun < 12) ripe -= 0.4;
+    if (m.lon >= 195 && m.lon < 225) ripe -= 0.3;
+    if (m.speed > 13.2) ripe += 0.1;
+    const verdict = !next ? 'void' : ripe >= 0.3 ? 'ripe' : ripe <= -0.3 ? 'unripe' : 'open';
+    return { next, flags, ripe, verdict };
   }
 
   /* ---------- the whole state ---------- */
@@ -305,8 +346,9 @@
     const aspects = findAspects(B);
     const events = findEvents(t, B, aspects);
     const configs = selectConfigs(aspects, events, B);
+    const lunar = moonCondition(B, eps);
     const cusps = placidus(ang.ramc, loc.lat, eps, ang.asc, ang.mc);
-    return { date, loc, eps, ...ang, bodies: B, sect: isDay ? 'day' : 'night', moon, hour, aspects, events, configs, cusps };
+    return { date, loc, eps, ...ang, bodies: B, sect: isDay ? 'day' : 'night', moon: { ...moon, ...lunar }, hour, aspects, events, configs, cusps };
   }
 
   CW.engine = { compute, norm360, norm180, sep, houseOf, mundane, semiArc, dignity, placidus, synodic, rarity };

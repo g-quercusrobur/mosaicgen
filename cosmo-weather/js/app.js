@@ -112,6 +112,8 @@
     $('readout').innerHTML = `
       <h3>bodies</h3><table>${rows}</table>
       <h3>the figure</h3><table>${figs || '<tr><td>quiet sky</td></tr>'}</table>
+      <h3>portal</h3><p>scale ×${(cf.scale || 1).toFixed(2)} (jupiter widens, saturn narrows)${cf.cut ? ` · cut by ${cf.cut.by} ${cf.cut.aspect} ${cf.cut.target}, ${Math.round(cf.cut.width)}°` : ' · whole'}</p>
+      <p>guardians ${st.hour.dayRuler}${st.hour.dayRuler === st.hour.hourRuler ? ' alone: one pure figure' : ' and ' + st.hour.hourRuler}</p>
       <h3>events</h3><p>${ev}</p>
       <h3>hierarchy</h3><table>${top}</table>
       <p class="dim">sect ${st.sect} · asc ${Math.floor(st.asc % 30)}° ${C.SIGNS[Math.floor(st.asc / 30)].name} · mc ${Math.floor(st.mc % 30)}° ${C.SIGNS[Math.floor(st.mc / 30)].name} · day ${st.hour.dayRuler} / ${st.hour.dayAngel} · hour ${st.hour.index + 1} ${st.hour.hourRuler} / ${st.hour.angel}</p>`;
@@ -171,7 +173,7 @@
 
   async function start() {
     try {
-      await Promise.all(['400 20px Jost', '300 20px Jost', '500 20px Jost', '400 20px "IBM Plex Mono"'].map(f => document.fonts.load(f)));
+      await Promise.all(['500 20px Jost', '400 20px "IBM Plex Sans"', '500 20px "IBM Plex Sans"', '400 20px "IBM Plex Mono"'].map(f => document.fonts.load(f)));
     } catch (e) { /* fonts are a nicety */ }
     bind(); size(); recompute();
     requestAnimationFrame(frame);

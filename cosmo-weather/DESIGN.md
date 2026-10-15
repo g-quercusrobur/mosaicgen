@@ -27,7 +27,10 @@ Every mark on the dial is computed from the sky by a stated rule. Nothing is orn
 | retrograde / slowness | blur of the primitive the planet owns | see §6 |
 | station | the planet's number as hour-marks around the portal | pluto: an unbroken dark ring |
 | outer planets | optics | uranus iridescence · neptune brilliance and diffusion · pluto lensing |
-| day ruler + hour ruler | the pole | tinctures mixed as light |
+| day ruler + hour ruler | the guardian star at the pole | their planetary stars, point up, in a soft light (§5b) |
+| jupiter vs saturn | portal size | scale 0.5–1.5: dignity of both, plus their part in the figure |
+| hard aspect from a third planet | a wedge cut from the figure | pointed at the afflicting planet, width 24–100° by power |
+| dignity form | state ring on every planet | §6b |
 | houses | the container | twelve faces of the dodecagon, fixed to horizon and meridian |
 
 ## 3 · Correspondences
@@ -85,7 +88,9 @@ An aspect is a fraction of the circle: angle = k·360/n → the star polygon {n/
 
 **Rose engine.** The primary figure is wrapped in a guilloché band: 5 to 9 passes of r(θ) = R·(1 − a + a·f(Pθ)), where f morphs from a cosine (round petals) to a cusp (spikes) with hardness. A second band at 2P, counter-phased, makes the moiré.
 
-**Colour law (Itten chords).**
+**Two colours.** The lines carry the planets, the fill carries the relationship. Planet A's rose-engine passes twist clockwise in A's colour and planet B's twist counter-clockwise in B's, so the engraving crosses as two forces. Every star edge passes from one planet's colour to the other's: smoothly when soft, with a hard split at the midpoint when hard. Circle chains alternate. White appears only when a planet demands it (neptune's brilliance, uranus's pale iridescence).
+
+**Colour law for the fill (Itten chords).**
 - soft, fusion, creative: **light**. Additive, interpolated in OKLab.
 - hard: **pigment**. Multiplicative in linear RGB, chroma pulled down. Mud.
 - anything mixed with saturn goes black. Black figures are drawn as grooves carved into the light, edged by the other planet's colour.
@@ -95,6 +100,12 @@ An aspect is a fraction of the circle: angle = k·360/n → the star polygon {n/
 
 **Constellations.** Figures share the portal at the same radius. Only where vertices of two figures coincide: a white star with a diffraction cross. Plain edge crossings do not count (tested: they read as beads). Major stars are joined by a hairline: the figure of the day. Two centred, aligned figures share gcd(n₁, n₂) vertices.
 
+## 5b · Size, cut, guardians
+
+- **Size.** Jupiter owns scale and Saturn owns restriction. e = 0.3·(jupiter score − saturn score)/10, plus 0.6 if jupiter is in the figure, minus 0.6 if saturn is, plus 0.15 for venus or sun, minus 0.3 for pluto. Scale = 1 + 0.45e, clamped to 0.5–1.5. When jupiter slows, the expansion is halved: it turns inward. All figures share the portal radius, so constellations still form.
+- **Cut.** The strongest hard aspect (square, opposition, quincunx, semi- or sesquisquare) from a third planet to exactly one planet of the figure removes a wedge. The wedge points at the afflicting planet, its width is 24–100° by power, and its edges are hairlines in the afflictor's colour. The moon never cuts.
+- **Guardians.** The day ruler and the hour ruler as their planetary stars: saturn triangle, jupiter square, mars pentagram, sun hexagram, venus heptagram {7/3}, mercury octagram {8/3}, moon enneagram {9/4}. They stand point up, inside a soft light; the pole is no longer a point. One ruler (the first hour of every day) gives one pure figure; two rulers overlap and share gcd(n₁, n₂) points.
+
 ## 6 · Blur: what each planet owns
 
 | planet | primitive | when slow or retrograde |
@@ -102,13 +113,17 @@ An aspect is a fraction of the circle: angle = k·360/n → the star polygon {n/
 | mercury | rays, spokes, radial lines | outgoing strokes smear |
 | venus | curves: petals, circle chains, the Harris weave | curves soften |
 | mars | points and straight star edges | points dull |
-| jupiter | halos | rings haze |
+| jupiter | the portal's expansion | the expansion halves, turning inward |
 | saturn | the container's inner edge | the rim turns porous |
 | uranus | iridescence | slows |
 | neptune | global diffusion | **inverted**: diffusion withdraws, the field sharpens |
 | pluto | lensing | weakens |
 
 Blur is full while retrograde and ramps in as a direct planet slows toward its station, so the shadow period is visible.
+
+## 6b · State rings
+
+Every planet wears a ring whose form is its essential condition: whole for domicile, doubled for exaltation, thin for minor dignity (triplicity, term, face), faint for peregrine, broken into segments for detriment (exile), broken and drawn in for fall. The colour is the sign, purity follows the dignity score, retrograde blurs it, combust bleaches it. Outer planets wear the same forms in their optics: uranus iridescent, neptune white, pluto a hairline.
 
 ## 7 · Hierarchy
 
@@ -128,11 +143,11 @@ A colour field, not a texture. Three lights over midnight: the ascendant from th
 
 Rejected and why: a noise nebula (encodes nothing) and a planetary interference field (nine summed wave sources look like random blobs, so it reads as noise anyway). Both remain reachable for comparison with `?field=smoke`.
 
-**Harris weave.** The pencil of circles of the two luminaries: the circles through both, and the Apollonian circles separating them. Projective geometry in the manner of Frieda Harris's Thoth backgrounds, computed from where the sun and moon actually stand. At new moon it collapses into rings; through the month it opens.
+**Harris weave.** One figure spanning the two luminaries: the circles through both sun and moon, drawn only between them, as a spindle of arcs passing from gold to silver. Projective geometry in the manner of Frieda Harris's Thoth backgrounds, computed from where the two actually stand. At new moon it closes into rings; at full moon it spans the dial. The sun's prismatic rays were removed: from the viewer's side they read as "some planets emit a grid".
 
 ## 9 · Type and grid
 
-- **Jost** (Google Fonts, OFL) for all text. **IBM Plex Mono** (OFL) for degrees, numerals and the readout.
+- **IBM Plex Sans** (OFL) for all text: engineered for small screens. **IBM Plex Mono** (OFL) for degrees, numerals and the readout. **Jost** only in the wordmark, as a logo.
 - Lowercase throughout, as the Bauhaus wrote from 1925.
 - The interface owns one colour, off-white `#ebe7dc` at three opacities. All other colour belongs to the sky.
 - The square master is 2048 px. The dial is centred at 45% of the height. The caption band sits on a hairline at the bottom, with 6.25% margins.

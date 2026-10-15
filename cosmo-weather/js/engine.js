@@ -230,7 +230,31 @@
     configs.sort((x, y) => y.power - x.power);
     const stations = events.filter(e => e.type === 'station').map(e => ({ type: 'station', planet: e.planet, direction: e.direction, n: C.PLANETS[e.planet].number || 0, power: 0.5 }));
     const ripple = aspects.find(a => a.moon && a.a !== 'sun') || null;
-    return { primary: configs[0] || null, secondary: configs.slice(1, 3), stations, ripple };
+    const primary = configs[0] || null;
+    return { primary, secondary: configs.slice(1, 3), stations, ripple, ...portalShape(B, aspects, primary) };
+  }
+
+  /* Portal shape. Jupiter owns scale, Saturn owns restriction: the portal grows or shrinks with
+     their dignity and with their part in the figure. A hard aspect from a third planet to either
+     planet of the figure removes a wedge, pointed at the afflicting planet. The moon never cuts. */
+  function portalShape(B, aspects, primary) {
+    if (!primary) return { scale: 1, expansion: 0, cut: null };
+    const inv = k => k === primary.a || k === primary.b;
+    const jx = B.jupiter.dignity.score / 10, sx = B.saturn.dignity.score / 10;
+    let e = 0.3 * (jx - sx) + (inv('jupiter') ? 0.6 : 0) - (inv('saturn') ? 0.6 : 0)
+      + (inv('venus') || inv('sun') ? 0.15 : 0) - (inv('pluto') ? 0.3 : 0);
+    if (e > 0) e *= 1 - 0.5 * B.jupiter.slow;            // jupiter slowing: the expansion turns inward
+    const scale = Math.max(0.5, Math.min(1.5, 1 + 0.45 * e));
+    let cut = null;
+    for (const a of aspects) {
+      if (a.nature !== 'hard' || a.moon) continue;
+      const ia = inv(a.a), ib = inv(a.b);
+      if (ia === ib) continue;                             // exactly one planet of the figure
+      if (a.power < 0.06) continue;
+      if (!cut || a.power > cut.power) cut = { by: ia ? a.b : a.a, target: ia ? a.a : a.b, aspect: a.aspect, power: a.power,
+        width: Math.max(24, Math.min(100, 24 + 70 * Math.min(1, a.power * 1.5))) };
+    }
+    return { scale, expansion: e, cut };
   }
 
   /* ---------- the whole state ---------- */

@@ -85,7 +85,8 @@
     }
     return natalCache.state;
   }
-  function viewState() { return S.mode === 'natal' && S.natal ? natalState() : S.state; }
+  const natalModes = ['natal', 'natalchart', 'synastry'];
+  function viewState() { return (S.mode === 'natal' || S.mode === 'natalchart') && S.natal ? natalState() : S.state; }
 
   function recompute() {
     const busy = S.playing || S.dragging;
@@ -205,7 +206,7 @@
       pctx.setTransform(1, 0, 0, 1, 0, 0); pctx.clearRect(0, 0, plate.width, plate.height);
       pctx.setTransform(S.dpr * view.z, 0, 0, S.dpr * view.z, S.dpr * view.x, S.dpr * view.y);   // the view: zoom and pan
       const busy = S.playing || S.dragging || view.pinching;
-      info = CW.render.render(pctx, viewState(), S.side, t, { mode: S.mode === 'chart' ? 'chart' : 'clock', fieldRes: busy ? 110 : 200, caption: S.side >= 560, plate: true, fast: busy, field: S.field, sigil: S.sigil, engrave: S.engrave });
+      info = CW.render.render(pctx, viewState(), S.side, t, { mode: S.mode === 'chart' || S.mode === 'natalchart' ? 'chart' : 'clock', fieldRes: busy ? 110 : 200, caption: S.side >= 560, plate: true, fast: busy, field: S.field, sigil: S.sigil, engrave: S.engrave });
       S.dirty = false; lastPlate = ts;
     }
     ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -268,7 +269,11 @@
 
   /* ---------- export: square art ---------- */
   function download(cv, name) {
-    cv.toBlob(b => {
+    cv.toBlob(async b => {
+      try {                                                   // inside the claude.ai viewer a file is handed over through its downloads capability
+        const dl = window.claude && typeof window.claude.use === 'function' ? await window.claude.use('downloads') : null;
+        if (dl) { await dl.save({ filename: name, data: b }); return; }
+      } catch (e) { if (e && e.code === 'declined') return; }
       const a = document.createElement('a');
       a.href = URL.createObjectURL(b); a.download = name;
       document.body.appendChild(a); a.click(); a.remove();
@@ -279,7 +284,7 @@
   function exportPNG(px) {
     const st = viewState(), cv = document.createElement('canvas');
     cv.width = cv.height = px;
-    CW.render.render(cv.getContext('2d'), st, px, (performance.now() - t0) / 1000, { mode: S.mode === 'chart' ? 'chart' : 'clock', fieldRes: px >= 3000 ? 420 : 300, field: S.field, sigil: S.sigil, engrave: S.engrave });
+    CW.render.render(cv.getContext('2d'), st, px, (performance.now() - t0) / 1000, { mode: S.mode === 'chart' || S.mode === 'natalchart' ? 'chart' : 'clock', fieldRes: px >= 3000 ? 420 : 300, field: S.field, sigil: S.sigil, engrave: S.engrave });
     download(cv, `cosmo-weather_${st.loc.name}_${stampOf(st)}_${px}.png`);
   }
   /* a wallpaper at this screen's size: the square render set in a portrait field of the same ground */
@@ -353,8 +358,8 @@
     $('speed').textContent = S.speed < 1 ? `${S.speed * 60}m/s` : `${S.speed}h/s`;
     $('here').classList.toggle('on', S.place.name === 'here');
     if (PLACES[S.place.name] && $('city').value !== S.place.name) $('city').value = S.place.name;
-    document.querySelectorAll('[data-mode]').forEach(b => b.classList.toggle('on', b.dataset.mode === S.mode));
-    document.body.classList.toggle('natal', S.mode === 'natal');
+    document.querySelectorAll('[data-mode]').forEach(b => b.classList.toggle('on', b.dataset.mode === S.mode || (S.mode === 'natalchart' && (b.dataset.mode === 'chart' || b.dataset.mode === 'natal'))));
+    document.body.classList.toggle('natal', S.mode === 'natal' || S.mode === 'natalchart');
     $('sigil').classList.toggle('on', S.sigil);
   }
 
@@ -379,14 +384,16 @@
     $('when').addEventListener('keydown', e => { if (e.key === 'Enter') { commit(e); e.target.blur(); } });
     $('here').addEventListener('click', () => locate(true));
     document.querySelectorAll('[data-mode]').forEach(b => b.addEventListener('click', () => {
-      const m = b.dataset.mode;
+      let m = b.dataset.mode;
       if ((m === 'natal' || m === 'synastry') && !S.natal) { openBirth(); return; }
+      if (m === 'chart' && S.mode === 'natal') m = 'natalchart';          // the nativity as a chart: chart + natal lit together
+      else if (m === 'natal' && S.mode === 'chart') m = 'natalchart';
       S.mode = m; store.set('mode', S.mode); recompute();
     }));
     $('birth-open').addEventListener('click', openBirth);
     $('birth-close').addEventListener('click', () => { $('birth').hidden = true; });
     $('birth-save').addEventListener('click', saveBirth);
-    $('birth-clear').addEventListener('click', () => { S.natal = null; store.set('natal', null); if (S.mode === 'natal' || S.mode === 'synastry') S.mode = 'clock'; $('birth').hidden = true; recompute(); });
+    $('birth-clear').addEventListener('click', () => { S.natal = null; store.set('natal', null); if (natalModes.includes(S.mode)) S.mode = 'clock'; $('birth').hidden = true; recompute(); });
     $('wallpaper').addEventListener('click', exportWallpaper);
     $('lang').addEventListener('click', () => setLang(S.lang === 'es' ? 'en' : 'es'));
     $('save').addEventListener('click', () => exportPNG(2048));
@@ -559,7 +566,7 @@
     try {
       await Promise.all(['400 20px Geist', '500 20px Geist', '400 20px "Geist Mono"'].map(f => document.fonts.load(f)));
     } catch (e) { /* fonts are a nicety */ }
-    if ((S.mode === 'natal' || S.mode === 'synastry') && !S.natal) S.mode = 'clock';
+    if (natalModes.includes(S.mode) && !S.natal) S.mode = 'clock';
     bind(); bindGesture(); size(); recompute(); drawNexts();
     if (S.firstVisit || S.place.name === 'here') locate(false);
     requestAnimationFrame(frame);

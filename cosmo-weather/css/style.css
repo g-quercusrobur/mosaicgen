@@ -120,6 +120,7 @@ body.bare #stage { grid-row: 1 / 4; grid-column: 1 / 3; }
   body { grid-template-columns: 1fr; grid-template-areas: "top" "stage" "bottom"; overflow: auto; height: auto; min-height: 100%; }
   #stage { min-height: 0; }
   body.reading { grid-template-areas: "top" "stage" "bottom" "side"; }
+  body:not(.reading) #readout { display: none; }
   body.reading #readout { width: 100%; border-left: 0; border-top: 1px solid var(--ink-3); }
   .bar { padding: 10px 16px; }
   .bottom { gap: 6px; }

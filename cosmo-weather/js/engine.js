@@ -356,6 +356,20 @@
     return out;
   }
 
+  /* The next chord shift: walk forward in 10-minute steps until the chord's name changes,
+     then halve the interval down to the minute. */
+  function nextChordShift(date, loc, maxDays = 7) {
+    const name = d => compute(d, loc, { light: true }).chord.name;
+    const from = name(date), t0 = date.getTime(), step = 10 * 60000;
+    for (let t = t0 + step; t <= t0 + maxDays * 864e5; t += step) {
+      if (name(new Date(t)) === from) continue;
+      let lo = t - step, hi = t;
+      while (hi - lo > 60000) { const mid = (lo + hi) / 2; if (name(new Date(mid)) === from) lo = mid; else hi = mid; }
+      return { at: new Date(Math.round(hi / 60000) * 60000), from, to: name(new Date(hi)) };
+    }
+    return null;
+  }
+
   /* ---------- the whole state ---------- */
   function compute(date, loc, opts = {}) {
     const t = A.MakeTime(date);
@@ -412,5 +426,5 @@
     return st;
   }
 
-  CW.engine = { compute, norm360, norm180, sep, houseOf, mundane, semiArc, dignity, placidus, synodic, rarity };
+  CW.engine = { compute, nextChordShift, norm360, norm180, sep, houseOf, mundane, semiArc, dignity, placidus, synodic, rarity };
 })(window.CW = window.CW || {});

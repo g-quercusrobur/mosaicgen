@@ -41,11 +41,12 @@
 
   function recompute() {
     S.state = CW.engine.compute(now(), S.place);
+    if (!S.playing) S.state.nextChord = CW.engine.nextChordShift(S.state.date, S.place);
     S.lastCompute = performance.now();
     S.dirty = true;
     document.documentElement.style.setProperty('--ground', CW.render.ground(S.state));
     const c = CW.render.captionLines(S.state);
-    $('caption').innerHTML = `<p class="l1">${c.l1}</p><p>${c.l2}</p><p>${c.l3}</p><p>${c.chord}</p><p class="mono">${c.fig}</p><p class="mono">${c.moon}</p>`;
+    $('caption').innerHTML = `<p class="l1">${c.l1}</p><p>${c.l2}</p><p>${c.l3}</p><p>${c.chord}</p><p class="mono">${c.next}</p><p class="mono">${c.fig}</p><p class="mono">${c.moon}</p>`;
     scanIfNeeded();
     drawStrip();
     updateReadout();
@@ -187,7 +188,7 @@
       <h3>the figure</h3><table>${figs || '<tr><td>quiet sky</td></tr>'}</table>
       <h3>portal</h3><p>scale ×${(cf.scale || 1).toFixed(2)} (jupiter widens, saturn narrows)${cf.cut ? ` · cut by ${cf.cut.by} ${cf.cut.aspect} ${cf.cut.target}, ${Math.round(cf.cut.width)}°` : ' · whole'}</p>
       <p>guardians ${st.hour.dayRuler}${st.hour.dayRuler === st.hour.hourRuler ? ' alone: one pure figure' : ' and ' + st.hour.hourRuler}</p>
-      <h3>sound</h3><p>${st.chord.name}${st.chord.notes.length ? ' · ' + st.chord.notes.join(' ') : ''}${st.chord.planets ? ' · from ' + st.chord.planets.join(', ') : ''}</p>
+      <h3>sound</h3><p>${st.nextChord ? `next shift ${st.nextChord.from} → ${st.nextChord.to} at ${st.nextChord.at.toISOString().slice(0, 16).replace('T', ' ')} utc · ` : ''}${st.chord.name}${st.chord.notes.length ? ' · ' + st.chord.notes.join(' ') : ''}${st.chord.planets ? ' · from ' + st.chord.planets.join(', ') : ''}</p>
       <h3>windows</h3><p>ideation ${st.windows.ideation.toFixed(2)} · incarnation ${st.windows.incarnation.toFixed(2)} · destruction ${st.windows.destruction.toFixed(2)}</p>
       <h3>moon</h3><p>${st.moon.verdict} · ${st.moon.next ? `next ${st.moon.next.aspect} ${st.moon.next.planet} in ${(st.moon.next.days * 24).toFixed(1)}h` : 'void of course'}${st.moon.flags.filter(f => f !== 'void of course').map(f => ' · ' + f).join('')}</p>
       <h3>events</h3><p>${ev}</p>

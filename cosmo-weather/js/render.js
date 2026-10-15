@@ -896,6 +896,11 @@
     const extra = m.flags.filter(f => f !== 'void of course')[0];
     return extra ? `${head} · ${extra}` : head;
   }
+  function fmtShort(date, loc) {
+    const f = new Intl.DateTimeFormat('en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: loc.tz || 'UTC' });
+    const p = Object.fromEntries(f.formatToParts(date).map(x => [x.type, x.value]));
+    return `${p.weekday} ${p.day} ${p.month} ${p.hour}:${p.minute}`.toLowerCase();
+  }
   function captionLines(state) {
     const T = fmtTime(state.date, state.loc), B = state.bodies, H = state.hour;
     const sunSign = C.SIGNS[B.sun.sign].name;
@@ -906,7 +911,8 @@
       l3: `sun in the ${ordinal(B.sun.house)} house · ${dms(B.sun.deg)} ${sunSign}`,
       fig: fig ? `${fig.a} ${fig.aspect} ${fig.b}${fig.event ? ' · ' + fig.event : ''}` : 'quiet sky',
       moon: moonLine(state),
-      chord: `chord ${state.chord.name}${state.chord.notes.length > 1 && !state.chord.dyad ? ' · ' + state.chord.notes.join(' ') : ''}`
+      chord: `chord ${state.chord.name}${state.chord.notes.length > 1 && !state.chord.dyad ? ' · ' + state.chord.notes.join(' ') : ''}`,
+      next: state.nextChord ? `next chord ${state.nextChord.to} · ${fmtShort(state.nextChord.at, state.loc)}` : ''
     };
   }
   function drawCaption(ctx, state, Lt) {
@@ -931,6 +937,7 @@
     ctx.fillText(c.fig, Lt.S - m, Lt.capY + 50 * u);
     ctx.fillStyle = K.rgba(INK, state.moon.verdict === 'void' || state.moon.verdict === 'unripe' ? 0.85 : 0.5);
     ctx.fillText(`${c.moon} · ${Math.round(state.moon.illum * 100)}%`, Lt.S - m, Lt.capY + 88 * u);
+    if (c.next) { ctx.fillStyle = K.rgba(INK, 0.5); ctx.fillText(c.next, Lt.S - m, Lt.capY + 126 * u); }
     ctx.restore();
   }
 

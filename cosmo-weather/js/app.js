@@ -66,6 +66,7 @@
   const plate = document.createElement('canvas');          // the full render, redrawn only when the sky moves
   const pctx = plate.getContext('2d');
   let info = null, lastPlate = 0;
+  const view = { z: 1, x: 0, y: 0, pinching: false };      // screen = view.xy + view.z × dial
 
   function base() { return S.fixed ? new Date(S.fixed.getTime() + S.offsetMs) : new Date(Date.now() + S.offsetMs); }
   function now() { return new Date(base().getTime() + S.preview * 60000); }
@@ -179,14 +180,15 @@
     lastFrame = ts;
     const t = (ts - t0) / 1000;
     if (S.dirty) {
-      pctx.setTransform(S.dpr, 0, 0, S.dpr, 0, 0);
-      const busy = S.playing || S.dragging;
+      pctx.setTransform(1, 0, 0, 1, 0, 0); pctx.clearRect(0, 0, plate.width, plate.height);
+      pctx.setTransform(S.dpr * view.z, 0, 0, S.dpr * view.z, S.dpr * view.x, S.dpr * view.y);   // the view: zoom and pan
+      const busy = S.playing || S.dragging || view.pinching;
       info = CW.render.render(pctx, S.state, S.side, t, { mode: S.mode, fieldRes: busy ? 110 : 200, caption: S.side >= 560, plate: true, fast: busy, field: S.field, sigil: S.sigil, engrave: S.engrave });
       S.dirty = false; lastPlate = ts;
     }
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.drawImage(plate, 0, 0);
-    ctx.setTransform(S.dpr, 0, 0, S.dpr, 0, 0);
+    ctx.setTransform(S.dpr * view.z, 0, 0, S.dpr * view.z, S.dpr * view.x, S.dpr * view.y);
     CW.render.overlay(ctx, info, t);
   }
 
@@ -367,31 +369,75 @@
   /* ---------- the gesture: turn the dial to travel in time ----------
      clockwise = forward. one full turn = one day. the wheel moves ten minutes a notch. */
   function bindGesture() {
-    let drag = null;
-    const angleAt = e => {
-      const r = canvas.getBoundingClientRect(), Lt = CW.render.layout(S.side);
-      return { a: Math.atan2(e.clientY - r.top - Lt.cy, e.clientX - r.left - Lt.cx), d: Math.hypot(e.clientY - r.top - Lt.cy, e.clientX - r.left - Lt.cx), R: Lt.Rb };
+    /* one finger or the mouse turns the dial (time). two fingers pinch to zoom and pan.
+       ctrl/⌘ + wheel, or a trackpad pinch, zooms at the pointer. the plain wheel moves time.
+       double click or double tap returns to the whole dial. */
+    const pts = new Map();
+    let drag = null, pinch = null, lastTap = 0;
+    const local = e => { const r = canvas.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
+    const toDial = p => ({ x: (p.x - view.x) / view.z, y: (p.y - view.y) / view.z });
+    const clampView = () => {
+      view.z = Math.max(1, Math.min(8, view.z));
+      if (view.z === 1) { view.x = 0; view.y = 0; }
+      view.x = Math.min(0, Math.max(S.side * (1 - view.z), view.x));
+      view.y = Math.min(0, Math.max(S.side * (1 - view.z), view.y));
+      S.dirty = true;
     };
+    const zoomAt = (p, z) => { const w = toDial(p); view.z = z; view.x = p.x - w.x * view.z; view.y = p.y - w.y * view.z; clampView(); };
+    const angleAt = p => { const Lt = CW.render.layout(S.side), q = toDial(p); return { a: Math.atan2(q.y - Lt.cy, q.x - Lt.cx), d: Math.hypot(q.y - Lt.cy, q.x - Lt.cx), R: Lt.Rb }; };
+    const endTurn = () => { if (!drag) return; drag = null; S.dragging = false; canvas.classList.remove('turning'); recompute(); };
     canvas.addEventListener('pointerdown', e => {
-      const p = angleAt(e); if (p.d > p.R) return;
+      canvas.setPointerCapture(e.pointerId);
+      pts.set(e.pointerId, local(e));
+      if (pts.size === 2) {                                  // second finger: leave time alone, start the pinch
+        endTurn();
+        const [a, b] = [...pts.values()];
+        pinch = { d: Math.hypot(a.x - b.x, a.y - b.y), z: view.z, w: toDial({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }) };
+        view.pinching = true; return;
+      }
+      const now = performance.now();
+      if (now - lastTap < 300) { view.z = 1; clampView(); lastTap = 0; return; }   // double tap: the whole dial
+      lastTap = now;
+      const p = angleAt(local(e)); if (p.d > p.R) return;
       drag = { last: p.a, base: base().getTime() + S.preview * 60000, turned: 0 };
-      S.playing = false; S.dragging = true; canvas.setPointerCapture(e.pointerId); canvas.classList.add('turning');
+      S.playing = false; S.dragging = true; canvas.classList.add('turning');
     });
     canvas.addEventListener('pointermove', e => {
+      if (!pts.has(e.pointerId)) return;
+      pts.set(e.pointerId, local(e));
+      if (pinch && pts.size >= 2) {
+        const [a, b] = [...pts.values()], mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+        view.z = pinch.z * Math.hypot(a.x - b.x, a.y - b.y) / pinch.d;
+        view.x = mid.x - pinch.w.x * Math.max(1, Math.min(8, view.z)); view.y = mid.y - pinch.w.y * Math.max(1, Math.min(8, view.z));
+        clampView(); return;
+      }
       if (!drag) return;
-      const p = angleAt(e);
+      const p = angleAt(local(e));
       let d = p.a - drag.last; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI;
       drag.last = p.a; drag.turned += d;                    // screen y points down: a positive delta is clockwise
       S.fixed = new Date(drag.base + drag.turned / (2 * Math.PI) * 864e5); S.offsetMs = 0; S.preview = 0; $('preview').value = 0;
       recompute();
     });
-    const end = () => { if (!drag) return; drag = null; S.dragging = false; canvas.classList.remove('turning'); recompute(); };
-    canvas.addEventListener('pointerup', end); canvas.addEventListener('pointercancel', end);
+    const up = e => {
+      pts.delete(e.pointerId);
+      if (pinch && pts.size < 2) { pinch = null; view.pinching = false; S.dirty = true; }
+      if (!pts.size) endTurn();
+    };
+    canvas.addEventListener('pointerup', up); canvas.addEventListener('pointercancel', up);
+    canvas.addEventListener('dblclick', () => { view.z = 1; clampView(); });
     canvas.addEventListener('wheel', e => {
       e.preventDefault();
+      if (e.ctrlKey || e.metaKey) { zoomAt(local(e), view.z * Math.exp(-e.deltaY * 0.005)); return; }   // trackpad pinch arrives as ctrl + wheel
       S.playing = false; S.fixed = new Date(base().getTime() + S.preview * 60000 + Math.sign(e.deltaY) * 600000); S.offsetMs = 0; S.preview = 0; $('preview').value = 0;
       recompute();
     }, { passive: false });
+    window.addEventListener('keydown', e => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+      const c = { x: S.side / 2, y: S.side / 2 };
+      if (e.key === '+' || e.key === '=') zoomAt(c, view.z * 1.4);
+      if (e.key === '-' || e.key === '_') zoomAt(c, view.z / 1.4);
+      if (e.key === '0') { view.z = 1; clampView(); }
+    });
   }
 
   /* the device's position: asked once on the first visit, and whenever "here" is pressed */

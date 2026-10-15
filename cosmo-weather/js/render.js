@@ -215,7 +215,7 @@
      colour of the lights at that point, flat; its weight and opacity carry their intensity, as in intaglio. */
   function drawEngravedField(ctx, state, Lt) {
     const L = lights(state, Lt).map(l => ({ ...l, rgb: K.hexToRgb(l.color) }));
-    const E = 0.6 + 0.4 * state.moon.illum, u = Lt.u, step = 3.6 * u;
+    const E = 0.6 + 0.4 * state.moon.illum, u = Lt.u, step = 4.4 * u;
     ctx.save(); ctx.lineCap = 'butt';
     for (let r = step; r < Lt.R; r += step) {
       const segs = Math.max(36, Math.round(TAU * r / (7 * u)));
@@ -231,10 +231,10 @@
         const under = 1 - 0.4 * smooth(0, 0.35, y);
         const k = Math.min(1, I * 2.2 * E * under);
         ctx.strokeStyle = `rgba(${Math.round(255 * cr / I)},${Math.round(255 * cg / I)},${Math.round(255 * cb / I)},${(0.18 + 0.82 * k).toFixed(3)})`;
-        ctx.lineWidth = u * (0.35 + 2.1 * k);
+        ctx.lineWidth = u * (0.45 + 2.6 * k);
         ctx.beginPath();
         for (let q = 0; q <= 4; q++) {
-          const a = a0 + (a1 - a0) * q / 4, rr = r + 1.1 * u * Math.sin(12 * a + r * 0.045);
+          const a = a0 + (a1 - a0) * q / 4, rr = r + 1.4 * u * Math.sin(12 * a + r * 0.037);
           const px = Lt.cx + rr * Math.cos(a), py = Lt.cy - rr * Math.sin(a);
           q ? ctx.lineTo(px, py) : ctx.moveTo(px, py);
         }
@@ -810,12 +810,12 @@
     const s = 1 - 0.16 * strength;
     const sx = cx - r * s, sy = cy - r * s, sw = 2 * r * s;
     try {
-      const dpr = ctx.getTransform ? ctx.getTransform().a : 1;
+      const m = ctx.getTransform ? ctx.getTransform() : { a: 1, e: 0, f: 0 }, k = m.a, X = x => x * k + m.e, Y = y => y * k + m.f;
       ctx.save();
       ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1; ctx.filter = 'none';
       ctx.beginPath(); ctx.arc(cx, cy, r, 0, TAU); ctx.clip();
       ctx.setTransform(1, 0, 0, 1, 0, 0);
-      ctx.drawImage(src, sx * dpr, sy * dpr, sw * dpr, sw * dpr, (cx - r) * dpr, (cy - r) * dpr, 2 * r * dpr, 2 * r * dpr);
+      ctx.drawImage(src, X(sx), Y(sy), sw * k, sw * k, X(cx - r), Y(cy - r), 2 * r * k, 2 * r * k);
       ctx.restore();
       ctx.save();
       const g = ctx.createRadialGradient(cx, cy, r * 0.75, cx, cy, r);
@@ -1078,10 +1078,10 @@
       ctx.save();
       ctx.globalCompositeOperation = 'screen'; ctx.globalAlpha = nep * 0.5;
       ctx.filter = `blur(${(14 * Lt.u).toFixed(1)}px)`;
-      const dpr = ctx.getTransform().a;
+      const m = ctx.getTransform(), k = m.a;
       ctx.setTransform(1, 0, 0, 1, 0, 0);
-      const sx = (Lt.cx - Lt.R) * dpr, sw = 2 * Lt.R * dpr;
-      ctx.drawImage(ctx.canvas, sx, (Lt.cy - Lt.R) * dpr, sw, sw, sx, (Lt.cy - Lt.R) * dpr, sw, sw);
+      const sx = (Lt.cx - Lt.R) * k + m.e, sy = (Lt.cy - Lt.R) * k + m.f, sw = 2 * Lt.R * k;
+      ctx.drawImage(ctx.canvas, sx, sy, sw, sw, sx, sy, sw, sw);
       ctx.restore();
     }
     ctx.restore(); // sky clip

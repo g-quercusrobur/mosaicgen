@@ -21,6 +21,7 @@
     offsetMs: 0,
     fixed: params.get('t') ? new Date(params.get('t')) : null,
     playing: false,
+    field: params.get('field') || 'waves',
     state: null,
     lastCompute: 0
   };
@@ -68,7 +69,7 @@
     const t = (ts - t0) / 1000;
     if (S.dirty && (!S.playing || ts - lastPlate > 140)) {
       pctx.setTransform(S.dpr, 0, 0, S.dpr, 0, 0);
-      info = CW.render.render(pctx, S.state, S.side, t, { mode: S.mode, fieldRes: S.playing ? 110 : 200, caption: S.side >= 560, plate: true, fast: S.playing });
+      info = CW.render.render(pctx, S.state, S.side, t, { mode: S.mode, fieldRes: S.playing ? 110 : 200, caption: S.side >= 560, plate: true, fast: S.playing, field: S.field });
       S.dirty = false; lastPlate = ts;
     }
     ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -82,7 +83,7 @@
     const cv = document.createElement('canvas');
     cv.width = cv.height = px;
     const c = cv.getContext('2d');
-    CW.render.render(c, S.state, px, (performance.now() - t0) / 1000, { mode: S.mode, fieldRes: px >= 3000 ? 420 : 300 });
+    CW.render.render(c, S.state, px, (performance.now() - t0) / 1000, { mode: S.mode, fieldRes: px >= 3000 ? 420 : 300, field: S.field });
     const d = S.state.date;
     const stamp = d.toISOString().slice(0, 16).replace(/[:T]/g, '');
     cv.toBlob(b => {

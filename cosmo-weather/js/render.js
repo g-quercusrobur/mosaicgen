@@ -116,6 +116,44 @@
     ];
   }
   const fieldCache = { key: null, canvas: null };
+
+  /* The field: three lights over midnight — ascendant from the eastern horizon, sun and moon where
+     they stand, in their sign colours, weighted by sect. Pure light, no texture: a colour field. */
+  function buildLight(state, Lt, N) {
+    const key = ['l', N, Math.round(state.date.getTime() / 60000), state.loc.lat, state.loc.lon].join('|');
+    if (fieldCache.key === key) return fieldCache.canvas;
+    const cv = fieldCache.canvas && fieldCache.canvas.width === N ? fieldCache.canvas : document.createElement('canvas');
+    cv.width = cv.height = N;
+    const g = cv.getContext('2d');
+    const img = g.createImageData(N, N);
+    const lin = c => K.hexToRgb(c).map(v => Math.pow(v, 2.2));
+    const L = lights(state, Lt).map(l => ({ ...l, lin: lin(l.color) }));
+    const base = lin(MIDNIGHT);
+    const E = 0.6 + 0.4 * state.moon.illum;
+    const ext = 1.08;
+    for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) {
+      const x = (i / (N - 1) * 2 - 1) * ext, y = (j / (N - 1) * 2 - 1) * ext;
+      const rr = x * x + y * y, o = (j * N + i) * 4;
+      if (rr > ext * ext) { img.data[o + 3] = 0; continue; }
+      let r = base[0], gg = base[1], b = base[2];
+      for (const l of L) {
+        const dx = x - l.pos.x, dy = y - l.pos.y;
+        const f = 0.95 * l.w * Math.exp(-(dx * dx + dy * dy) / (2 * l.sigma * l.sigma));
+        r += l.lin[0] * f; gg += l.lin[1] * f; b += l.lin[2] * f;
+      }
+      const under = 1 - 0.22 * smooth(0, 0.35, y);           // below the horizon: under the earth
+      const vig = 0.72 + 0.28 * (1 - Math.min(1, rr));
+      const k = E * under * vig;
+      img.data[o] = 255 * Math.pow(1 - Math.exp(-r * k * 2.2), 1 / 2.2);
+      img.data[o + 1] = 255 * Math.pow(1 - Math.exp(-gg * k * 2.2), 1 / 2.2);
+      img.data[o + 2] = 255 * Math.pow(1 - Math.exp(-b * k * 2.2), 1 / 2.2);
+      img.data[o + 3] = 255;
+    }
+    g.putImageData(img, 0, 0);
+    fieldCache.key = key; fieldCache.canvas = cv;
+    return cv;
+  }
+
   function buildField(state, Lt, N) {
     const key = [N, Math.round(state.date.getTime() / 60000), state.loc.lat, state.loc.lon].join('|');
     if (fieldCache.key === key) return fieldCache.canvas;
@@ -308,7 +346,8 @@
     const h = hardness(cfg);
     const col = figureColor(state, cfg);
     const pa = presence(state, cfg.a), pb = presence(state, cfg.b);
-    const accent = lightness(pa) > lightness(pb) ? pa : pb;   // when the mix goes black, the lighter force edges the groove
+    const accent = lightness(pa) > lightness(pb) ? pa : pb;
+    const dark = lightness(col) < 0.22;   // when the mix goes black, the lighter force edges the groove
     const primary = role === 'primary';
     const alpha = primary ? 1 : 0.38;
     R *= 1 + 0.006 * Math.sin(t * 0.6 + (primary ? 0 : 2));
@@ -322,14 +361,13 @@
     const iris = cfg.a === 'uranus' || cfg.b === 'uranus';
     const colAt = i => iris ? K.hueShift(col, 40 * Math.sin(t * 0.5 + i * 1.3)) : col;
     const sg = (p, c, w, a) => strokeGlow(ctx, p, c, w, a, E, accent);
-    const dark = lightness(col) < 0.22;
     ctx.save();
     const geo = { verts: [], edges: [], power: cfg.power, role };
 
     // halo — jupiter
     withBlur(ctx, blur.halos, () => {
       const p = new Path2D(); p.arc(cx, cy, R * 1.02, 0, TAU); p.moveTo(cx + R * 1.055, cy); p.arc(cx, cy, R * 1.055, 0, TAU);
-      sg(p, colAt(0), lw * 0.6, alpha * 0.6);
+      sg(p, colAt(0), lw * (dark ? 0.3 : 0.6), alpha * (dark ? 0.45 : 0.6));
     });
 
     // rose-engine band — curves (venus); primary only, two counter-phased sets make the moiré
@@ -472,10 +510,6 @@
       const w = Math.sqrt(Math.min(1.5, A.power) * Math.min(1.5, B.power));
       for (const a of A.verts) for (const b of B.verts) {
         if (Math.hypot(a.x - b.x, a.y - b.y) < tol) stars.push({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, b: 1.0 * w + 0.4, major: true });
-      }
-      for (const ea of A.edges) for (const eb of B.edges) {
-        const x = segX(ea[0], ea[1], eb[0], eb[1]);
-        if (x) stars.push({ x: x.x, y: x.y, b: 0.45 * w, major: false });
       }
     }
     // merge near-duplicates, keep the brightest few
@@ -622,7 +656,7 @@
   function lens(ctx, cx, cy, r, strength) {
     if (strength < 0.05) return;
     const src = ctx.canvas;
-    const s = 1 - 0.28 * strength;
+    const s = 1 - 0.16 * strength;
     const sx = cx - r * s, sy = cy - r * s, sw = 2 * r * s;
     try {
       const dpr = ctx.getTransform ? ctx.getTransform().a : 1;
@@ -634,7 +668,7 @@
       ctx.restore();
       ctx.save();
       const g = ctx.createRadialGradient(cx, cy, r * 0.75, cx, cy, r);
-      g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, `rgba(0,0,0,${0.28 * strength})`);
+      g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, `rgba(0,0,0,${0.12 * strength})`);
       ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, r, 0, TAU); ctx.fill();
       ctx.restore();
     } catch (e) { /* tainted or unsupported: skip */ }
@@ -691,37 +725,31 @@
     ctx.restore();
   }
 
+  /* the rete: a chapter ring. degrees, signs, planet notches. no colour — the colour lives in the sky */
   function drawRete(ctx, state, Lt, lw) {
-    const u = Lt.u;
+    const u = Lt.u, rm = (Lt.Rz + Lt.Rzi) / 2;
     ctx.save();
+    ctx.fillStyle = VOID;
+    ctx.beginPath(); ctx.arc(Lt.cx, Lt.cy, Lt.Rz, 0, TAU); ctx.arc(Lt.cx, Lt.cy, Lt.Rzi, 0, TAU, true); ctx.fill('evenodd');
+    ctx.strokeStyle = K.rgba(INK, 0.4); ctx.lineWidth = 1 * u;
+    ctx.beginPath(); ctx.arc(Lt.cx, Lt.cy, Lt.Rzi, 0, TAU); ctx.stroke();
+    for (let d = 0; d < 360; d++) {
+      const a = eclAngle(state, d), major = d % 30 === 0, five = d % 5 === 0;
+      if (!five && !major) continue;
+      const l = major ? (Lt.Rz - Lt.Rzi) : five && d % 10 === 0 ? 9 * u : 5 * u;
+      const p0 = polar(Lt, a, Lt.Rzi), p1 = polar(Lt, a, Lt.Rzi + l);
+      ctx.strokeStyle = K.rgba(INK, major ? 0.5 : 0.28); ctx.lineWidth = (major ? 1.2 : 0.8) * u;
+      ctx.beginPath(); ctx.moveTo(p0.x, p0.y); ctx.lineTo(p1.x, p1.y); ctx.stroke();
+    }
     for (let i = 0; i < 12; i++) {
-      const a0 = eclAngle(state, i * 30), a1 = eclAngle(state, (i + 1) * 30);
-      ctx.beginPath();
-      ctx.arc(Lt.cx, Lt.cy, Lt.Rz, -a0, -a1, true);
-      ctx.arc(Lt.cx, Lt.cy, Lt.Rzi, -a1, -a0, false);
-      ctx.closePath();
-      ctx.fillStyle = C.SIGNS[i].color; ctx.fill();
-      // sign glyph in the ring, near-black on colour
-      const am = eclAngle(state, i * 30 + 15), p = polar(Lt, am, (Lt.Rz + Lt.Rzi) / 2);
-      G.sign(ctx, i, p.x, p.y, (Lt.Rz - Lt.Rzi) * 0.62, 'rgba(4,5,12,0.82)', 0.16);
-      // hairline divisions
-      const q0 = polar(Lt, a0, Lt.Rzi), q1 = polar(Lt, a0, Lt.Rz);
-      ctx.strokeStyle = VOID; ctx.lineWidth = 2 * u; ctx.beginPath(); ctx.moveTo(q0.x, q0.y); ctx.lineTo(q1.x, q1.y); ctx.stroke();
+      const p = polar(Lt, eclAngle(state, i * 30 + 15), rm + 2 * u);
+      G.sign(ctx, i, p.x, p.y, (Lt.Rz - Lt.Rzi) * 0.5, K.rgba(INK, 0.62), 0.11);
     }
-    // pisces: ultraviolet glow on its segment
-    {
-      const a0 = eclAngle(state, 330), a1 = eclAngle(state, 360);
-      ctx.save(); ctx.globalCompositeOperation = 'lighter';
-      ctx.strokeStyle = K.rgba(C.SIGNS[11].glow, 0.35); ctx.lineWidth = 6 * u;
-      ctx.beginPath(); ctx.arc(Lt.cx, Lt.cy, (Lt.Rz + Lt.Rzi) / 2, -a0, -a1, true); ctx.stroke();
-      ctx.restore();
-    }
-    // planet notches on the inner edge of the rete: true ecliptic longitude
+    // planet notches on the inner edge: true ecliptic longitude, in each planet's tincture
     for (const key of C.ORDER) {
       const a = eclAngle(state, state.bodies[key].lon);
       const p0 = polar(Lt, a, Lt.Rzi), p1 = polar(Lt, a, Lt.Rzi - 14 * u);
-      ctx.strokeStyle = key === 'saturn' ? C.PLANETS.saturn.rim : K.rgba(coreColor(state, key), 0.95);
-      if (C.PLANETS[key].kind === 'optic') ctx.strokeStyle = K.rgba(INK, 0.7);
+      ctx.strokeStyle = key === 'saturn' ? C.PLANETS.saturn.rim : C.PLANETS[key].kind === 'optic' ? K.rgba(INK, 0.7) : K.rgba(coreColor(state, key), 0.95);
       ctx.lineWidth = 3 * u; ctx.beginPath(); ctx.moveTo(p0.x, p0.y); ctx.lineTo(p1.x, p1.y); ctx.stroke();
     }
     ctx.restore();
@@ -791,9 +819,10 @@
     ctx.save();
     ctx.beginPath(); ctx.arc(Lt.cx, Lt.cy, Lt.R + 1, 0, TAU); ctx.clip();
     ctx.fillStyle = MIDNIGHT; ctx.fillRect(0, 0, S, S);
-    const field = buildField(state, Lt, opts.fieldRes || 180);
+    const smoke = opts.field === 'smoke';
+    const field = smoke ? buildField(state, Lt, opts.fieldRes || 180) : buildLight(state, Lt, opts.fieldRes || 180);
     ctx.save();
-    ctx.translate(Lt.cx, Lt.cy); ctx.rotate(t * 0.004);
+    ctx.translate(Lt.cx, Lt.cy);
     ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
     ctx.drawImage(field, -Lt.R * 1.08, -Lt.R * 1.08, Lt.R * 2.16, Lt.R * 2.16);
     ctx.restore();

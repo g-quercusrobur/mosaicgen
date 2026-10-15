@@ -50,7 +50,7 @@ Every mark on the dial is computed from the sky by a stated rule. Nothing is orn
 Outer planets follow Dion Fortune. They have no pigment: they are optics, which is also true to the eye.
 White is reserved for constellation stars.
 
-**Signs — GD King scale of the paths = Itten's twelve-step circle.** Aries scarlet → red-orange → orange → amber → yellow → yellow-green → emerald → green-blue → blue → indigo → violet → Pisces **ultraviolet** (red-violet rendered dark, with a blacklight glow). Golden Dawn letter order; no Crowley swaps. Colour holds flat across a sign and cross-fades over 2° at each cusp.
+**Signs — GD King scale of the paths = Itten's twelve-step circle** (used in the field and in planet auras, never as a ring on the frame). Aries scarlet → red-orange → orange → amber → yellow → yellow-green → emerald → green-blue → blue → indigo → violet → Pisces **ultraviolet** (red-violet rendered dark, with a blacklight glow). Golden Dawn letter order; no Crowley swaps. Colour holds flat across a sign and cross-fades over 2° at each cusp.
 
 **Elements (where needed).** fire flame-scarlet · water deep blue · air bright pale yellow · earth citrine, olive, russet, black.
 
@@ -60,7 +60,7 @@ White is reserved for constellation stars.
 
 - **Container.** A dodecagon, Saturn's black, edged in lead. Twelve sides hold every Ptolemaic aspect as a vertex subset (2, 3, 4, 6, 12). Quintiles and septiles do not fit it and look foreign against it, which is correct.
 - **Houses.** Vertices are cusps and faces are houses: ascendant on the left vertex, MC on the top vertex. The frame is fixed to the observer's horizon. It does not turn.
-- **Rete.** A thin ring of the twelve sign colours, rotated so the ascendant degree sits on the eastern horizon. Planet notches mark true longitude.
+- **Rete.** A monochrome chapter ring: degree ticks and sign glyphs in off-white, rotated so the ascendant degree sits on the eastern horizon. Planet notches in their tinctures mark true longitude. Sign colour never appears on the frame; it lives in the field and the auras.
 - **Sky.** Planets are placed in their real local sky. The angle is the Placidian mundane position, the same unequal division as the planetary hours: rising on the left, culminating at the top, setting on the right. The radius is the altitude. The noon sun stands high in summer and low in winter, as on the Prague Orloj. Below the horizon the sun is switched off.
 - **Portal.** The inner disc, half the sky's radius, centred on the pole. Mandalas live here and only here.
 - **Pole.** The axis. Coloured by the day ruler and the hour ruler.
@@ -93,7 +93,7 @@ An aspect is a fraction of the circle: angle = k·360/n → the star polygon {n/
 
 **Orientation.** Vertex zero points at the first planet's true longitude on the rete. Rotation comes from the sky, never from a design choice.
 
-**Constellations.** Figures share the portal at the same radius. Where vertices of two figures coincide, a white star with a diffraction cross; where edges cross, a small star. Major stars are joined by a hairline: the figure of the day. Two centred, aligned figures share gcd(n₁, n₂) vertices.
+**Constellations.** Figures share the portal at the same radius. Only where vertices of two figures coincide: a white star with a diffraction cross. Plain edge crossings do not count (tested: they read as beads). Major stars are joined by a hairline: the figure of the day. Two centred, aligned figures share gcd(n₁, n₂) vertices.
 
 ## 6 · Blur: what each planet owns
 
@@ -124,7 +124,9 @@ power = (0.2 + 0.8 · rarity) × aspect weight × (0.3 · exactness^1.5 + 0.7 ·
 
 ## 8 · Field
 
-A domain-warped noise field lit by three lights: the ascendant from the eastern horizon, the sun and the moon at their real positions, in their sign colours and weighted by sect. Each light drifts between two neighbouring hues. Dust lanes and filaments carry the structure. The half of the sky below the horizon is slightly darker: under the earth. No photographs.
+A colour field, not a texture. Three lights over midnight: the ascendant from the eastern horizon, the sun and the moon at their real positions, each in its sign colour and weighted by sect. Below the horizon the field is slightly darker: under the earth. No noise, no smoke, no photographs. Every structure inside the circle is computed geometry.
+
+Rejected and why: a noise nebula (encodes nothing) and a planetary interference field (nine summed wave sources look like random blobs, so it reads as noise anyway). Both remain reachable for comparison with `?field=smoke`.
 
 **Harris weave.** The pencil of circles of the two luminaries: the circles through both, and the Apollonian circles separating them. Projective geometry in the manner of Frieda Harris's Thoth backgrounds, computed from where the sun and moon actually stand. At new moon it collapses into rings; through the month it opens.
 

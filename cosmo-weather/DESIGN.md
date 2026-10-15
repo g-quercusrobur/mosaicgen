@@ -20,7 +20,7 @@ Every mark on the dial is computed from the sky by a stated rule. Nothing is orn
 | moon phase | global exposure, line weight | exposure 0.62–1.0, lines ×1.5–2.6 from new to full |
 | sect (day / night) | which light leads the field | day: sun .45 · asc .30 · moon .25 — night: moon leads |
 | sun, moon, ascendant signs | the field | three coloured lights at their real positions, midnight between |
-| essential dignity | chroma (clarity) | clarity = 0.62 + score/16, floor 0.18. never brightness |
+| essential dignity | chroma and local luminance | clarity = 0.62 + score/16, floor 0.18. a weak planet is greyer and darker, its aura fainter. the moon still owns global exposure |
 | combust | bleach | core pulled toward pale gold |
 | cazimi | white-gold ring | within 17′ of the sun |
 | aspect | geometry {n/k} + colour law | see §5 |

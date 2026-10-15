@@ -48,7 +48,7 @@
     const P = C.PLANETS[key], b = state.bodies[key];
     if (key === 'saturn') return P.tincture;
     let c = K.mixLight(P.tincture, signColorAt(b.lon), P.kind === 'optic' ? 0.05 : 0.15, 0);
-    c = K.clarify(c, b.clarity);
+    c = K.shade(K.clarify(c, b.clarity), -0.2 * (1 - b.clarity));
     if (b.combust) c = K.mixLight(c, '#fff6dc', 0.35, 0.05);
     return c;
   }
@@ -561,7 +561,7 @@
   /* ---------- the intelligences ---------- */
   function placeBodies(state, Lt) {
     const pts = C.ORDER.map(k => ({ key: k, ...skyPoint(Lt, state.bodies[k]) }));
-    const min = Lt.S * 0.034;
+    const min = Lt.S * 0.04;
     for (let it = 0; it < 24; it++) {                     // nudge apart along the orbit, never radially
       let moved = false;
       for (let i = 0; i < pts.length; i++) for (let j = i + 1; j < pts.length; j++) {
@@ -647,16 +647,17 @@
       const core = coreColor(state, key);
       const aura = signColorAt(b.lon);
       const inv = involved[key] || 0;
-      const auraR = Lt.S * (key === 'sun' ? 0.05 : key === 'moon' ? 0.038 : 0.02 + 0.018 * Math.min(1, inv));
-      const coreR = Lt.S * (key === 'sun' ? 0.0125 : key === 'moon' ? 0.0115 : 0.0072);
+      const auraR = Lt.S * (key === 'sun' ? 0.06 : key === 'moon' ? 0.046 : 0.025 + 0.02 * Math.min(1, inv));
+      const coreR = Lt.S * (key === 'sun' ? 0.0155 : key === 'moon' ? 0.0142 : 0.0092);
 
       // aura: sign colour, purity from dignity
       if (!(key === 'sun' && !up)) {
-        const ac = K.clarify(aura, b.clarity);
+        const ac = K.shade(K.clarify(aura, b.clarity), -0.15 * (1 - b.clarity));
+        const aw = 0.4 + 0.6 * b.clarity;                    // a weak planet's aura is fainter
         withBlur(ctx, 4 * Lt.u * b.slow, () => {
           ctx.save(); ctx.globalCompositeOperation = 'screen';
           const g = ctx.createRadialGradient(q.x, q.y, 0, q.x, q.y, auraR);
-          g.addColorStop(0, K.rgba(ac, 0.4 * E * dim)); g.addColorStop(0.4, K.rgba(ac, 0.12 * E * dim)); g.addColorStop(1, K.rgba(ac, 0));
+          g.addColorStop(0, K.rgba(ac, 0.45 * E * dim * aw)); g.addColorStop(0.4, K.rgba(ac, 0.12 * E * dim)); g.addColorStop(1, K.rgba(ac, 0));
           ctx.fillStyle = g; ctx.beginPath(); ctx.arc(q.x, q.y, auraR, 0, TAU); ctx.fill();
           ctx.restore();
         });
@@ -697,7 +698,7 @@
       ctx.restore();
 
       // glyph, outward of the body
-      const gr = Lt.S * 0.0165, off = coreR * 2.6 + gr * 0.75;
+      const gr = Lt.S * 0.0185, off = coreR * 2.6 + gr * 0.75;
       const gx = q.x + Math.cos(q.th) * off, gy = q.y - Math.sin(q.th) * off;
       const ink = K.rgba(INK, (up ? 0.82 : 0.45));
       withBlur(ctx, 2.5 * Lt.u * b.slow, () => G.planet(ctx, key, gx, gy, gr, ink, 0.11));

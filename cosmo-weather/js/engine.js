@@ -175,11 +175,12 @@
       let mods = applying ? 1.2 : 0.8;
       if (a.station || b.station) mods *= 1.5;
       if ((a.key === 'sun' || b.key === 'sun') && !(a.key === 'moon' || b.key === 'moon')) mods *= 1.2;
-      if (a.angular || b.angular) mods *= 1.3;
+      const sky = (0.2 + 0.8 * rar) * best.asp.weight * (0.3 * Math.pow(exact, 1.5) + 0.7 * windowT) * mods;   // the sky's own weight
+      if (a.angular || b.angular) mods *= 1.3;                                                                // local: the horizon turning
       const power = (0.2 + 0.8 * rar) * best.asp.weight * (0.3 * Math.pow(exact, 1.5) + 0.7 * windowT) * mods;
       out.push({
         a: a.key, b: b.key, aspect: best.asp.key, n: best.asp.n, k: best.asp.k, nature: best.asp.nature,
-        angle: best.asp.angle, orb: best.orb, orbMax: best.orbMax, exact, applying, rarity: rar, power, days, window: windowT,
+        angle: best.asp.angle, orb: best.orb, orbMax: best.orbMax, exact, applying, rarity: rar, power, sky, days, window: windowT,
         moon: a.key === 'moon' || b.key === 'moon'
       });
     }
@@ -298,7 +299,7 @@
     return { next, flags, ripe, verdict };
   }
 
-  /* The chord of the moment. Each planet of the figure sounds the note of the sign it stands in
+  /* The chord of the moment. Each planet of the two strongest figures sounds the note of the sign it stands in
      (Case's colour–note scale). Three or more notes forming a known chord are named; otherwise the
      figure's two planets give a dyad, first > second. */
   const CHORDS = [
@@ -306,7 +307,8 @@
     [[0, 4, 7], ''], [[0, 3, 7], '-'], [[0, 3, 6], 'dim'], [[0, 4, 8], '+'], [[0, 5, 7], 'sus4'], [[0, 2, 7], 'sus2']
   ];
   function chordOf(st) {
-    const cf = st.configs, figs = [cf.primary, ...cf.secondary].filter(Boolean);
+    // the harmony of the sky: the two strongest figures, moon included, weighed without the turning horizon
+    const figs = st.aspects.filter(a => a.sky >= 0.08).sort((x, y) => y.sky - x.sky).slice(0, 2);
     if (!figs.length) return { name: 'none', notes: [] };
     const planets = [...new Set(figs.flatMap(f => [f.a, f.b]))];
     const pcs = [...new Set(planets.map(k => st.bodies[k].sign))].sort((a, b) => a - b);
@@ -318,7 +320,7 @@
         if (set.join() === pcs.join()) return { name: N[root] + suffix, notes: pcs.map(i => N[i]), planets };
       }
     }
-    const a = N[st.bodies[cf.primary.a].sign], b = N[st.bodies[cf.primary.b].sign];
+    const a = N[st.bodies[figs[0].a].sign], b = N[st.bodies[figs[0].b].sign];
     return { name: a === b ? a : `${a}>${b}`, notes: pcs.map(i => N[i]), planets, dyad: true };
   }
 

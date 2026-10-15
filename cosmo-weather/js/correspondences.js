@@ -30,18 +30,20 @@
 
   /* kind: 'pigment' (seven classical tinctures) | 'optic' (outer planets) */
   const PLANETS = {
-    sun:     { name: 'sun',     kind: 'pigment', tincture: '#e8b54a', metal: 'gold',        sephira: 'tiphareth', number: 6,    angel: 'michael',  body: 'Sun',     period: 365.256, owns: 'radiance' },
-    moon:    { name: 'moon',    kind: 'pigment', tincture: '#cdd5df', metal: 'silver',      sephira: 'yesod',     number: 9,    angel: 'gabriel',  body: 'Moon',    period: 27.3217, owns: 'fill' },
+    sun:     { name: 'sun',     kind: 'pigment', tincture: '#d4a93a', sheen: '#fff2c2', shade: '#8a6318', metal: 'gold',        sephira: 'tiphareth', number: 6,    angel: 'michael',  body: 'Sun',     period: 365.256, owns: 'radiance' },
+    moon:    { name: 'moon',    kind: 'pigment', tincture: '#c3cad2', sheen: '#f6f8fa', shade: '#6d7684', metal: 'silver',      sephira: 'yesod',     number: 9,    angel: 'gabriel',  body: 'Moon',    period: 27.3217, owns: 'fill' },
     mercury: { name: 'mercury', kind: 'pigment', tincture: '#8f52b8', metal: 'quicksilver', sephira: 'hod',       number: 8,    angel: 'raphael',  body: 'Mercury', period: 365.256, owns: 'rays' },
-    venus:   { name: 'venus',   kind: 'pigment', tincture: '#2f9d5c', metal: 'copper',      sephira: 'netzach',   number: 7,    angel: 'anael',    body: 'Venus',   period: 365.256, owns: 'curves' },
-    mars:    { name: 'mars',    kind: 'pigment', tincture: '#c9262e', metal: 'iron',        sephira: 'geburah',   number: 5,    angel: 'samael',   body: 'Mars',    period: 686.98,  owns: 'points' },
-    jupiter: { name: 'jupiter', kind: 'pigment', tincture: '#2f6fd6', metal: 'tin',         sephira: 'chesed',    number: 4,    angel: 'sachiel',  body: 'Jupiter', period: 4332.59, owns: 'halos' },
+    venus:   { name: 'venus',   kind: 'pigment', tincture: '#2e7050', metal: 'copper',      sephira: 'netzach',   number: 7,    angel: 'anael',    body: 'Venus',   period: 365.256, owns: 'curves' },
+    mars:    { name: 'mars',    kind: 'pigment', tincture: '#b5302a', metal: 'iron',        sephira: 'geburah',   number: 5,    angel: 'samael',   body: 'Mars',    period: 686.98,  owns: 'points' },
+    jupiter: { name: 'jupiter', kind: 'pigment', tincture: '#2b63c4', metal: 'tin',         sephira: 'chesed',    number: 4,    angel: 'sachiel',  body: 'Jupiter', period: 4332.59, owns: 'halos' },
     saturn:  { name: 'saturn',  kind: 'pigment', tincture: '#040507', rim: '#4d525c', metal: 'lead', sephira: 'binah', number: 3, angel: 'cassiel', body: 'Saturn', period: 10759.2, owns: 'container' },
     uranus:  { name: 'uranus',  kind: 'optic',   tincture: '#d8e4ee', optic: 'iridescence', sephira: null, number: null, body: 'Uranus',  period: 30688.5, owns: 'lattice' },
     neptune: { name: 'neptune', kind: 'optic',   tincture: '#eef3ff', optic: 'brilliance',  sephira: null, number: null, body: 'Neptune', period: 60182,   owns: 'diffusion' },
     pluto:   { name: 'pluto',   kind: 'optic',   tincture: '#1a0f12', optic: 'lensing',     sephira: null, number: null, body: 'Pluto',   period: 90560,   owns: 'core' }
   };
   const ORDER = ['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune', 'pluto'];
+  /* the elements, GD King scale of the mother letters; earth is Malkuth's black, here a dark brown */
+  const ELEMENTS = { air: '#f2e8a0', water: '#4a7ef0', fire: '#ff5a2a', earth: '#1c1410' };
   const CHALDEAN = ['saturn', 'jupiter', 'mars', 'sun', 'venus', 'mercury', 'moon'];
   const WEEKDAY_RULER = ['sun', 'moon', 'mars', 'mercury', 'jupiter', 'venus', 'saturn']; // Sunday..Saturday
 
@@ -143,6 +145,6 @@
   CW.corr = {
     SIGNS, PLANETS, ORDER, CHALDEAN, WEEKDAY_RULER, SYNODIC_OVERRIDE,
     DOMICILE, EXALTATION, TRIPLICITY, TERMS, faceRuler, ASPECTS, ASPECT_GLYPH, BENEFIC, MALEFIC, NOTES, INTERVALS, MOTHERS,
-    DECANS, decanOf, TRUMP_SIGN, TRUMP_PLANET, TRUMP_ELEMENT, MANSIONS, mansionOf
+    DECANS, decanOf, TRUMP_SIGN, TRUMP_PLANET, TRUMP_ELEMENT, MANSIONS, mansionOf, ELEMENTS
   };
 })(window.CW = window.CW || {});

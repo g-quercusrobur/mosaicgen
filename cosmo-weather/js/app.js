@@ -53,7 +53,9 @@
     playing: false,
     preview: 0,                                            // minutes ahead, from the 24-hour strip
     sigil: params.get('sigil') === '1',
-    engrave: params.get('engrave') === '1',
+    engrave: params.get('field') !== 'glow' && params.get('engrave') !== '0',   // engraved at rest; glow only on request
+    natal: store.get('natal', null),                        // { date, place, unknownTime } — stays on this device
+    lang: params.get('lang') || store.get('lang', null) || ((navigator.language || 'en').toLowerCase().startsWith('es') ? 'es' : 'en'),
     field: params.get('field') || 'waves',
     state: null,
     lastCompute: 0
@@ -71,14 +73,33 @@
   function base() { return S.fixed ? new Date(S.fixed.getTime() + S.offsetMs) : new Date(Date.now() + S.offsetMs); }
   function now() { return new Date(base().getTime() + S.preview * 60000); }
 
+  /* the nativity, computed once per birth data */
+  const natalCache = { key: null, state: null };
+  function natalState() {
+    if (!S.natal) return null;
+    const key = JSON.stringify(S.natal);
+    if (natalCache.key !== key) {
+      const st = CW.engine.compute(new Date(S.natal.date), S.natal.place);
+      st.natalView = true; st.nextChord = null;
+      natalCache.key = key; natalCache.state = st;
+    }
+    return natalCache.state;
+  }
+  function viewState() { return S.mode === 'natal' && S.natal ? natalState() : S.state; }
+
   function recompute() {
     const busy = S.playing || S.dragging;
     S.state = CW.engine.compute(now(), S.place, { light: busy });
     if (!busy) S.state.nextChord = CW.engine.nextChordShift(S.state.date, S.place);
+    if (S.mode === 'synastry' && S.natal) {                 // the sky of now against the nativity: the figure is the strongest transit
+      const ns = natalState(), tr = CW.engine.computeTransits(S.state, ns).filter(x => x.power > 0.04);
+      S.state.natal = ns; S.state.transits = tr;
+      S.state.configs = { ...S.state.configs, primary: tr[0] || null, secondary: tr.slice(1, 3), scale: 1, cut: null };
+    }
     S.lastCompute = performance.now();
     S.dirty = true;
     document.documentElement.style.setProperty('--ground', CW.render.ground(S.state));
-    const c = CW.render.captionLines(S.state);
+    const c = CW.render.captionLines(viewState());
     $('caption').innerHTML = `<p class="l1">${c.l1}</p><p>${c.l2}</p><p>${c.l3}</p><p>${c.chord}</p><p>${c.decan}</p><p class="mono">${c.next}</p><p class="mono">${c.fig}</p><p class="mono">${c.moon}</p><p class="mono">${c.mansion}</p>`;
     if (!busy) scanIfNeeded();
     drawStrip();
@@ -152,20 +173,21 @@
       c.globalAlpha = 1;
     }
     c.font = `${10 * d}px "Geist Mono", monospace`; c.fillStyle = 'rgba(235,231,220,0.5)'; c.textBaseline = 'top';
-    [['now', 0], ['+6h', 6], ['+12h', 12], ['+18h', 18], ['+24h', 24]].forEach(([l, h]) => { c.textAlign = h === 0 ? 'left' : h === 24 ? 'right' : 'center'; c.fillText(l, h / 24 * W, 2 * d); });
+    CW.i18n.t('ui.strip').map((l, n) => [l, n * 6]).forEach(([l, h]) => { c.textAlign = h === 0 ? 'left' : h === 24 ? 'right' : 'center'; c.fillText(l, h / 24 * W, 2 * d); });
     const x = S.preview / 1440 * W;
     c.fillStyle = 'rgba(235,231,220,0.9)'; c.fillRect(Math.min(W - 2 * d, x), 0, 2 * d, H);
   }
   function fmtAt(d) {
-    return new Intl.DateTimeFormat('en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: S.place.tz || 'UTC' }).format(d).toLowerCase();
+    return new Intl.DateTimeFormat(CW.i18n.locale(), { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: S.place.tz || 'UTC' }).format(d).toLowerCase();
   }
   function drawNexts() {
     const el = $('nexts');
-    if (!scan.nexts) { el.innerHTML = '<span>reading the next seven days…</span>'; return; }
+    const i = CW.i18n;
+    if (!scan.nexts) { el.innerHTML = `<span>${i.t('ui.reading')}</span>`; return; }
     el.innerHTML = Object.entries(MOTHER_INK).map(([m, col]) => {
       const n = scan.nexts[m];
-      return n ? `<button data-jump="${n.at.toISOString()}" title="go to this moment"><i style="background:${col}"></i>${m} · ${fmtAt(n.at)}</button>`
-               : `<span><i style="background:${col}"></i>${m} · not this week</span>`;
+      return n ? `<button data-jump="${n.at.toISOString()}" title="${i.t('ui.goTo')}"><i style="background:${col}"></i>${i.window(m)} · ${fmtAt(n.at)}</button>`
+               : `<span><i style="background:${col}"></i>${i.window(m)} · ${i.t('ui.notThisWeek')}</span>`;
     }).join('');
     el.querySelectorAll('[data-jump]').forEach(b => b.addEventListener('click', () => { S.playing = false; S.fixed = new Date(b.dataset.jump); S.offsetMs = 0; S.preview = 0; $('preview').value = 0; recompute(); }));
   }
@@ -183,7 +205,7 @@
       pctx.setTransform(1, 0, 0, 1, 0, 0); pctx.clearRect(0, 0, plate.width, plate.height);
       pctx.setTransform(S.dpr * view.z, 0, 0, S.dpr * view.z, S.dpr * view.x, S.dpr * view.y);   // the view: zoom and pan
       const busy = S.playing || S.dragging || view.pinching;
-      info = CW.render.render(pctx, S.state, S.side, t, { mode: S.mode, fieldRes: busy ? 110 : 200, caption: S.side >= 560, plate: true, fast: busy, field: S.field, sigil: S.sigil, engrave: S.engrave });
+      info = CW.render.render(pctx, viewState(), S.side, t, { mode: S.mode === 'chart' ? 'chart' : 'clock', fieldRes: busy ? 110 : 200, caption: S.side >= 560, plate: true, fast: busy, field: S.field, sigil: S.sigil, engrave: S.engrave });
       S.dirty = false; lastPlate = ts;
     }
     ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -240,68 +262,86 @@
     if (on) { audio.ctx.resume(); soundChord(S.state.chord); }
     else soundChord(null);
     $('listen').classList.toggle('on', on);
-    $('listen').textContent = on ? 'listening' : 'listen';
+    $('listen').textContent = CW.i18n.t(on ? 'ui.listening' : 'ui.listen');
   }
   function followChord() { if (audio.on && S.state && S.state.chord.name !== audio.key) soundChord(S.state.chord, 2.5); }
 
   /* ---------- export: square art ---------- */
-  function exportPNG(px) {
-    const cv = document.createElement('canvas');
-    cv.width = cv.height = px;
-    const c = cv.getContext('2d');
-    CW.render.render(c, S.state, px, (performance.now() - t0) / 1000, { mode: S.mode, fieldRes: px >= 3000 ? 420 : 300, field: S.field, sigil: S.sigil, engrave: S.engrave });
-    const d = S.state.date;
-    const stamp = d.toISOString().slice(0, 16).replace(/[:T]/g, '');
+  function download(cv, name) {
     cv.toBlob(b => {
       const a = document.createElement('a');
-      a.href = URL.createObjectURL(b);
-      a.download = `cosmo-weather_${S.place.name}_${stamp}_${px}.png`;
+      a.href = URL.createObjectURL(b); a.download = name;
       document.body.appendChild(a); a.click(); a.remove();
       setTimeout(() => URL.revokeObjectURL(a.href), 4000);
     }, 'image/png');
+  }
+  const stampOf = st => st.date.toISOString().slice(0, 16).replace(/[:T]/g, '');
+  function exportPNG(px) {
+    const st = viewState(), cv = document.createElement('canvas');
+    cv.width = cv.height = px;
+    CW.render.render(cv.getContext('2d'), st, px, (performance.now() - t0) / 1000, { mode: S.mode === 'chart' ? 'chart' : 'clock', fieldRes: px >= 3000 ? 420 : 300, field: S.field, sigil: S.sigil, engrave: S.engrave });
+    download(cv, `cosmo-weather_${st.loc.name}_${stampOf(st)}_${px}.png`);
+  }
+  /* a wallpaper at this screen's size: the square render set in a portrait field of the same ground */
+  function exportWallpaper() {
+    const st = viewState(), dpr = window.devicePixelRatio || 1;
+    const W = Math.round((screen.width || 1080) * dpr), H = Math.round((screen.height || 2340) * dpr);
+    const side = Math.min(W, H), cv = document.createElement('canvas');
+    cv.width = W; cv.height = H;
+    const c = cv.getContext('2d');
+    c.fillStyle = CW.render.ground(st); c.fillRect(0, 0, W, H);
+    const sq = document.createElement('canvas'); sq.width = sq.height = side;
+    CW.render.render(sq.getContext('2d'), st, side, 3, { mode: 'clock', fieldRes: 300, sigil: S.sigil, engrave: S.engrave });
+    c.drawImage(sq, (W - side) / 2, (H - side) / 2);
+    download(cv, `cosmo-weather_wallpaper_${st.loc.name}_${stampOf(st)}.png`);
   }
 
   const ordinalWord = n => n + (n % 100 >= 11 && n % 100 <= 13 ? 'th' : ['th', 'st', 'nd', 'rd'][n % 10] || 'th');
 
   /* ---------- readout: every mark traceable ---------- */
   function updateReadout() {
-    const st = S.state, C = CW.corr;
+    const st = viewState(), C = CW.corr, i = CW.i18n, R = k => i.t('ui.r.' + k), H = k => i.t('ui.h.' + k);
+    const P = k => i.planet(k), A = k => i.aspect(k);
     const rows = C.ORDER.map(k => {
       const b = st.bodies[k];
-      const flags = [b.retro ? 'retrograde' : '', b.station ? 'stationary' : '', b.cazimi ? 'cazimi' : b.combust ? 'combust' : b.beams ? 'under the beams' : ''].filter(Boolean).join(', ');
-      const dig = C.PLANETS[k].kind === 'optic' ? 'no essential dignity' : `${b.dignity.score > 0 ? '+' : ''}${b.dignity.score} · ${b.dignity.labels.join(', ') || '—'}`;
-      return `<tr><td>${k}</td><td>${Math.floor(b.deg)}°${String(Math.floor((b.deg % 1) * 60)).padStart(2, '0')}′ ${C.SIGNS[b.sign].name}</td><td>house ${b.house}</td></tr><tr class="sub"><td></td><td colspan="2">${dig}${flags ? ' · ' + flags : ''}</td></tr>`;
+      const flags = [b.retro ? i.flag('retrograde') : '', b.station ? i.flag('stationary') : '', b.cazimi ? i.flag('cazimi') : b.combust ? i.flag('combust') : b.beams ? i.flag('beams') : ''].filter(Boolean).join(', ');
+      const dig = C.PLANETS[k].kind === 'optic' ? i.flag('noDignity') : `${b.dignity.score > 0 ? '+' : ''}${b.dignity.score} · ${b.dignity.labels.map(l => i.dignity(l)).join(', ') || '—'}`;
+      return `<tr><td>${P(k)}</td><td>${Math.floor(b.deg)}°${String(Math.floor((b.deg % 1) * 60)).padStart(2, '0')}′ ${i.sign(b.sign)}</td><td>${R('house')} ${b.house}</td></tr><tr class="sub"><td></td><td colspan="2">${dig}${flags ? ' · ' + flags : ''}</td></tr>`;
     }).join('');
     const cf = st.configs;
-    const figs = [cf.primary, ...cf.secondary].filter(Boolean).map((a, i) =>
-      `<tr><td>${i ? 'ring' : 'figure'}</td><td>${a.a} ${a.aspect} ${a.b}</td><td>{${a.n}/${a.k}}</td><td>orb ${a.orb.toFixed(2)}° ${a.applying ? 'applying' : 'separating'}${a.dissociate ? ' · out of sign' : ''}</td><td>${a.power.toFixed(2)}${a.event ? ' · ' + a.event : ''}</td></tr>`).join('');
-    const tz = S.place.tz || 'UTC';
-    const hm = d => new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: tz }).format(d);
-    const dec = b => `${['first', 'second', 'third'][b.decan.decan - 1]} decan of ${C.SIGNS[b.sign].name} · ${b.decan.ruler}`;
+    const figName = a => a.natal ? `${P(a.a)} ${A(a.aspect)} ${i.t('cap.natal')} ${P(a.b)}` : `${P(a.a)} ${A(a.aspect)} ${P(a.b)}`;
+    const evName = e => e.split(' ').map(w => i.event(w)).join(' ');
+    const figs = [cf.primary, ...cf.secondary].filter(Boolean).map((a, n) =>
+      `<tr><td>${n ? R('ring') : R('figure')}</td><td>${figName(a)}</td><td>{${a.n}/${a.k}}</td><td>${R('orb')} ${a.orb.toFixed(2)}° ${a.applying ? R('applying') : R('separating')}${a.dissociate ? ' · ' + i.flag('outOfSign') : ''}</td><td>${a.power.toFixed(2)}${a.event ? ' · ' + evName(a.event) : ''}</td></tr>`).join('');
+    const tz = st.loc.tz || 'UTC';
+    const hm = d => new Intl.DateTimeFormat(i.locale(), { hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: tz }).format(d);
+    const dec = b => `${i.decanOrd(b.decan.decan)} ${i.t('cap.decanOf')} ${i.sign(b.sign)} · ${P(b.decan.ruler)}`;
     const tarot = `<table>
-      <tr><td>sun</td><td>${dec(st.bodies.sun)}</td><td>${st.bodies.sun.decan.card} · ${st.bodies.sun.decan.title}</td></tr>
-      <tr><td>moon</td><td>${dec(st.bodies.moon)}</td><td>${st.bodies.moon.decan.card} · ${st.bodies.moon.decan.title}</td></tr>
-      <tr><td>ascendant</td><td>${C.SIGNS[Math.floor(st.asc / 30)].name}</td><td>${C.TRUMP_SIGN[Math.floor(st.asc / 30)]}</td></tr>
-      <tr><td>day</td><td>${st.hour.dayRuler}</td><td>${C.TRUMP_PLANET[st.hour.dayRuler]}</td></tr>
-      <tr><td>hour</td><td>${st.hour.hourRuler}</td><td>${C.TRUMP_PLANET[st.hour.hourRuler]}</td></tr></table>`;
-    const hours = st.hour.table ? st.hour.table.map(h => `<span${h.index === st.hour.index ? ' class="now"' : ''}>${h.index + 1} ${h.ruler} ${hm(h.start)}</span>`).join(' · ') : 'polar day or night: equal hours assumed';
+      <tr><td>${R('sun')}</td><td>${dec(st.bodies.sun)}</td><td>${i.card(st.bodies.sun.decan)} · ${i.title(st.bodies.sun.decan)}</td></tr>
+      <tr><td>${R('moon')}</td><td>${dec(st.bodies.moon)}</td><td>${i.card(st.bodies.moon.decan)} · ${i.title(st.bodies.moon.decan)}</td></tr>
+      <tr><td>${R('ascendant')}</td><td>${i.sign(Math.floor(st.asc / 30))}</td><td>${i.trumpSign(Math.floor(st.asc / 30))}</td></tr>
+      <tr><td>${R('dayRuler')}</td><td>${P(st.hour.dayRuler)}</td><td>${i.trumpPlanet(st.hour.dayRuler)}</td></tr>
+      <tr><td>${R('hourRuler')}</td><td>${P(st.hour.hourRuler)}</td><td>${i.trumpPlanet(st.hour.hourRuler)}</td></tr></table>`;
+    const hours = st.hour.table ? st.hour.table.map(h => `<span${h.index === st.hour.index ? ' class="now"' : ''}>${h.index + 1} ${P(h.ruler)} ${hm(h.start)}</span>`).join(' · ') : i.t('ui.polar');
     const top = st.aspects.slice(0, 12).map(a =>
-      `<tr><td>${a.a} ${a.aspect} ${a.b}</td><td>${a.orb.toFixed(2)}°</td><td>${a.applying ? 'app' : 'sep'}</td><td>${a.power.toFixed(3)}</td></tr>`).join('');
-    const ev = st.events.map(e => e.type + (e.planet ? ' ' + e.planet : '') + (e.kind ? ' ' + e.kind : '') + (e.direction ? ' ' + e.direction : '')).join(' · ') || '—';
+      `<tr><td>${figName(a)}</td><td>${a.orb.toFixed(2)}°</td><td>${a.applying ? R('applying') : R('separating')}</td><td>${a.power.toFixed(3)}</td></tr>`).join('');
+    const ev = st.events.map(e => i.event(e.type) + (e.planet ? ' ' + P(e.planet) : '') + (e.kind ? ' ' + evName(e.kind) : '') + (e.direction ? ' ' + i.event(e.direction) : '')).join(' · ') || '—';
+    const W = k => `${i.window(k)} ${st.windows[k].toFixed(2)}`;
     $('readout').innerHTML = `
-      <h3>bodies</h3><table>${rows}</table>
-      <h3>the figure</h3><table>${figs || '<tr><td>quiet sky</td></tr>'}</table>
-      <h3>portal</h3><p>scale ×${(cf.scale || 1).toFixed(2)} (jupiter widens, saturn narrows)${cf.cut ? ` · cut by ${cf.cut.by} ${cf.cut.aspect} ${cf.cut.target}, ${Math.round(cf.cut.width)}°` : ' · whole'}</p>
-      <p>guardians ${st.hour.dayRuler}${st.hour.dayRuler === st.hour.hourRuler ? ' alone: one pure figure' : ' and ' + st.hour.hourRuler}</p>
-      <h3>sound</h3><p>${st.chord.name}${st.chord.interval ? ' · ' + st.chord.interval : ''}${st.chord.notes.length ? ' · notes ' + st.chord.notes.join(' ') : ''}${st.chord.planets ? ' · from ' + st.chord.planets.join(', ') : ''}${st.nextChord ? ` · next ${st.nextChord.to} at ${hm(st.nextChord.at)}` : ''}</p>
-      <h3>tarot</h3>${tarot}
-      <h3>windows</h3><p>ideation ${st.windows.ideation.toFixed(2)} · incarnation ${st.windows.incarnation.toFixed(2)} · destruction ${st.windows.destruction.toFixed(2)}</p>
-      <h3>moon</h3><p>${st.moon.verdict} · ${st.moon.next ? `next ${st.moon.next.aspect} ${st.moon.next.planet} in ${(st.moon.next.days * 24).toFixed(1)}h` : 'void of course'}${st.moon.flags.filter(f => f !== 'void of course').map(f => ' · ' + f).join('')}</p>
-      <p>${ordinalWord(st.bodies.moon.mansion.index)} mansion · ${st.bodies.moon.mansion.name} (agrippa II.33)</p>
-      <h3>hours of the day</h3><p class="hours">${hours}</p>
-      <h3>events</h3><p>${ev}</p>
-      <h3>hierarchy</h3><table>${top}</table>
-      <p class="dim">sect ${st.sect} · asc ${Math.floor(st.asc % 30)}° ${C.SIGNS[Math.floor(st.asc / 30)].name} · mc ${Math.floor(st.mc % 30)}° ${C.SIGNS[Math.floor(st.mc / 30)].name} · day ${st.hour.dayRuler} / ${st.hour.dayAngel} · hour ${st.hour.index + 1} ${st.hour.hourRuler} / ${st.hour.angel}</p>`;
+      <h3>${H('bodies')}</h3><table>${rows}</table>
+      <h3>${H('figure')}</h3><table>${figs || `<tr><td>${i.t('ui.quietSky')}</td></tr>`}</table>
+      <h3>${H('sound')}</h3><p>${st.chord.name}${st.chord.interval ? ' · ' + i.interval(st.chord.interval) : ''}${st.chord.notes.length ? ` · ${R('notes')} ` + st.chord.notes.join(' ') : ''}${st.chord.planets ? ` · ${R('from')} ` + st.chord.planets.map(P).join(', ') : ''}${st.nextChord ? ` · ${R('next')} ${st.nextChord.to} ${R('at')} ${hm(st.nextChord.at)}` : ''}</p>
+      <h3>${H('tarot')}</h3>${tarot}
+      ${st.transits ? `<h3>${H('transits')}</h3><table>${st.transits.slice(0, 8).map(a => `<tr><td>${figName(a)}</td><td>${a.orb.toFixed(2)}°</td><td>${a.applying ? R('applying') : R('separating')}</td><td>${a.power.toFixed(2)}</td></tr>`).join('') || `<tr><td>${i.t('ui.noContact')}</td></tr>`}</table>` : ''}
+      <h3>${H('portal')}</h3><p>${R('scale')} ×${(cf.scale || 1).toFixed(2)} (${R('widens')})${cf.cut ? ` · ${R('cut')} ${P(cf.cut.by)} ${A(cf.cut.aspect)} ${P(cf.cut.target)}, ${Math.round(cf.cut.width)}°` : ' · ' + R('whole')}</p>
+      <p>${R('guardians')} ${P(st.hour.dayRuler)}${st.hour.dayRuler === st.hour.hourRuler ? ' ' + R('alone') : ' ' + R('and') + ' ' + P(st.hour.hourRuler)}</p>
+      <h3>${H('windows')}</h3><p>${W('ideation')} · ${W('incarnation')} · ${W('destruction')}</p>
+      <h3>${H('moon')}</h3><p>${i.verdict(st.moon.verdict)} · ${st.moon.next ? `${R('nextMoon')} ${A(st.moon.next.aspect)} ${P(st.moon.next.planet)} ${R('in')} ${(st.moon.next.days * 24).toFixed(1)}h` : i.flag('void of course')}${st.moon.flags.filter(f => f !== 'void of course').map(f => ' · ' + i.flag(f === 'under the beams' ? 'beams' : f)).join('')}</p>
+      <p>${i.ordinal(st.bodies.moon.mansion.index)} ${R('mansion')} · ${st.bodies.moon.mansion.name} (agrippa II.33)</p>
+      <h3>${H('hours')}</h3><p class="hours">${hours}</p>
+      <h3>${H('events')}</h3><p>${ev}</p>
+      <h3>${H('hierarchy')}</h3><table>${top}</table>
+      <p class="dim">${R('sect')} ${st.sect === 'day' ? R('day') : R('night')} · asc ${Math.floor(st.asc % 30)}° ${i.sign(Math.floor(st.asc / 30))} · mc ${Math.floor(st.mc % 30)}° ${i.sign(Math.floor(st.mc / 30))} · ${R('dayRuler')} ${P(st.hour.dayRuler)} / ${st.hour.dayAngel} · ${R('hour')} ${st.hour.index + 1} ${P(st.hour.hourRuler)} / ${st.hour.angel}</p>`;
   }
 
   function updateControls() {
@@ -309,11 +349,12 @@
     $('zone').textContent = offsetOf(S.place.tz || 'UTC', S.state.date);
     $('live').classList.toggle('on', S.offsetMs === 0 && !S.fixed && !S.playing);
     $('play').classList.toggle('on', S.playing);
-    $('play').textContent = S.playing ? 'pause' : 'run';
+    $('play').textContent = CW.i18n.t(S.playing ? 'ui.pause' : 'ui.run');
     $('speed').textContent = S.speed < 1 ? `${S.speed * 60}m/s` : `${S.speed}h/s`;
     $('here').classList.toggle('on', S.place.name === 'here');
     if (PLACES[S.place.name] && $('city').value !== S.place.name) $('city').value = S.place.name;
     document.querySelectorAll('[data-mode]').forEach(b => b.classList.toggle('on', b.dataset.mode === S.mode));
+    document.body.classList.toggle('natal', S.mode === 'natal');
     $('sigil').classList.toggle('on', S.sigil);
   }
 
@@ -337,8 +378,19 @@
     $('when').addEventListener('change', commit);
     $('when').addEventListener('keydown', e => { if (e.key === 'Enter') { commit(e); e.target.blur(); } });
     $('here').addEventListener('click', () => locate(true));
-    document.querySelectorAll('[data-mode]').forEach(b => b.addEventListener('click', () => { S.mode = b.dataset.mode; store.set('mode', S.mode); S.dirty = true; updateControls(); }));
+    document.querySelectorAll('[data-mode]').forEach(b => b.addEventListener('click', () => {
+      const m = b.dataset.mode;
+      if ((m === 'natal' || m === 'synastry') && !S.natal) { openBirth(); return; }
+      S.mode = m; store.set('mode', S.mode); recompute();
+    }));
+    $('birth-open').addEventListener('click', openBirth);
+    $('birth-close').addEventListener('click', () => { $('birth').hidden = true; });
+    $('birth-save').addEventListener('click', saveBirth);
+    $('birth-clear').addEventListener('click', () => { S.natal = null; store.set('natal', null); if (S.mode === 'natal' || S.mode === 'synastry') S.mode = 'clock'; $('birth').hidden = true; recompute(); });
+    $('wallpaper').addEventListener('click', exportWallpaper);
+    $('lang').addEventListener('click', () => setLang(S.lang === 'es' ? 'en' : 'es'));
     $('save').addEventListener('click', () => exportPNG(2048));
+    const bc = $('birth-city'); bc.innerHTML = ZONES.map(z => `<option value="${z.name}">${offsetOf(z.tz)} · ${z.name}</option>`).join('');
     $('sigil').addEventListener('click', () => { S.sigil = !S.sigil; S.dirty = true; updateControls(); });
     $('preview').addEventListener('input', e => { S.preview = Number(e.target.value); recompute(); });
     $('save-hd').addEventListener('click', () => exportPNG(4096));
@@ -360,10 +412,37 @@
       if (e.key === ' ') { e.preventDefault(); $('play').click(); }
       if (e.key === 'ArrowRight') { S.offsetMs += (e.shiftKey ? 24 : 1) * 3600e3; recompute(); }
       if (e.key === 'ArrowLeft') { S.offsetMs -= (e.shiftKey ? 24 : 1) * 3600e3; recompute(); }
-      if (e.key === 'Escape') { document.body.classList.remove('bare', 'reading'); $('about').hidden = true; $('about-open').classList.remove('on'); }
+      if (e.key === 'Escape') { document.body.classList.remove('bare', 'reading'); $('about').hidden = true; $('about-open').classList.remove('on'); $('birth').hidden = true; }
     });
     window.addEventListener('resize', size);
     if (params.get('hd') !== '1') $('save-hd').hidden = true;
+  }
+
+  /* ---------- the nativity: birth data, kept on this device only ---------- */
+  function openBirth() {
+    const n = S.natal;
+    if (n) {
+      const p = placeParts(new Date(n.date), n.place.tz);
+      $('birth-date').value = `${p.year}-${p.month}-${p.day}`; $('birth-time').value = n.unknownTime ? '' : `${p.hour}:${p.minute}`;
+      $('birth-unknown').checked = !!n.unknownTime;
+      if (PLACES[n.place.name]) $('birth-city').value = n.place.name;
+      $('birth-lat').value = n.place.lat; $('birth-lon').value = n.place.lon;
+    } else { $('birth-city').value = S.place.name in PLACES ? S.place.name : 'greenwich'; $('birth-lat').value = ''; $('birth-lon').value = ''; }
+    $('birth-note').textContent = '';
+    $('birth').hidden = false;
+  }
+  function saveBirth() {
+    const dateTxt = $('birth-date').value.trim(), unknown = $('birth-unknown').checked, timeTxt = unknown ? '12:00' : $('birth-time').value.trim();
+    const city = PLACES[$('birth-city').value];
+    const lat = parseFloat($('birth-lat').value), lon = parseFloat($('birth-lon').value);
+    const place = Number.isFinite(lat) && Number.isFinite(lon) ? { name: $('birth-place').value.trim().toLowerCase() || city.name, lat, lon, tz: city.tz } : { ...city };
+    const d = fromStamp(`${dateTxt} ${timeTxt}`, place.tz);
+    if (!d) { $('birth-note').textContent = CW.i18n.t('ui.badDate'); return; }
+    S.natal = { date: d.toISOString(), place, unknownTime: unknown };
+    store.set('natal', S.natal);
+    $('birth').hidden = true;
+    if (S.mode !== 'natal' && S.mode !== 'synastry') S.mode = 'synastry';
+    store.set('mode', S.mode); recompute();
   }
 
   /* the moment as the place reads it: yyyy-mm-dd hh:mm in the place's time zone */
@@ -372,14 +451,15 @@
     return Object.fromEntries(f.formatToParts(d).map(p => [p.type, p.value]));
   }
   function placeStamp(d) { const p = placeParts(d, S.place.tz); return `${p.year}-${p.month}-${p.day} ${p.hour}:${p.minute}`; }
-  function fromPlaceStamp(txt) {
+  function fromStamp(txt, tz) {
     const m = txt.match(/^(\d{4})-(\d{1,2})-(\d{1,2})[ t](\d{1,2}):(\d{2})$/i);
     if (!m) return null;
     const want = Date.UTC(+m[1], m[2] - 1, +m[3], +m[4], +m[5]);
     let t = want;                                           // the zone's offset at that moment, found by two corrections
-    for (let i = 0; i < 2; i++) { const p = placeParts(new Date(t), S.place.tz); t += want - Date.UTC(+p.year, p.month - 1, +p.day, +p.hour, +p.minute); }
+    for (let i = 0; i < 2; i++) { const p = placeParts(new Date(t), tz); t += want - Date.UTC(+p.year, p.month - 1, +p.day, +p.hour, +p.minute); }
     return new Date(t);
   }
+  const fromPlaceStamp = txt => fromStamp(txt, S.place.tz);
 
   /* ---------- the gesture: turn the dial to travel in time ----------
      clockwise = forward. one full turn = one day. the wheel moves ten minutes a notch. */
@@ -466,14 +546,25 @@
     }, () => { if (asked) $('here').title = 'location not available on this device or browser'; }, { timeout: 10000, maximumAge: 3600e3 });
   }
 
+  function setLang(l) {
+    S.lang = l; store.set('lang', l); CW.i18n.set(l); CW.i18n.apply();
+    document.querySelectorAll('[data-about]').forEach(el => { el.hidden = el.dataset.about !== l; });
+    scan.key = null;                                        // the week's labels are rebuilt in the new language
+    if (S.state) recompute(); drawNexts();
+  }
+
   async function start() {
+    CW.i18n.set(S.lang); CW.i18n.apply();
+    document.querySelectorAll('[data-about]').forEach(el => { el.hidden = el.dataset.about !== S.lang; });
     try {
       await Promise.all(['400 20px Geist', '500 20px Geist', '400 20px "Geist Mono"'].map(f => document.fonts.load(f)));
     } catch (e) { /* fonts are a nicety */ }
+    if ((S.mode === 'natal' || S.mode === 'synastry') && !S.natal) S.mode = 'clock';
     bind(); bindGesture(); size(); recompute(); drawNexts();
     if (S.firstVisit || S.place.name === 'here') locate(false);
     requestAnimationFrame(frame);
+    if ('serviceWorker' in navigator && /^https?:/.test(location.protocol) && !/claude\.ai$/.test(location.hostname)) navigator.serviceWorker.register('./sw.js').catch(() => {});
   }
-  CW.app = { start, exportPNG, S };
+  CW.app = { start, exportPNG, exportWallpaper, setLang, S, viewState };
   start();
 })(window.CW = window.CW || {});

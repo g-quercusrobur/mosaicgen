@@ -391,6 +391,37 @@
     return null;
   }
 
+  /* ---------- synastry: the sky of now against a nativity ----------
+     Transiting planets to natal planets and angles: Ptolemaic aspects and the quincunx, tight orbs.
+     power = weight × exactness^1.5 × slowness of the transiting planet: a Saturn contact outweighs a Moon contact. */
+  const TRANSIT_ORB = { conjunction: 6, opposition: 6, square: 5, trine: 5, sextile: 3, quincunx: 2 };
+  function computeTransits(cur, natal) {
+    const out = [];
+    const targets = [...C.ORDER.map(k => ({ key: k, lon: natal.bodies[k].lon })), { key: 'ascendant', lon: natal.asc }, { key: 'midheaven', lon: natal.mc }];
+    for (const tk of C.ORDER) {
+      const a = cur.bodies[tk];
+      const slow = Math.min(1, Math.log10(C.PLANETS[tk].period) / 5);
+      const lum = tk === 'sun' || tk === 'moon' ? 1 : 0;
+      for (const n of targets) {
+        const d = sep(a.lon, n.lon);
+        let best = null;
+        for (const asp of C.ASPECTS) {
+          if (!TRANSIT_ORB[asp.key]) continue;
+          const orbMax = TRANSIT_ORB[asp.key] + lum, orb = Math.abs(d - asp.angle);
+          if (orb <= orbMax && (!best || orb < best.orb)) best = { asp, orb, orbMax };
+        }
+        if (!best) continue;
+        const d1 = sep(a.lon + a.speed / 24, n.lon);
+        const applying = Math.abs(d1 - best.asp.angle) < best.orb;
+        const exact = 1 - best.orb / best.orbMax;
+        const power = best.asp.weight * Math.pow(exact, 1.5) * (0.35 + 0.65 * slow) * (applying ? 1.15 : 0.9);
+        out.push({ a: tk, b: n.key, natal: true, nlon: n.lon, aspect: best.asp.key, n: best.asp.n, k: best.asp.k, nature: best.asp.nature,
+          angle: best.asp.angle, orb: best.orb, orbMax: best.orbMax, exact, applying, power, moon: tk === 'moon' });
+      }
+    }
+    return out.sort((x, y) => y.power - x.power);
+  }
+
   /* ---------- the whole state ---------- */
   function compute(date, loc, opts = {}) {
     const t = A.MakeTime(date);
@@ -463,5 +494,5 @@
     return st;
   }
 
-  CW.engine = { compute, nextChordShift, norm360, norm180, sep, houseOf, mundane, semiArc, dignity, placidus, synodic, rarity };
+  CW.engine = { compute, computeTransits, nextChordShift, norm360, norm180, sep, houseOf, mundane, semiArc, dignity, placidus, synodic, rarity };
 })(window.CW = window.CW || {});

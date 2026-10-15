@@ -36,29 +36,32 @@ Every mark on the dial is computed from the sky by a stated rule. Nothing is orn
 
 ## 3 · Correspondences
 
-**Planets — heraldic tinctures, which agree with the GD Queen scale of the Sephiroth.**
+**One core, two declared windows.** The core is the Renaissance synthesis: Ptolemy and Lilly for the astrology, the *Picatrix*, Ficino, Agrippa and the Heptameron for the planetary magic, Reuchlin and Kircher for the Tree. Window 1 (modern, declared): the Golden Dawn King-scale colours of the signs, read as notes after Paul Foster Case. Window 2 (modern, declared): the Tarot, as the 36 decans with the Golden Dawn minor cards and the Book T titles, and the trumps on signs and planets in the Golden Dawn attribution. No Crowley swaps.
 
-| planet | tincture | metal | sephira | number | angel |
-|---|---|---|---|---|---|
-| sun | or, gold | gold | tiphareth | 6 | michael |
-| moon | argent, silver | silver | yesod | 9 | gabriel |
-| mercury | purpure | quicksilver | hod | 8 | raphael |
-| venus | vert | copper | netzach | 7 | anael |
-| mars | gules | iron | geburah | 5 | samael |
-| jupiter | azure | tin | chesed | 4 | sachiel |
-| saturn | sable, black | lead | binah | 3 | cassiel |
-| uranus | — iridescence | — | chokmah | 2 | — |
-| neptune | — brilliance | — | kether | 1 | — |
-| pluto | — lensing | — | daath | none | — |
+**Planets — heraldic tinctures (Ferne, 1586), the metals, Kircher's Tree.**
 
-Outer planets follow Dion Fortune. They have no pigment: they are optics, which is also true to the eye.
-White is reserved for constellation stars.
+| planet | tincture | hex | metal | sephira | number | angel |
+|---|---|---|---|---|---|---|
+| sun | or | `#d4a93a`, sheen `#fff2c2`, shade `#8a6318` | gold | tiphareth | 6 | michael |
+| moon | argent | `#c3cad2`, sheen `#f6f8fa`, shade `#6d7684` | silver | yesod | 9 | gabriel |
+| mercury | purpure | `#8f52b8` | quicksilver | hod | 8 | raphael |
+| venus | vert | `#2e7050` | copper | netzach | 7 | anael |
+| mars | gules | `#b5302a` | iron | geburah | 5 | samael |
+| jupiter | azure | `#2b63c4` | tin | chesed | 4 | sachiel |
+| saturn | sable | `#040507`, rim `#4d525c` | lead | binah | 3 | cassiel |
+| uranus | — iridescence | — | — | — | — | — |
+| neptune | — brilliance | — | — | — | — | — |
+| pluto | — lensing | — | — | — | — | — |
+
+Gold and silver are drawn as metal: a radial gradient from sheen through body to shade, so the luminaries shimmer instead of sitting flat. The outer planets are not on the Tree: no sephira, no number, no essential dignity, no pigment. They remain as optics (iridescence, brilliance, lensing), which is also true to the eye. White is reserved for constellation stars.
 
 **Signs — GD King scale of the paths = Itten's twelve-step circle** (used in the field and in planet auras, never as a ring on the frame). Aries scarlet → red-orange → orange → amber → yellow → yellow-green → emerald → green-blue → blue → indigo → violet → Pisces **ultraviolet** (red-violet rendered dark, with a blacklight glow). Golden Dawn letter order; no Crowley swaps. Colour holds flat across a sign and cross-fades over 2° at each cusp.
 
-**Elements (where needed).** fire flame-scarlet · water deep blue · air bright pale yellow · earth citrine, olive, russet, black.
+**Elements.** air pale gold `#f2e8a0` · water deep blue `#4a7ef0` · fire flame `#ff5a2a` · earth dark brown, near black `#1c1410`.
 
-**Dignity (Lilly).** domicile +5 · exaltation +4 · triplicity +3 (Ptolemaic day/night) · term +2 (Egyptian) · face +1 (Chaldean) · detriment −5 · fall −4 · peregrine −5. Outer planets: modern domicile and detriment only.
+**Decans and mansions.** Each 10° carries its Chaldean face ruler, its Golden Dawn minor card and its Book T title (five of wands, lord of strife …). The Moon's 28 mansions carry Agrippa's names (II.33). Both appear in the caption and the readout.
+
+**Dignity (Lilly).** domicile +5 · exaltation +4 · triplicity +3 (Ptolemaic day/night) · term +2 (Egyptian) · face +1 (Chaldean) · detriment −5 · fall −4 · peregrine −5 · mutual reception lifts peregrine (+5). Outer planets: none.
 
 ## 4 · The instrument
 
@@ -165,7 +168,7 @@ Rejected and why: a noise nebula (encodes nothing) and a planetary interference 
 
 ## 9 · Type and grid
 
-- **IBM Plex Sans** (OFL) for all text: engineered for small screens. **IBM Plex Mono** (OFL) for degrees, numerals and the readout. **Jost** only in the wordmark, as a logo.
+- **Geist** (OFL) for all text and the wordmark (wide tracking); **Geist Mono** for degrees, numerals and the readout. One family.
 - Lowercase throughout, as the Bauhaus wrote from 1925.
 - The interface owns one colour, off-white `#ebe7dc` at three opacities. All other colour belongs to the sky.
 - The square master is 2048 px. The dial is centred at 45% of the height. The caption band sits on a hairline at the bottom, with 6.25% margins.
@@ -212,3 +215,18 @@ Angels of the days and hours from the Heptameron: michael, gabriel, samael, raph
 - **Listen.** A button sounds the chord as a slow organ drone: sine partials 1–4 for each note (pure tone plus overtones, the organ pipe), each doubled with a ±0.12 Hz detune so it breathes. The root sounds again an octave below. A = 440: the 432 Hz "cosmic tuning" is avoided on purpose. Swell 3 s, low-pass at 2.2 kHz, a generated 3-second reverb. While on, the drone glides to the next chord when the sky shifts, so the harmony moves audibly while the clock runs.
 - **Round 7.** Font: Geist and Geist Mono (one family; the wordmark is Geist with wide tracking). Caption and frame type scale up on small screens; exports keep the master size. The date field is typed in the place's own time (yyyy-mm-dd hh:mm). Turning the dial travels in time: clockwise is forward, one turn is one day, a wheel notch is ten minutes. The readout uses full words. An about section gives the concept, history, methods and references. Outer planets carry no essential dignity. Every planet within 17° of the sun is under the beams. Sigil lines thinner. An engraved field (light as line weight, no glows) is available as a prototype behind `?engrave=1`.
 - **Zoom.** Two fingers pinch and pan; ctrl/⌘ + wheel (or a trackpad pinch) zooms at the pointer; + and − keys; double click or double tap returns to the whole dial. Up to 8×. The plate is redrawn at the zoomed scale, so lines stay sharp. One finger and the plain wheel still move time. Engraving lines 20% coarser, so the engraving shows at screen size.
+
+## 14 · Round 8 changes
+
+- **Correspondence system settled** (§3): Renaissance core, two declared modern windows. The outer planets leave the Tree and stay as optics. Mercury purpure. Natural tones throughout: metallic gold and silver (gradient sheen → shade), a mature copper-green for Venus, earth as dark brown near black.
+- **Tarot in the reading.** The decan of the Sun (card and Book T title) sits in the caption under the chord, the Moon's mansion on the right; the readout carries a tarot section right after sound, with the decans of all seven and the trumps of the figure. Dyads are written as `C–E · major third`: lower note, upper note, interval.
+- **Planets a tad larger** (k = 0.95 + 0.5·power); metallic bodies; the rings as before.
+- **Pluto's lens** is now plainly a lens: the field inside it is magnified (1 + 1.0·s), the surround pulled inward (1 + 0.45·s), an Einstein ring on the rim and an ink rim outside it. Its radius grows with Pluto's power.
+- **Engraving is the resting state** and the export default. Light is line weight, no glows. The glow field remains behind `?field=glow`. Engraving 20% coarser so it reads at screen size; cached per minute and per zoom so the clock keeps running.
+- **Nativity.** `birth` stores a date, time and place on the device only (no server, nothing leaves the phone). Unknown time takes noon and hides nothing: the user sees the houses are provisional. `natal` draws the nativity as a clock; `chart` works for it too.
+- **Synastry** = the current sky against the nativity. Transits by longitude with orbs conjunction/opposition 6°, square/trine 5°, sextile 3°, quincunx 2°, one degree more for a luminary. Power = aspect weight × exactness^1.5 × (0.35 + 0.65·slowness) × applying. The strongest transit is the figure, in the transiting planet's colour, drawn between the current body and the natal ring; the natal ring is ink (`#d9d3c6`), the current sky colour.
+- **Planetary hours.** The readout lists all twenty-four hours of the day with their rulers and angels, the current one marked.
+- **Two languages.** English and Spanish, switched by the top-bar button and remembered; the browser's language sets the first visit. Every string, name and title passes through `js/i18n.js`. Book T titles are translated plainly.
+- **Installable.** A web manifest, icons (Seed of Life in a dodecagon) and a service worker (network first, cache fallback) make the clock an app on the home screen. `wallpaper` exports a portrait image at the device's own pixel size with the dial set in the same ground.
+- **About** is a working paper (v0.7) in both languages, with 33 references.
+- **Three mothers kept.** The windows remain ideation, incarnation and destruction. A fourth window (earth) was declined: the three mother letters are the tradition's division.

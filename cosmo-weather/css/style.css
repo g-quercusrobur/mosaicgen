@@ -38,6 +38,11 @@ button, input {
 button:hover { color: var(--ink); }
 button.on { color: var(--ink); border-color: var(--ink-3); }
 button:focus-visible, input:focus-visible { outline: 1px solid var(--ink); outline-offset: 1px; }
+select {
+  font: 400 13px/1 var(--sans); color: var(--ink); background: var(--void); border: 1px solid var(--ink-3);
+  padding: 7px 8px; min-height: 32px; color-scheme: dark; cursor: pointer; max-width: 46vw;
+}
+select:focus-visible { outline: 1px solid var(--ink); outline-offset: 1px; }
 input[type="datetime-local"] {
   font-family: var(--mono); font-size: 12px; letter-spacing: 0; color: var(--ink);
   border-color: var(--ink-3); color-scheme: dark; cursor: text;

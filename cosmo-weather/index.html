@@ -43,14 +43,13 @@
       <button id="live">now</button>
       <button data-step="1">+1h</button>
       <button data-step="24">+1d</button>
-      <button id="play" title="one hour per second (space)">run</button>
+      <button id="play" title="run the clock, one hour per second (space)">run</button>
+      <button id="speed" title="running speed">1h/s</button>
       <input id="when" type="datetime-local" aria-label="moment">
     </nav>
     <nav class="group">
-      <button data-place="greenwich">greenwich</button>
-      <button data-place="rome">rome</button>
-      <button data-place="jerusalem">jerusalem</button>
-      <button data-place="here">here</button>
+      <button id="here" data-place="here" title="use this device's location">here</button>
+      <select id="city" aria-label="one city for each time zone"></select>
     </nav>
     <nav class="group">
       <button id="save">save 2048</button>

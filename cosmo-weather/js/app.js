@@ -3,11 +3,39 @@
 */
 (function (CW) {
   'use strict';
-  const PLACES = {
-    greenwich: { name: 'greenwich', lat: 51.4769, lon: -0.0005, tz: 'UTC', zoneLabel: 'gmt' },
-    rome:      { name: 'rome',      lat: 41.9028, lon: 12.4964, tz: 'Europe/Rome' },
-    jerusalem: { name: 'jerusalem', lat: 31.7683, lon: 35.2137, tz: 'Asia/Jerusalem' }
+  /* one city for each time zone, west to east */
+  const ZONES = [
+    ['pago pago', -14.2756, -170.7020, 'Pacific/Pago_Pago'], ['honolulu', 21.3069, -157.8583, 'Pacific/Honolulu'],
+    ['atuona', -9.8030, -139.0410, 'Pacific/Marquesas'], ['anchorage', 61.2181, -149.9003, 'America/Anchorage'],
+    ['los angeles', 34.0522, -118.2437, 'America/Los_Angeles'], ['denver', 39.7392, -104.9903, 'America/Denver'],
+    ['mexico city', 19.4326, -99.1332, 'America/Mexico_City'], ['new york', 40.7128, -74.0060, 'America/New_York'],
+    ['caracas', 10.4806, -66.9036, 'America/Caracas'], ["st. john's", 47.5615, -52.7126, 'America/St_Johns'],
+    ['são paulo', -23.5505, -46.6333, 'America/Sao_Paulo'], ['noronha', -3.8540, -32.4240, 'America/Noronha'],
+    ['ponta delgada', 37.7412, -25.6756, 'Atlantic/Azores'], ['greenwich', 51.4769, -0.0005, 'UTC', 'gmt'],
+    ['rome', 41.9028, 12.4964, 'Europe/Rome'], ['jerusalem', 31.7683, 35.2137, 'Asia/Jerusalem'],
+    ['istanbul', 41.0082, 28.9784, 'Europe/Istanbul'], ['tehran', 35.6892, 51.3890, 'Asia/Tehran'],
+    ['dubai', 25.2048, 55.2708, 'Asia/Dubai'], ['kabul', 34.5553, 69.2075, 'Asia/Kabul'],
+    ['karachi', 24.8607, 67.0011, 'Asia/Karachi'], ['mumbai', 19.0760, 72.8777, 'Asia/Kolkata'],
+    ['kathmandu', 27.7172, 85.3240, 'Asia/Kathmandu'], ['dhaka', 23.8103, 90.4125, 'Asia/Dhaka'],
+    ['yangon', 16.8409, 96.1735, 'Asia/Yangon'], ['bangkok', 13.7563, 100.5018, 'Asia/Bangkok'],
+    ['beijing', 39.9042, 116.4074, 'Asia/Shanghai'], ['tokyo', 35.6762, 139.6503, 'Asia/Tokyo'],
+    ['darwin', -12.4634, 130.8456, 'Australia/Darwin'], ['sydney', -33.8688, 151.2093, 'Australia/Sydney'],
+    ['nouméa', -22.2758, 166.4580, 'Pacific/Noumea'], ['auckland', -36.8485, 174.7633, 'Pacific/Auckland'],
+    ["nuku'alofa", -21.1394, -175.2018, 'Pacific/Tongatapu'], ['kiritimati', 1.8721, -157.3626, 'Pacific/Kiritimati']
+  ].map(([name, lat, lon, tz, zoneLabel]) => ({ name, lat, lon, tz, zoneLabel }));
+  const PLACES = Object.fromEntries(ZONES.map(z => [z.name, z]));
+  const offsetOf = (tz, d = new Date()) => {
+    try { return new Intl.DateTimeFormat('en-GB', { timeZone: tz, timeZoneName: 'shortOffset' }).formatToParts(d).find(p => p.type === 'timeZoneName').value.replace('GMT', 'utc').toLowerCase() || 'utc'; }
+    catch (e) { return ''; }
   };
+  /* without a stored place: the city of the device's own time zone, then the device's position if allowed */
+  function placeFromDevice() {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const exact = ZONES.find(z => z.tz === tz);
+    if (exact) return exact;
+    const off = offsetOf(tz);
+    return ZONES.find(z => offsetOf(z.tz) === off) || PLACES.greenwich;
+  }
   const store = {
     get(k, d) { try { const v = localStorage.getItem('cw.' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
     set(k, v) { try { localStorage.setItem('cw.' + k, JSON.stringify(v)); } catch (e) { /* private mode */ } }
@@ -16,7 +44,9 @@
 
   const S = {
     mode: params.get('mode') || store.get('mode', 'clock'),
-    place: store.get('place', PLACES.greenwich),
+    place: store.get('place', null) || placeFromDevice(),
+    firstVisit: !store.get('place', null),
+    speed: 1,                                              // hours of sky per second while running
     live: !params.get('t'),
     offsetMs: 0,
     fixed: params.get('t') ? new Date(params.get('t')) : null,
@@ -40,16 +70,16 @@
   function now() { return new Date(base().getTime() + S.preview * 60000); }
 
   function recompute() {
-    S.state = CW.engine.compute(now(), S.place);
+    S.state = CW.engine.compute(now(), S.place, { light: S.playing });
     if (!S.playing) S.state.nextChord = CW.engine.nextChordShift(S.state.date, S.place);
     S.lastCompute = performance.now();
     S.dirty = true;
     document.documentElement.style.setProperty('--ground', CW.render.ground(S.state));
     const c = CW.render.captionLines(S.state);
     $('caption').innerHTML = `<p class="l1">${c.l1}</p><p>${c.l2}</p><p>${c.l3}</p><p>${c.chord}</p><p class="mono">${c.next}</p><p class="mono">${c.fig}</p><p class="mono">${c.moon}</p>`;
-    scanIfNeeded();
+    if (!S.playing) scanIfNeeded();
     drawStrip();
-    updateReadout();
+    if (!S.playing) updateReadout();                       // the heavy parts wait until the clock rests
     updateControls();
   }
 
@@ -130,18 +160,19 @@
       return n ? `<button data-jump="${n.at.toISOString()}" title="go to this moment"><i style="background:${col}"></i>${m} · ${fmtAt(n.at)}</button>`
                : `<span><i style="background:${col}"></i>${m} · not this week</span>`;
     }).join('');
-    el.querySelectorAll('[data-jump]').forEach(b => b.addEventListener('click', () => { S.fixed = new Date(b.dataset.jump); S.offsetMs = 0; S.preview = 0; $('preview').value = 0; recompute(); }));
+    el.querySelectorAll('[data-jump]').forEach(b => b.addEventListener('click', () => { S.playing = false; S.fixed = new Date(b.dataset.jump); S.offsetMs = 0; S.preview = 0; $('preview').value = 0; recompute(); }));
   }
 
   let t0 = performance.now(), lastFrame = 0;
   function frame(ts) {
     requestAnimationFrame(frame);
-    if (ts - lastFrame < 1000 / 24) return;                   // 24 fps is enough for a clock
-    lastFrame = ts;
-    if (S.playing) { S.offsetMs += 3600e3 / 24; recompute(); }  // one hour per second
+    if (!S.playing && ts - lastFrame < 1000 / 30) return;     // at rest 30 fps; running, every frame the screen gives
+    const dt = Math.min(0.1, (ts - (lastFrame || ts)) / 1000);
+    if (S.playing) { S.offsetMs += S.speed * 3600e3 * dt; recompute(); }   // smooth: time advances with the real frame interval
     else if (performance.now() - S.lastCompute > 20000) recompute();
+    lastFrame = ts;
     const t = (ts - t0) / 1000;
-    if (S.dirty && (!S.playing || ts - lastPlate > 140)) {
+    if (S.dirty) {
       pctx.setTransform(S.dpr, 0, 0, S.dpr, 0, 0);
       info = CW.render.render(pctx, S.state, S.side, t, { mode: S.mode, fieldRes: S.playing ? 110 : 200, caption: S.side >= 560, plate: true, fast: S.playing, field: S.field, sigil: S.sigil });
       S.dirty = false; lastPlate = ts;
@@ -202,7 +233,10 @@
     if (document.activeElement !== $('when')) $('when').value = local;
     $('live').classList.toggle('on', S.offsetMs === 0 && !S.fixed && !S.playing);
     $('play').classList.toggle('on', S.playing);
-    document.querySelectorAll('[data-place]').forEach(b => b.classList.toggle('on', b.dataset.place === S.place.name));
+    $('play').textContent = S.playing ? 'pause' : 'run';
+    $('speed').textContent = S.speed < 1 ? `${S.speed * 60}m/s` : `${S.speed}h/s`;
+    $('here').classList.toggle('on', S.place.name === 'here');
+    if (PLACES[S.place.name] && $('city').value !== S.place.name) $('city').value = S.place.name;
     document.querySelectorAll('[data-mode]').forEach(b => b.classList.toggle('on', b.dataset.mode === S.mode));
     $('sigil').classList.toggle('on', S.sigil);
   }
@@ -210,23 +244,20 @@
   function bind() {
     document.querySelectorAll('[data-step]').forEach(b => b.addEventListener('click', () => { S.offsetMs += Number(b.dataset.step) * 3600e3; recompute(); }));
     $('live').addEventListener('click', () => { S.offsetMs = 0; S.fixed = null; S.playing = false; S.preview = 0; $('preview').value = 0; recompute(); });
-    $('play').addEventListener('click', () => { S.playing = !S.playing; updateControls(); });
+    $('play').addEventListener('click', () => {
+      S.playing = !S.playing;
+      if (!S.playing) recompute(); else updateControls();  // on pause, the full reading of the moment where it stopped
+    });
+    const SPEEDS = [0.25, 1, 4, 24];
+    $('speed').addEventListener('click', () => { S.speed = SPEEDS[(SPEEDS.indexOf(S.speed) + 1) % SPEEDS.length]; updateControls(); });
+    const fill = () => { $('city').innerHTML = ZONES.map(z => `<option value="${z.name}">${offsetOf(z.tz)} · ${z.name}</option>`).join('') + (PLACES[S.place.name] ? '' : `<option value="" selected>${S.place.name}</option>`); };
+    fill();
+    $('city').addEventListener('change', e => { if (!PLACES[e.target.value]) return; S.place = PLACES[e.target.value]; store.set('place', S.place); recompute(); });
     $('when').addEventListener('change', e => {
       const v = new Date(e.target.value);
       if (!isNaN(v)) { S.fixed = v; S.offsetMs = 0; recompute(); }
     });
-    document.querySelectorAll('[data-place]').forEach(b => b.addEventListener('click', () => {
-      const k = b.dataset.place;
-      if (k === 'here') {
-        if (!navigator.geolocation) return;
-        navigator.geolocation.getCurrentPosition(p => {
-          S.place = { name: 'here', lat: p.coords.latitude, lon: p.coords.longitude, tz: Intl.DateTimeFormat().resolvedOptions().timeZone };
-          store.set('place', S.place); recompute();
-        }, () => {}, { timeout: 10000 });
-        return;
-      }
-      S.place = PLACES[k]; store.set('place', S.place); recompute();
-    }));
+    $('here').addEventListener('click', () => locate(true));
     document.querySelectorAll('[data-mode]').forEach(b => b.addEventListener('click', () => { S.mode = b.dataset.mode; store.set('mode', S.mode); S.dirty = true; updateControls(); }));
     $('save').addEventListener('click', () => exportPNG(2048));
     $('sigil').addEventListener('click', () => { S.sigil = !S.sigil; S.dirty = true; updateControls(); });
@@ -252,11 +283,23 @@
     if (params.get('hd') !== '1') $('save-hd').hidden = true;
   }
 
+  /* the device's position: asked once on the first visit, and whenever "here" is pressed */
+  function locate(asked) {
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(p => {
+      S.place = { name: 'here', lat: p.coords.latitude, lon: p.coords.longitude, tz: Intl.DateTimeFormat().resolvedOptions().timeZone };
+      store.set('place', S.place);
+      const sel = $('city'); if (![...sel.options].some(o => o.value === '')) sel.insertAdjacentHTML('beforeend', '<option value="">here</option>');
+      sel.value = ''; recompute();
+    }, () => { if (asked) $('here').title = 'location not available on this device or browser'; }, { timeout: 10000, maximumAge: 3600e3 });
+  }
+
   async function start() {
     try {
       await Promise.all(['500 20px Jost', '400 20px "IBM Plex Sans"', '500 20px "IBM Plex Sans"', '400 20px "IBM Plex Mono"'].map(f => document.fonts.load(f)));
     } catch (e) { /* fonts are a nicety */ }
     bind(); size(); recompute(); drawNexts();
+    if (S.firstVisit || S.place.name === 'here') locate(false);
     requestAnimationFrame(frame);
   }
   CW.app = { start, exportPNG, S };

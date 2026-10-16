@@ -1178,10 +1178,11 @@
       ctx.strokeStyle = K.rgba(INK, angle ? 0.7 : 0.3); ctx.lineWidth = (angle ? 1.6 : 1) * u;
       ctx.beginPath(); ctx.moveTo(p0.x, p0.y); ctx.lineTo(p1.x, p1.y); ctx.stroke();
       const span = E_.norm360(state.cusps[h % 12 + 1] - state.cusps[h]);
-      const lp = polar(Lt, eclAngle(state, state.cusps[h] + span / 2), (Lt.Rz + inR) / 2);
+      // the numeral: on one circle midway across the band, mid-house, set radially as on a chapter ring
+      const ma = eclAngle(state, state.cusps[h] + span / 2), lp = polar(Lt, ma, (Lt.Rz + inR) / 2);
       const sunHouse = state.bodies.sun.house === h;
-      ctx.fillStyle = K.rgba(sunHouse ? C.PLANETS.sun.tincture : INK, sunHouse ? 0.95 : 0.6);
-      ctx.fillText(I().roman(h), lp.x, lp.y);
+      ctx.fillStyle = K.rgba(sunHouse ? C.PLANETS.sun.tincture : INK, sunHouse ? 0.95 : 0.72);
+      ctx.save(); ctx.translate(lp.x, lp.y); ctx.rotate(Math.sin(ma) < 0 ? -Math.PI / 2 - ma : Math.PI / 2 - ma); ctx.fillText(I().roman(h), 0, 0); ctx.restore();   // radial; the lower half turned to read upright at the foot
     }
     // the cardinal ring: a hairline concentric with the dial beyond the container, the four cardinal points set
     // into it like the indices of a bezel, each joined to the container by a radial index. upright text, the ring

@@ -22,10 +22,12 @@
   <header class="bar top">
     <span class="brand"><span class="mark">siderarium</span><span class="tag" data-i18n="ui.tagline">the macrocosmic clock</span></span>
     <nav class="seg" aria-label="view">
+      <span class="seg-ind" aria-hidden="true"></span>
       <button data-mode="clock" data-i18n="ui.clock">clock</button>
       <button data-mode="chart" data-i18n="ui.chart">chart</button>
       <button data-mode="natal" data-i18n="ui.natal">natal</button>
       <button data-mode="synastry" data-i18n="ui.synastry">transits</button>
+      <button id="sigil" class="tog" data-i18n="ui.sigil" title="s">sigil</button>
     </nav>
     <nav class="group">
       <button id="info" data-i18n="ui.readout" title="i">readout</button>
@@ -38,7 +40,6 @@
     <section>
       <h2 data-i18n="ui.view">view</h2>
       <div class="rowbtns">
-        <button id="sigil" data-i18n="ui.sigil" title="s">sigil</button>
         <button id="listen" data-i18n="ui.listen" title="l">listen</button>
         <button id="full" data-i18n="ui.screen" title="f">screen</button>
         <button id="about-open" data-i18n="ui.about">about</button>
@@ -68,6 +69,7 @@
 
   <main id="stage">
     <button id="now-float" class="float-now" data-i18n="ui.now" hidden>now</button>
+    <button id="listen-corner" class="corner-speaker" aria-label="listen to the chord" title="l"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="M4 9.5v5h3.2l4.3 3.3V6.2L7.2 9.5H4z"/><path d="M15 9.6a3.4 3.4 0 0 1 0 4.8"/><path class="w2" d="M17.6 7a7 7 0 0 1 0 10"/></svg></button>
     <canvas id="dial" aria-label="the sky of the moment, as a dial"></canvas>
     <div id="caption"></div>
     <section id="ahead" aria-label="the next 24 hours">

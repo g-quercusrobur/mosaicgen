@@ -1183,15 +1183,29 @@
       ctx.fillStyle = K.rgba(sunHouse ? C.PLANETS.sun.tincture : INK, sunHouse ? 0.95 : 0.6);
       ctx.fillText(I().roman(h), lp.x, lp.y);
     }
-    // cardinal labels outside the container
-    ctx.font = `400 ${Math.round(18 * u * Lt.ts)}px ${SANS}`;
-    ctx.fillStyle = K.rgba(INK, 0.55);
+    // the cardinal ring: a hairline concentric with the dial beyond the container, the four cardinal points set
+    // into it like the indices of a bezel, each joined to the container by a radial index. upright text, the ring
+    // cleared behind it; on narrow layouts a label is kept inside the canvas.
+    const Rc = Lt.Rb + (Lt.tight ? 13 : 28) * u, fs = Math.round(16 * u * Lt.ts);
+    ctx.font = `500 ${fs}px ${SANS}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    if ('letterSpacing' in ctx) ctx.letterSpacing = `${(0.08 * fs).toFixed(1)}px`;
     const am = eclAngle(state, state.mc);
-    const lab = [['ASC', Math.PI], ['DSC', 0], ['MC', am], ['IC', am + Math.PI]];
-    for (const [s, a] of lab) {
-      const rOut = Lt.Rb / Math.cos(((a % (Math.PI / 6)) + Math.PI / 6) % (Math.PI / 6) - Math.PI / 12);  // to the dodecagon edge
-      const p = polar(Lt, a, Math.min(rOut, Lt.Rb) + 26 * u); ctx.fillText(s, p.x, p.y);
+    const lab = [['ASC', Math.PI], ['DSC', 0], ['MC', am], ['IC', am + Math.PI]].map(([s, a]) => {
+      const w = ctx.measureText(s).width + 0.08 * fs + 12 * u, h = fs * 1.15, p = polar(Lt, a, Rc), half = w / 2;
+      return { s, a, w, h, x: Math.max(half + 2 * u, Math.min(Lt.S - half - 2 * u, p.x)), y: p.y };
+    });
+    ctx.strokeStyle = K.rgba(INK, 0.42); ctx.lineWidth = 1.2 * u;
+    ctx.beginPath(); ctx.arc(Lt.cx, Lt.cy, Rc, 0, TAU); ctx.stroke();
+    for (const l of lab) {
+      // the index: from the container's outline to the label's box
+      const reach = l.w / 2 * Math.abs(Math.cos(l.a)) + l.h / 2 * Math.abs(Math.sin(l.a));
+      const p0 = polar(Lt, l.a, edgeR(l.a) + 1.5 * u), p1 = polar(Lt, l.a, Rc - reach - 4 * u);
+      ctx.strokeStyle = K.rgba(INK, 0.85); ctx.lineWidth = 2 * u;
+      ctx.beginPath(); ctx.moveTo(p0.x, p0.y); ctx.lineTo(p1.x, p1.y); ctx.stroke();
+      ctx.fillStyle = VOID; ctx.fillRect(l.x - l.w / 2, l.y - l.h / 2, l.w, l.h);
+      ctx.fillStyle = K.rgba(INK, 0.88); ctx.fillText(l.s, l.x + 0.04 * fs, l.y);
     }
+    if ('letterSpacing' in ctx) ctx.letterSpacing = '0px';
     ctx.restore();
   }
 

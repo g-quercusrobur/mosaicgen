@@ -1,24 +1,24 @@
 {
- "rendered": "2026-10-16 01:46 utc",
+ "rendered": "2026-10-16 07:04 utc",
  "targets": [
   {
    "name": "rome",
    "place": "rome",
-   "caption": "friday · 16 october 2026 · 03:46 cest · rome",
+   "caption": "friday · 16 october 2026 · 09:04 cest · rome",
    "figure": "mars trine saturn",
    "chord": "chord C–E · major third"
   },
   {
    "name": "new-york",
    "place": "new york",
-   "caption": "thursday · 15 october 2026 · 21:46 gmt-4 · new york",
+   "caption": "friday · 16 october 2026 · 03:04 gmt-4 · new york",
    "figure": "mars trine saturn",
    "chord": "chord C–E · major third"
   },
   {
    "name": "greenwich",
    "place": "greenwich",
-   "caption": "friday · 16 october 2026 · 01:46 gmt · greenwich",
+   "caption": "friday · 16 october 2026 · 07:04 gmt · greenwich",
    "figure": "mars trine saturn",
    "chord": "chord C–E · major third"
   }

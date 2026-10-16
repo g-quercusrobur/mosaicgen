@@ -129,7 +129,6 @@
     canvas.style.width = canvas.style.height = side + 'px';
     canvas.width = canvas.height = Math.round(side * dpr);
     S.side = side; S.dpr = dpr;
-    placeCorner(side);
     plate.width = plate.height = canvas.width;
     S.dirty = true;
     document.body.classList.toggle('small', side < 560);
@@ -327,7 +326,7 @@
       `<tr><td>${n ? R('ring') : R('figure')}</td><td colspan="2">${figName(a)} · {${a.n}/${a.k}}</td></tr><tr class="sub"><td></td><td colspan="2">${R('orb')} ${a.orb.toFixed(2)}° ${a.applying ? R('applying') : R('separating')}${a.dissociate ? ' · ' + i.flag('outOfSign') : ''} · ${a.power.toFixed(2)}${a.event ? ' · ' + evName(a.event) : ''}</td></tr>`).join('');
     const cap = CW.render.captionLines(st);
     const el = st.elements ? `${R('element')} ${i.t('ui.el.' + st.elements.dominant)} ${Math.round(st.elements.shares[st.elements.dominant] * 100)}% · ${i.t('ui.el.' + st.elements.order[1])} ${Math.round(st.elements.shares[st.elements.order[1]] * 100)}%` : '';
-    const lead = `<div class="lead"><p class="big">${cap.fig}</p><p>${cap.chord} · ${cap.moon}${el ? ' · ' + el : ''}</p><p class="when">${cap.l1} · ${cap.l2}</p></div>`;
+    const lead = `<div class="lead"><p class="big">${cap.fig}</p><p>${cap.chord} · ${cap.moon}${el ? ' · ' + el : ''}</p><p class="moment">${cap.l1} · ${cap.l2}</p></div>`;
     const inter = st.interaction;
     const interSentence = f => f.name === 'setOff' ? `${P(f.t)} ${R('setsOff')} ${P(f.a)} ${A(f.natalAspect)} ${P(f.b)}` : `${P(f.t)} ${R('closes')} ${R('fig.' + f.name)} ${R('with')} ${P(f.a)} ${A(f.natalAspect)} ${P(f.b)}`;
     const interRows = inter ? (inter.figures.length ? inter.figures.slice(0, 6).map(f => `<tr><td>${R(f.tone)}</td><td colspan="2">${interSentence(f)}</td></tr><tr class="sub"><td></td><td colspan="2">${P(f.t)} ${A(f.x.aspect)} ${P(f.a)} ${f.x.orb.toFixed(1)}° · ${P(f.t)} ${A(f.y.aspect)} ${P(f.b)} ${f.y.orb.toFixed(1)}° · ${f.power.toFixed(2)}</td></tr>`).join('') : `<tr><td colspan="3">${R('noFigure')}</td></tr>`) : '';
@@ -343,7 +342,7 @@
       <tr><td>${R('hourRuler')}</td><td>${P(st.hour.hourRuler)}</td><td>${i.trumpPlanet(st.hour.hourRuler)}</td></tr></table>`;
     const hours = st.hour.table ? st.hour.table.map(h => `<span${h.index === st.hour.index ? ' class="now"' : ''}>${h.index + 1} ${P(h.ruler)} ${hm(h.start)}</span>`).join(' · ') : i.t('ui.polar');
     const top = st.aspects.slice(0, 12).map(a =>
-      `<tr><td>${figName(a)}</td><td>${a.orb.toFixed(2)}°</td><td>${a.applying ? R('applying') : R('separating')}</td><td>${a.power.toFixed(3)}</td></tr>`).join('');
+      `<tr><td>${figName(a)}</td><td class="nw">${a.orb.toFixed(2)}° ${a.applying ? R('applying') : R('separating')}</td><td class="nw">${a.power.toFixed(2)}</td></tr>`).join('');
     const ev = st.events.map(e => i.event(e.type) + (e.planet ? ' ' + P(e.planet) : '') + (e.kind ? ' ' + evName(e.kind) : '') + (e.direction ? ' ' + i.event(e.direction) : '')).join(' · ') || '—';
     const W = k => `${i.window(k)} ${st.windows[k].toFixed(2)}`;
     $('readout').innerHTML = `
@@ -388,13 +387,6 @@
     if (!on.length) { ind.style.width = '0px'; return; }
     const l = Math.min(...on.map(b => b.offsetLeft)), r = Math.max(...on.map(b => b.offsetLeft + b.offsetWidth));
     ind.style.left = l + 'px'; ind.style.width = (r - l) + 'px';
-  }
-  /* the speaker sits at the corner of the dial, outside the figure */
-  function placeCorner(side) {
-    const b = $('listen-corner'), st = $('stage').getBoundingClientRect(), cv = canvas.getBoundingClientRect();
-    const tight = side < 560, sz = tight ? 44 : 40;
-    b.style.left = (cv.left - st.left + side - sz - 4) + 'px';
-    b.style.top = (cv.top - st.top + (tight ? side - sz - 4 : side * 0.84 - sz - 10)) + 'px';
   }
 
   /* ---------- the menu: view, settings, nativity and saved charts ---------- */
@@ -520,6 +512,7 @@
       if (e.key === 'Escape') { document.body.classList.remove('bare', 'reading'); $('about').hidden = true; $('about-open').classList.remove('on'); $('birth').hidden = true; openMenu(false); }
     });
     window.addEventListener('resize', () => { size(); slideSeg(); });
+    $('readout').addEventListener('transitionend', e => { if (e.propertyName === 'width') size(); });   // the stage is only final once the panel has opened
     if (params.get('hd') !== '1') $('save-hd').hidden = true;
   }
 

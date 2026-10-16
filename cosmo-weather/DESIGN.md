@@ -1,6 +1,6 @@
 # cosmo weather — system book
 
-A cosmic clock. It renders the sky of the moment as an instrument: the frame is Bauhaus, the content is the trip.
+A cosmic clock. It renders the sky of the moment as an instrument: the frame has the discipline of a watch dial, the content is the trip.
 Every mark on the dial is computed from the sky by a stated rule. Nothing is ornament.
 
 ---
@@ -9,7 +9,7 @@ Every mark on the dial is computed from the sky by a stated rule. Nothing is orn
 
 1. **Austere frame, maximal content.** Grid, type and interface are strict and colourless. Everything inside the circle is computed light.
 2. **One variable, one channel.** No astrological factor drives more than one visual channel, and no channel takes more than one factor.
-3. **One authority per channel.** Golden Dawn decides colour. The Bauhaus (Itten, Albers) decides structure and colour harmony. Lilly decides dignity.
+3. **One authority per channel.** Golden Dawn decides colour. Itten's circle and Albers' interaction decide colour harmony; the dial discipline of haute horlogerie (chapter ring, applied numerals, the Moon in its aperture, nothing that does not read) decides structure. Lilly decides dignity.
 4. **Traceable.** Any mark can be explained from the readout. The readout is part of the product.
 5. **Earned excess.** Stars, mandalas and portals appear only when the sky produces them.
 
@@ -168,8 +168,9 @@ Rejected and why: a noise nebula (encodes nothing) and a planetary interference 
 
 ## 9 · Type and grid
 
-- **Geist** (OFL) for all text and the wordmark (wide tracking); **Geist Mono** for degrees, numerals and the readout. One family.
-- Lowercase throughout, as the Bauhaus wrote from 1925.
+- **Geist** (OFL, self-hosted) for all text, the readout and the wordmark (wide tracking); **Geist Mono** only for typed inputs and the chart legend. One family, no third-party request.
+- Ordinary capitals: names, days, places and the start of every line. The wordmark alone stays lowercase. Houses in Roman numerals, in the text face.
+- Every export, square or wallpaper, carries the notice: © year Siderarium · proprietary design and method · all rights reserved.
 - The interface owns one colour, off-white `#ebe7dc` at three opacities. All other colour belongs to the sky.
 - The square master is 2048 px. The dial is centred at 45% of the height. The caption band sits on a hairline at the bottom, with 6.25% margins.
 - Motion is clockwork: ticks and steady rotation, no bounce.

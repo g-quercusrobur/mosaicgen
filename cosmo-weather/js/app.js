@@ -11,7 +11,7 @@
     ['mexico city', 19.4326, -99.1332, 'America/Mexico_City'], ['new york', 40.7128, -74.0060, 'America/New_York'],
     ['caracas', 10.4806, -66.9036, 'America/Caracas'], ["st. john's", 47.5615, -52.7126, 'America/St_Johns'],
     ['são paulo', -23.5505, -46.6333, 'America/Sao_Paulo'], ['noronha', -3.8540, -32.4240, 'America/Noronha'],
-    ['ponta delgada', 37.7412, -25.6756, 'Atlantic/Azores'], ['greenwich', 51.4769, -0.0005, 'UTC', 'gmt'],
+    ['ponta delgada', 37.7412, -25.6756, 'Atlantic/Azores'], ['greenwich', 51.4769, -0.0005, 'UTC', 'GMT'],
     ['rome', 41.9028, 12.4964, 'Europe/Rome'], ['jerusalem', 31.7683, 35.2137, 'Asia/Jerusalem'],
     ['istanbul', 41.0082, 28.9784, 'Europe/Istanbul'], ['tehran', 35.6892, 51.3890, 'Asia/Tehran'],
     ['dubai', 25.2048, 55.2708, 'Asia/Dubai'], ['kabul', 34.5553, 69.2075, 'Asia/Kabul'],
@@ -25,7 +25,7 @@
   ].map(([name, lat, lon, tz, zoneLabel]) => ({ name, lat, lon, tz, zoneLabel }));
   const PLACES = Object.fromEntries(ZONES.map(z => [z.name, z]));
   const offsetOf = (tz, d = new Date()) => {
-    try { return new Intl.DateTimeFormat('en-GB', { timeZone: tz, timeZoneName: 'shortOffset' }).formatToParts(d).find(p => p.type === 'timeZoneName').value.replace('GMT', 'utc').toLowerCase() || 'utc'; }
+    try { return new Intl.DateTimeFormat('en-GB', { timeZone: tz, timeZoneName: 'shortOffset' }).formatToParts(d).find(p => p.type === 'timeZoneName').value.replace('GMT', 'UTC') || 'UTC'; }
     catch (e) { return ''; }
   };
   /* without a stored place: the city of the device's own time zone, then the device's position if allowed */
@@ -113,7 +113,7 @@
     document.documentElement.style.setProperty('--ground', CW.render.ground(S.state, S.groundEl));
     document.body.classList.toggle('mrx', viewState().bodies.mercury.slow > 0.5);   // mercury retrograde: the print misregisters
     const c = CW.render.captionLines(viewState());
-    $('caption').innerHTML = `<p class="l1">${c.l1}</p><p>${c.l2}</p><p>${c.l3}</p><p>${c.chord}</p><p>${c.decan}</p><p class="mono">${c.next}</p><p class="mono">${c.fig}</p><p class="mono">${c.moon}</p><p class="mono">${c.mansion}</p>`;
+    $('caption').innerHTML = `<p class="l1">${c.l1}</p><p>${c.l2}</p><p>${c.l3}</p><p>${c.chord}</p><p>${c.decan}</p><p class="mono">${c.next}</p><p class="mono label">${c.label}</p><p class="mono">${c.fig}</p><p class="mono">${c.moon}</p><p class="mono">${c.mansion}</p>`;
     if (!busy) scanIfNeeded();
     drawStrip();
     if (!busy) updateReadout();                            // the heavy parts wait until the clock rests
@@ -193,21 +193,21 @@
       c.globalAlpha = 1;
     }
     c.font = `${10 * d}px "Geist Mono", monospace`; c.fillStyle = 'rgba(235,231,220,0.5)'; c.textBaseline = 'top';
-    CW.i18n.t('ui.strip').map((l, n) => [l, n * 6]).forEach(([l, h]) => { c.textAlign = h === 0 ? 'left' : h === 24 ? 'right' : 'center'; c.fillText(l, h / 24 * W, 2 * d); });
+    CW.i18n.t('ui.strip').map((l, n) => [CW.i18n.cap1(l), n * 6]).forEach(([l, h]) => { c.textAlign = h === 0 ? 'left' : h === 24 ? 'right' : 'center'; c.fillText(l, h / 24 * W, 2 * d); });
     const x = Math.max(0, Math.min(1, S.offsetMs / 864e5)) * W;
     c.fillStyle = 'rgba(235,231,220,0.9)'; c.fillRect(Math.min(W - 2 * d, x), 0, 2 * d, H);
   }
   function fmtAt(d) {
-    return new Intl.DateTimeFormat(CW.i18n.locale(), { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: S.place.tz || 'UTC' }).format(d).toLowerCase();
+    return new Intl.DateTimeFormat(CW.i18n.locale(), { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: S.place.tz || 'UTC' }).format(d).replace(/^./, c => c.toUpperCase());
   }
   function drawNexts() {
     const el = $('nexts');
     const i = CW.i18n;
-    if (!scan.nexts) { el.innerHTML = `<span>${i.t('ui.reading')}</span>`; return; }
+    if (!scan.nexts) { el.innerHTML = `<span>${i.cap1(i.t('ui.reading'))}</span>`; return; }
     el.innerHTML = Object.entries(MOTHER_INK).map(([m, col]) => {
       const n = scan.nexts[m];
-      return n ? `<button data-jump="${n.at.toISOString()}" title="${i.t('ui.goTo')}"><i style="background:${col}"></i>${i.window(m)} · ${fmtAt(n.at)}</button>`
-               : `<span><i style="background:${col}"></i>${i.window(m)} · ${i.t('ui.notThisWeek')}</span>`;
+      return n ? `<button data-jump="${n.at.toISOString()}" title="${i.t('ui.goTo')}"><i style="background:${col}"></i>${i.cap1(i.window(m))} · ${fmtAt(n.at)}</button>`
+               : `<span><i style="background:${col}"></i>${i.cap1(i.window(m))} · ${i.t('ui.notThisWeek')}</span>`;
     }).join('');
     el.querySelectorAll('[data-jump]').forEach(b => b.addEventListener('click', () => { S.playing = false; S.offsetMs = new Date(b.dataset.jump).getTime() - anchor(); recompute(); }));
   }
@@ -330,56 +330,54 @@
 
   /* ---------- readout: every mark traceable ---------- */
   function updateReadout() {
-    const st = viewState(), C = CW.corr, i = CW.i18n, R = k => i.t('ui.r.' + k), H = k => i.t('ui.h.' + k);
+    const st = viewState(), C = CW.corr, i = CW.i18n, R = k => i.t('ui.r.' + k), H = k => i.cap1(i.t('ui.h.' + k));
     const P = k => i.planet(k), A = k => i.aspect(k);
     const rows = C.ORDER.map(k => {
       const b = st.bodies[k];
       const flags = [b.retro ? i.flag('retrograde') : '', b.station ? i.flag('stationary') : '', b.cazimi ? i.flag('cazimi') : b.combust ? i.flag('combust') : b.beams ? i.flag('beams') : '', b.oob ? i.flag('oob') : ''].filter(Boolean).join(', ');
       const dig = C.PLANETS[k].kind === 'optic' ? i.flag('noDignity') : `${b.dignity.score > 0 ? '+' : ''}${b.dignity.score} · ${b.dignity.labels.map(l => i.dignity(l)).join(', ') || '—'}`;
-      return `<tr><td>${P(k)}</td><td>${Math.floor(b.deg)}°${String(Math.floor((b.deg % 1) * 60)).padStart(2, '0')}′ ${i.sign(b.sign)}</td><td>${R('house')} ${b.house}</td></tr><tr class="sub"><td></td><td colspan="2">${dig}${flags ? ' · ' + flags : ''}</td></tr>`;
+      return `<tr><td>${P(k)}</td><td>${Math.floor(b.deg)}°${String(Math.floor((b.deg % 1) * 60)).padStart(2, '0')}′ ${i.sign(b.sign)}</td><td>${R('house')} ${i.roman(b.house)}</td></tr><tr class="sub"><td></td><td colspan="2">${i.cap1(dig)}${flags ? ' · ' + flags : ''}</td></tr>`;
     }).join('');
     const cf = st.configs;
     const figName = a => a.natal ? `${P(a.a)} ${A(a.aspect)} ${i.t('cap.natal')} ${P(a.b)}` : `${P(a.a)} ${A(a.aspect)} ${P(a.b)}`;
     const evName = e => e.split(' ').map(w => i.event(w)).join(' ');
     const figs = [cf.primary, ...cf.secondary].filter(Boolean).map((a, n) =>
-      `<tr><td>${n ? R('ring') : R('figure')}</td><td colspan="2">${figName(a)} · {${a.n}/${a.k}}</td></tr><tr class="sub"><td></td><td colspan="2">${R('orb')} ${a.orb.toFixed(2)}° ${a.applying ? R('applying') : R('separating')}${a.dissociate ? ' · ' + i.flag('outOfSign') : ''} · ${a.power.toFixed(2)}${a.event ? ' · ' + evName(a.event) : ''}</td></tr>`).join('');
+      `<tr><td>${i.cap1(n ? R('ring') : R('figure'))}</td><td colspan="2">${figName(a)} · {${a.n}/${a.k}}</td></tr><tr class="sub"><td></td><td colspan="2">${i.cap1(R('orb'))} ${a.orb.toFixed(2)}° ${a.applying ? R('applying') : R('separating')}${a.dissociate ? ' · ' + i.flag('outOfSign') : ''} · ${a.power.toFixed(2)}${a.event ? ' · ' + evName(a.event) : ''}</td></tr>`).join('');
     const cap = CW.render.captionLines(st);
     const el = st.elements ? `${R('element')} ${i.t('ui.el.' + st.elements.dominant)} ${Math.round(st.elements.shares[st.elements.dominant] * 100)}% · ${i.t('ui.el.' + st.elements.order[1])} ${Math.round(st.elements.shares[st.elements.order[1]] * 100)}%` : '';
-    const lead = `<div class="lead"><p class="big">${cap.fig}</p><p>${cap.chord} · ${cap.moon}${el ? ' · ' + el : ''}</p><p class="moment">${cap.l1} · ${cap.l2}</p></div>`;
+    const guardians = `${R('guardians')} ${P(st.hour.dayRuler)}${st.hour.dayRuler === st.hour.hourRuler ? ' ' + R('alone') : ' ' + R('and') + ' ' + P(st.hour.hourRuler)}`;
+    const lead = `<div class="lead"><p class="big">${cap.fig}</p><p>${i.cap1(R('moonIs'))} ${i.verdict(st.moon.verdict)} · ${guardians} · ${cap.chord.replace(/^./, c => c.toLowerCase())}${el ? ' · ' + el : ''}</p><p class="moment">${cap.l1} · ${cap.l2}</p></div>`;
     const inter = st.interaction;
     const interSentence = f => f.name === 'setOff' ? `${P(f.t)} ${R('setsOff')} ${P(f.a)} ${A(f.natalAspect)} ${P(f.b)}` : `${P(f.t)} ${R('closes')} ${R('fig.' + f.name)} ${R('with')} ${P(f.a)} ${A(f.natalAspect)} ${P(f.b)}`;
-    const interRows = inter ? (inter.figures.length ? inter.figures.slice(0, 6).map(f => `<tr><td>${R(f.tone)}</td><td colspan="2">${interSentence(f)}</td></tr><tr class="sub"><td></td><td colspan="2">${P(f.t)} ${A(f.x.aspect)} ${P(f.a)} ${f.x.orb.toFixed(1)}° · ${P(f.t)} ${A(f.y.aspect)} ${P(f.b)} ${f.y.orb.toFixed(1)}° · ${f.power.toFixed(2)}</td></tr>`).join('') : `<tr><td colspan="3">${R('noFigure')}</td></tr>`) : '';
-    const verdict = inter ? `<p class="verdict">${R('harmony')} ${inter.harmony.toFixed(2)} · ${R('strife')} ${inter.strife.toFixed(2)} · ${R(inter.verdict)}</p>` : '';
+    const interRows = inter ? (inter.figures.length ? inter.figures.slice(0, 6).map(f => `<tr><td>${i.cap1(R(f.tone))}</td><td colspan="2">${interSentence(f)}</td></tr><tr class="sub"><td></td><td colspan="2">${P(f.t)} ${A(f.x.aspect)} ${P(f.a)} ${f.x.orb.toFixed(1)}° · ${P(f.t)} ${A(f.y.aspect)} ${P(f.b)} ${f.y.orb.toFixed(1)}° · ${f.power.toFixed(2)}</td></tr>`).join('') : `<tr><td colspan="3">${i.cap1(R('noFigure'))}</td></tr>`) : '';
+    const verdict = inter ? `<p class="verdict">${i.cap1(R('harmony'))} ${inter.harmony.toFixed(2)} · ${R('strife')} ${inter.strife.toFixed(2)} · ${R(inter.verdict)}</p>` : '';
     const tz = st.loc.tz || 'UTC';
     const hm = d => new Intl.DateTimeFormat(i.locale(), { hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: tz }).format(d);
     const dec = b => `${i.decanOrd(b.decan.decan)} ${i.t('cap.decanOf')} ${i.sign(b.sign)} · ${P(b.decan.ruler)}`;
     const tarot = `<table>
-      <tr><td>${R('sun')}</td><td>${dec(st.bodies.sun)}</td><td>${i.card(st.bodies.sun.decan)} · ${i.title(st.bodies.sun.decan)}</td></tr>
-      <tr><td>${R('moon')}</td><td>${dec(st.bodies.moon)}</td><td>${i.card(st.bodies.moon.decan)} · ${i.title(st.bodies.moon.decan)}</td></tr>
-      <tr><td>${R('ascendant')}</td><td>${i.sign(Math.floor(st.asc / 30))}</td><td>${i.trumpSign(Math.floor(st.asc / 30))}</td></tr>
-      <tr><td>${R('dayRuler')}</td><td>${P(st.hour.dayRuler)}</td><td>${i.trumpPlanet(st.hour.dayRuler)}</td></tr>
-      <tr><td>${R('hourRuler')}</td><td>${P(st.hour.hourRuler)}</td><td>${i.trumpPlanet(st.hour.hourRuler)}</td></tr></table>`;
-    const hours = st.hour.table ? st.hour.table.map(h => `<span${h.index === st.hour.index ? ' class="now"' : ''}>${h.index + 1} ${P(h.ruler)} ${hm(h.start)}</span>`).join(' · ') : i.t('ui.polar');
+      <tr><td>${i.cap1(R('sun'))}</td><td>${i.cap1(dec(st.bodies.sun))}</td><td>${i.card(st.bodies.sun.decan)} · ${i.title(st.bodies.sun.decan)}</td></tr>
+      <tr><td>${i.cap1(R('moon'))}</td><td>${i.cap1(dec(st.bodies.moon))}</td><td>${i.card(st.bodies.moon.decan)} · ${i.title(st.bodies.moon.decan)}</td></tr>
+      <tr><td>${i.cap1(R('ascendant'))}</td><td>${i.sign(Math.floor(st.asc / 30))}</td><td>${i.trumpSign(Math.floor(st.asc / 30))}</td></tr>
+      <tr><td>${i.cap1(R('dayRuler'))}</td><td>${P(st.hour.dayRuler)}</td><td>${i.trumpPlanet(st.hour.dayRuler)}</td></tr>
+      <tr><td>${i.cap1(R('hourRuler'))}</td><td>${P(st.hour.hourRuler)}</td><td>${i.trumpPlanet(st.hour.hourRuler)}</td></tr></table>`;
+    const hours = st.hour.table ? st.hour.table.map(h => `<span${h.index === st.hour.index ? ' class="now"' : ''}>${h.index + 1} ${P(h.ruler)} ${hm(h.start)}</span>`).join(' · ') : i.cap1(i.t('ui.polar'));
     const top = st.aspects.slice(0, 12).map(a =>
       `<tr><td>${figName(a)}</td><td class="nw">${a.orb.toFixed(2)}° ${a.applying ? R('applying') : R('separating')}</td><td class="nw">${a.power.toFixed(2)}</td></tr>`).join('');
     const ev = st.events.map(e => i.event(e.type) + (e.planet ? ' ' + P(e.planet) : '') + (e.kind ? ' ' + evName(e.kind) : '') + (e.direction ? ' ' + i.event(e.direction) : '')).join(' · ') || '—';
-    const W = k => `${i.window(k)} ${st.windows[k].toFixed(2)}`;
     $('readout').innerHTML = `
       ${lead}
       <h3>${H('bodies')}</h3><table>${rows}</table>
-      <h3>${H('figure')}</h3><table>${figs || `<tr><td>${i.t('ui.quietSky')}</td></tr>`}</table>
+      <h3>${H('figure')}</h3><table>${figs || `<tr><td>${i.cap1(i.t('ui.quietSky'))}</td></tr>`}</table>
       <h3>${H('sound')}</h3><p>${st.chord.name}${st.chord.interval ? ' · ' + i.interval(st.chord.interval) : ''}${st.chord.notes.length ? ` · ${R('notes')} ` + st.chord.notes.join(' ') : ''}${st.chord.planets ? ` · ${R('from')} ` + st.chord.planets.map(P).join(', ') : ''}${st.nextChord ? ` · ${R('next')} ${st.nextChord.to} ${R('at')} ${hm(st.nextChord.at)}` : ''}</p>
       <h3>${H('tarot')}</h3>${tarot}
-      ${st.transits ? `<h3>${H('transits')}</h3>${verdict}<table>${interRows}</table><table>${st.transits.slice(0, 8).map(a => `<tr><td>${figName(a)}</td><td>${a.orb.toFixed(2)}° ${a.applying ? R('applying') : R('separating')}</td><td>${a.power.toFixed(2)}</td></tr>`).join('') || `<tr><td>${i.t('ui.noContact')}</td></tr>`}</table>` : ''}
-      <h3>${H('portal')}</h3><p>${R('scale')} ×${(cf.scale || 1).toFixed(2)} (${R('widens')})${cf.cut ? ` · ${R('cut')} ${P(cf.cut.by)} ${A(cf.cut.aspect)} ${P(cf.cut.target)}, ${Math.round(cf.cut.width)}°` : ' · ' + R('whole')}</p>
-      <p>${R('guardians')} ${P(st.hour.dayRuler)}${st.hour.dayRuler === st.hour.hourRuler ? ' ' + R('alone') : ' ' + R('and') + ' ' + P(st.hour.hourRuler)}</p>
-      <h3>${H('windows')}</h3><p>${W('ideation')} · ${W('incarnation')} · ${W('destruction')}</p>
-      <h3>${H('moon')}</h3>${st.moon.verdict === 'void' ? `<p class="dim">${R('voidNote')}</p>` : ''}<p>${i.verdict(st.moon.verdict)} · ${st.moon.next ? `${R('nextMoon')} ${A(st.moon.next.aspect)} ${P(st.moon.next.planet)} ${R('in')} ${(st.moon.next.days * 24).toFixed(1)}h` : i.flag('void of course')}${st.moon.flags.filter(f => f !== 'void of course').map(f => ' · ' + i.flag(f === 'under the beams' ? 'beams' : f)).join('')}</p>
-      <p>${i.ordinal(st.bodies.moon.mansion.index)} ${R('mansion')} · ${st.bodies.moon.mansion.name} (agrippa II.33)</p>
+      ${st.transits ? `<h3>${H('transits')}</h3>${verdict}<table>${interRows}</table><table>${st.transits.slice(0, 8).map(a => `<tr><td>${figName(a)}</td><td>${a.orb.toFixed(2)}° ${a.applying ? R('applying') : R('separating')}</td><td>${a.power.toFixed(2)}</td></tr>`).join('') || `<tr><td>${i.cap1(i.t('ui.noContact'))}</td></tr>`}</table>` : ''}
+      <h3>${H('moon')}</h3>${st.moon.verdict === 'void' ? `<p class="dim">${i.cap1(R('voidNote'))}</p>` : ''}<p>${i.cap1(i.verdict(st.moon.verdict))} · ${st.moon.next ? `${R('nextMoon')} ${A(st.moon.next.aspect)} ${P(st.moon.next.planet)} ${R('in')} ${(st.moon.next.days * 24).toFixed(1)}h` : i.flag('void of course')}${st.moon.flags.filter(f => f !== 'void of course').map(f => ' · ' + i.flag(f === 'under the beams' ? 'beams' : f)).join('')}</p>
+      <p>${i.cap1(guardians)}</p>
+      <p>${i.ordinal(st.bodies.moon.mansion.index)} ${R('mansion')} · ${i.name(st.bodies.moon.mansion.name)} (Agrippa II.33)</p>
       <h3>${H('hours')}</h3><p class="hours">${hours}</p>
-      <h3>${H('events')}</h3><p>${ev}</p>
+      <h3>${H('events')}</h3><p>${i.cap1(ev)}</p>
       <h3>${H('hierarchy')}</h3><table>${top}</table>
-      <p class="dim">${R('sect')} ${st.sect === 'day' ? R('day') : R('night')} · asc ${Math.floor(st.asc % 30)}° ${i.sign(Math.floor(st.asc / 30))} · mc ${Math.floor(st.mc % 30)}° ${i.sign(Math.floor(st.mc / 30))} · ${R('dayRuler')} ${P(st.hour.dayRuler)} / ${st.hour.dayAngel} · ${R('hour')} ${st.hour.index + 1} ${P(st.hour.hourRuler)} / ${st.hour.angel}</p>`;
+      <p class="dim">${i.cap1(R('sect'))} ${st.sect === 'day' ? R('day') : R('night')} · ASC ${Math.floor(st.asc % 30)}° ${i.sign(Math.floor(st.asc / 30))} · MC ${Math.floor(st.mc % 30)}° ${i.sign(Math.floor(st.mc / 30))} · ${R('dayRuler')} ${P(st.hour.dayRuler)} / ${i.name(st.hour.dayAngel)} · ${R('hour')} ${st.hour.index + 1} ${P(st.hour.hourRuler)} / ${i.name(st.hour.angel)}</p>`;
   }
 
   function updateControls() {
@@ -390,7 +388,7 @@
     $('now-float').hidden = live;                           // the way back, in sight whenever the clock has been moved
     if (document.activeElement !== $('preview')) $('preview').value = Math.max(0, Math.min(1440, Math.round(S.offsetMs / 60000)));
     $('play').classList.toggle('on', S.playing);
-    $('play').textContent = CW.i18n.t(S.playing ? 'ui.pause' : 'ui.run');
+    $('play').textContent = CW.i18n.cap1(CW.i18n.t(S.playing ? 'ui.pause' : 'ui.run'));
     $('speed').textContent = S.speed < 1 ? `${S.speed * 60}m/s` : `${S.speed}h/s`;
     $('here').classList.toggle('on', S.place.name === 'here');
     if (PLACES[S.place.name] && $('city').value !== S.place.name) $('city').value = S.place.name;
@@ -412,9 +410,9 @@
   const uid = () => Math.random().toString(36).slice(2, 10);
   function natalSummary() {
     const i = CW.i18n;
-    if (!S.natal) return i.t('ui.noneSet');
+    if (!S.natal) return i.cap1(i.t('ui.noneSet'));
     const p = placeParts(new Date(S.natal.date), S.natal.place.tz);
-    return `${S.natal.name ? S.natal.name + ' · ' : ''}${p.year}-${p.month}-${p.day} ${S.natal.unknownTime ? '' : p.hour + ':' + p.minute + ' '}· ${S.natal.place.name}`;
+    return `${S.natal.name ? S.natal.name + ' · ' : ''}${p.year}-${p.month}-${p.day} ${S.natal.unknownTime ? '' : p.hour + ':' + p.minute + ' '}· ${i.placeName(S.natal.place.name)}`;
   }
   function refreshMenu() {
     const i = CW.i18n;
@@ -423,8 +421,8 @@
     $('natal-summary').textContent = natalSummary();
     $('natal-saveas').disabled = !S.natal;
     const ul = $('charts');
-    ul.innerHTML = S.charts.length ? S.charts.map(c => `<li data-id="${c.id}"${S.natal && S.natal.id === c.id ? ' class="on"' : ''}><span class="name" data-act="load" role="button" tabindex="0" title="${i.t('ui.load')}">${esc(c.name)}</span><span class="ops"><button data-act="rename">${i.t('ui.rename')}</button><button data-act="delete">${i.t('ui.del')}</button></span></li>`).join('')
-      : `<li class="empty">${i.t('ui.noCharts')}</li>`;
+    ul.innerHTML = S.charts.length ? S.charts.map(c => `<li data-id="${c.id}"${S.natal && S.natal.id === c.id ? ' class="on"' : ''}><span class="name" data-act="load" role="button" tabindex="0" title="${i.t('ui.load')}">${esc(c.name)}</span><span class="ops"><button data-act="rename">${i.cap1(i.t('ui.rename'))}</button><button data-act="delete">${i.cap1(i.t('ui.del'))}</button></span></li>`).join('')
+      : `<li class="empty">${i.cap1(i.t('ui.noCharts'))}</li>`;
   }
   const esc = t => String(t).replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
   function openMenu(open) { $('menu').hidden = !open; $('menu-open').classList.toggle('on', open); if (open) refreshMenu(); }
@@ -466,7 +464,7 @@
         input.addEventListener('blur', done);
       } else if (b.dataset.act === 'delete') {
         if (b.dataset.armed) { S.charts = S.charts.filter(c => c.id !== id); store.set('charts', S.charts); refreshMenu(); }
-        else { b.dataset.armed = '1'; b.textContent = CW.i18n.t('ui.confirm'); setTimeout(() => { if (b.isConnected) { delete b.dataset.armed; b.textContent = CW.i18n.t('ui.del'); } }, 3000); }
+        else { b.dataset.armed = '1'; b.textContent = CW.i18n.cap1(CW.i18n.t('ui.confirm')); setTimeout(() => { if (b.isConnected) { delete b.dataset.armed; b.textContent = CW.i18n.cap1(CW.i18n.t('ui.del')); } }, 3000); }
       }
     });
   }
@@ -481,7 +479,7 @@
     });
     const SPEEDS = [0.25, 1, 4, 24];
     $('speed').addEventListener('click', () => { S.speed = SPEEDS[(SPEEDS.indexOf(S.speed) + 1) % SPEEDS.length]; updateControls(); });
-    const fill = () => { $('city').innerHTML = ZONES.map(z => `<option value="${z.name}">${offsetOf(z.tz)} · ${z.name}</option>`).join('') + (PLACES[S.place.name] ? '' : `<option value="" selected>${S.place.name}</option>`); };
+    const fill = () => { const pn = CW.i18n.placeName; $('city').innerHTML = ZONES.map(z => `<option value="${z.name}">${offsetOf(z.tz)} · ${pn(z.name)}</option>`).join('') + (PLACES[S.place.name] ? '' : `<option value="" selected>${pn(S.place.name)}</option>`); };
     fill();
     $('city').addEventListener('change', e => { if (!PLACES[e.target.value]) return; S.place = PLACES[e.target.value]; store.set('place', S.place); recompute(); });
     const commit = e => {
@@ -505,7 +503,7 @@
     $('birth-clear').addEventListener('click', () => { S.natal = null; store.set('natal', null); if (natalModes.includes(S.mode)) S.mode = 'clock'; $('birth').hidden = true; recompute(); });
     $('wallpaper').addEventListener('click', exportWallpaper);
     $('save').addEventListener('click', () => exportPNG(2048));
-    const bc = $('birth-city'); bc.innerHTML = ZONES.map(z => `<option value="${z.name}">${offsetOf(z.tz)} · ${z.name}</option>`).join('');
+    const bc = $('birth-city'); bc.innerHTML = ZONES.map(z => `<option value="${z.name}">${offsetOf(z.tz)} · ${CW.i18n.placeName(z.name)}</option>`).join('');
     $('sigil').addEventListener('click', () => { S.sigil = !S.sigil; S.dirty = true; updateControls(); });
     $('preview').addEventListener('input', e => { S.playing = false; S.offsetMs = Number(e.target.value) * 60000; recompute(); });
     $('save-hd').addEventListener('click', () => exportPNG(4096));
@@ -553,9 +551,9 @@
     const dateTxt = $('birth-date').value.trim(), unknown = $('birth-unknown').checked, timeTxt = unknown ? '12:00' : $('birth-time').value.trim();
     const city = PLACES[$('birth-city').value];
     const lat = parseFloat($('birth-lat').value), lon = parseFloat($('birth-lon').value);
-    const place = Number.isFinite(lat) && Number.isFinite(lon) ? { name: $('birth-place').value.trim().toLowerCase() || city.name, lat, lon, tz: city.tz } : { ...city };
+    const place = Number.isFinite(lat) && Number.isFinite(lon) ? { name: $('birth-place').value.trim() || city.name, lat, lon, tz: city.tz } : { ...city };
     const d = fromStamp(`${dateTxt} ${timeTxt}`, place.tz);
-    if (!d) { $('birth-note').textContent = CW.i18n.t('ui.badDate'); return; }
+    if (!d) { $('birth-note').textContent = CW.i18n.cap1(CW.i18n.t('ui.badDate')); return; }
     const name = $('birth-name').value.trim();
     S.natal = { date: d.toISOString(), place, unknownTime: unknown, name: name || undefined, id: name ? (S.natal && S.natal.id) || uid() : undefined };
     if (name) upsertChart(S.natal);                         // a named nativity is kept in the saved charts

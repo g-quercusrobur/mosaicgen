@@ -2,7 +2,7 @@ name: pages
 on:
   push:
     branches: [claude/cosmo-weather-app-lrigzv, main, master]
-    paths: ['cosmo-weather/**', '.github/workflows/pages.yml']
+    paths: ['cosmo-weather/**', 'site/**', '.github/workflows/pages.yml']
   workflow_dispatch:
 permissions:
   contents: write
@@ -14,8 +14,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: stage the app without the sample renders
-        run: rsync -a --exclude samples cosmo-weather/ dist/
+      - name: stage the website at the root and the app under /app (the hourly renders stay at /sky)
+        run: |
+          rsync -a site/ dist/
+          rsync -a --exclude samples cosmo-weather/ dist/app/
       # the site is published as the gh-pages branch: no Pages API call, so no admin permission is needed.
       # github serves a gh-pages branch at https://<owner>.github.io/<repo>/ once Pages is on
       # (settings → pages → source: deploy from a branch → gh-pages).

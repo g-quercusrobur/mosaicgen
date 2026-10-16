@@ -16,7 +16,7 @@
   const TAU = Math.PI * 2;
   const INK = '#ebe7dc';            // off-white, the only colour the frame owns
   const MIDNIGHT = '#050a20';
-  const VOID = '#02030a';
+  const VOID = '#000000';                                 // the page is pure black; the art sits lighter on it
   const STAR = '#ffffff';            // reserved for constellations
   const NATAL_INK = '#d9d3c6';       // the nativity is drawn in ink: it is the fixed thing the sky moves against
   const SANS = 'Geist, "Helvetica Neue", Arial, sans-serif';
@@ -38,7 +38,7 @@
   const clamp = (x, a = 0, b = 1) => Math.max(a, Math.min(b, x));
   const smooth = (e0, e1, x) => { const t = clamp((x - e0) / (e1 - e0)); return t * t * (3 - 2 * t); };
   /* the moon's light sets the weight of every mark: a floor of 70% at new moon, and the full moon adds luminosity of its own */
-  const lunarE = state => { const i = state.moon.illum; return 0.70 + 0.30 * i + 0.22 * smooth(0.9, 1, i); };
+  const lunarE = state => { const i = state.moon.illum; return 0.81 + 0.35 * i + 0.25 * smooth(0.9, 1, i); };   // ~15% lighter than before
   const lunarLw = state => { const i = state.moon.illum; return 2.24 + 0.96 * i + 0.3 * smooth(0.9, 1, i); };
 
   /* ---------- colour of things ---------- */
@@ -589,11 +589,11 @@
         ctx.globalCompositeOperation = 'source-over';
       }
       const g0 = ctx.createRadialGradient(cx, cy, rg * 1.2, cx, cy, rg * 6);
-      g0.addColorStop(0, 'rgba(2,3,10,0.55)'); g0.addColorStop(1, 'rgba(2,3,10,0)');
+      g0.addColorStop(0, 'rgba(0,0,0,0.55)'); g0.addColorStop(1, 'rgba(0,0,0,0)');
       ctx.fillStyle = g0; ctx.beginPath(); ctx.arc(cx, cy, rg * 6, 0, TAU); ctx.fill();
       const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, rg * 2.4);
       const deep = level > 0 ? 0.72 : 0.97;
-      g.addColorStop(0, `rgba(2,3,10,${deep})`); g.addColorStop(0.5, `rgba(2,3,10,${(deep * 0.88).toFixed(2)})`); g.addColorStop(1, 'rgba(2,3,10,0)');
+      g.addColorStop(0, `rgba(0,0,0,${deep})`); g.addColorStop(0.5, `rgba(0,0,0,${(deep * 0.88).toFixed(2)})`); g.addColorStop(1, 'rgba(0,0,0,0)');
       ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, rg * 2.4, 0, TAU); ctx.fill();
     }
     const ghost = v === 'void' ? 0.8 : v === 'unripe' ? 0.7 : 1;   // void: the light goes out, the guardians still hold the room
@@ -606,7 +606,7 @@
       const c = key === 'moon' ? '#dfe6ee' : C.PLANETS[key].tincture;
       ctx.lineJoin = 'round'; ctx.lineCap = 'round';
       ctx.globalCompositeOperation = 'source-over';
-      if (!PURE) { ctx.strokeStyle = 'rgba(2,3,10,0.45)'; ctx.lineWidth = lw * 2.6; ctx.stroke(p); }   // a dark bed so any tincture reads on any light
+      if (!PURE) { ctx.strokeStyle = 'rgba(0,0,0,0.45)'; ctx.lineWidth = lw * 2.6; ctx.stroke(p); }   // a dark bed so any tincture reads on any light
       strokeGlow(ctx, p, c, lw * 1.1, alpha, E, '#9aa0ab');
     };
     if (d === hr) star(d, ghost);
@@ -1022,7 +1022,7 @@
     ctx.save();
     ctx.globalCompositeOperation = 'source-over'; ctx.filter = 'none'; ctx.setLineDash([]);
     if (disc) {
-      ctx.fillStyle = `rgba(2,3,10,${(0.82 * s).toFixed(2)})`; ctx.beginPath(); ctx.arc(cx, cy, r, 0, TAU); ctx.fill();
+      ctx.fillStyle = `rgba(0,0,0,${(0.82 * s).toFixed(2)})`; ctx.beginPath(); ctx.arc(cx, cy, r, 0, TAU); ctx.fill();
       withBlur(ctx, 2.5 * u * soft, () => { ctx.strokeStyle = K.rgba(col, s * (1 - 0.3 * soft)); ctx.lineWidth = Math.max(u, r * 0.04); ctx.beginPath(); ctx.arc(cx, cy, r, 0, TAU); ctx.stroke(); });
     }
     withBlur(ctx, 4 * u * soft, () => {                    // retrograde: the corona loses focus
@@ -1077,7 +1077,7 @@
     const el = state.elements; if (!el) return;
     const [d0, d1] = el.order, u = Lt.u;
     const col = K.mixLight(ELEMENT_LIGHT[d0], ELEMENT_LIGHT[d1], 0.3 * el.shares[d1] / (el.shares[d0] + el.shares[d1]), 0);
-    const a = (d0 === 'earth' ? 0.16 : 0.12) + 0.22 * el.shares[d0];
+    const a = (d0 === 'earth' ? 0.24 : 0.2) + 0.3 * el.shares[d0];
     ctx.save(); auraClip(ctx, Lt);
     ctx.globalCompositeOperation = 'screen';
     const inR = Lt.Rb * Math.cos(Math.PI / 12), outR = Lt.Rb * 1.4;
@@ -1089,10 +1089,10 @@
       for (let i = 0; i < 900; i++) {
         const h1 = hash(i, 17, 1), h2 = hash(i, 19, 2), h3 = hash(i, 23, 3);
         const r = inR + Math.pow(h1, 0.7) * span, th = h2 * TAU, fade = 1 - (r - inR) / span;
-        ctx.fillStyle = K.rgba(h3 > 0.8 ? '#c9a070' : ELEMENT_LIGHT.earth, (0.08 + 0.16 * h3) * fade);
+        ctx.fillStyle = K.rgba(h3 > 0.8 ? '#c9a070' : ELEMENT_LIGHT.earth, (0.12 + 0.24 * h3) * fade);
         ctx.beginPath(); ctx.arc(Lt.cx + r * Math.cos(th), Lt.cy + r * Math.sin(th), u * (0.7 + 1.6 * h3), 0, TAU); ctx.fill();
       }
-      ctx.strokeStyle = K.rgba(ELEMENT_LIGHT.earth, 0.28); ctx.lineWidth = u * 1.1; ctx.lineJoin = 'round';
+      ctx.strokeStyle = K.rgba(ELEMENT_LIGHT.earth, 0.4); ctx.lineWidth = u * 1.2; ctx.lineJoin = 'round';
       for (let i = 0; i < 36; i++) {
         const th = hash(i, 29, 4) * TAU, r0 = inR + hash(i, 31, 5) * span * 0.6; let r = r0, a0 = th;
         ctx.beginPath(); ctx.moveTo(Lt.cx + r * Math.cos(a0), Lt.cy + r * Math.sin(a0));
@@ -1113,7 +1113,7 @@
     ctx.save(); auraClip(ctx, Lt); ctx.globalCompositeOperation = 'screen'; ctx.lineCap = 'round';
     if (d0 === 'water') {
       for (let i = 0; i < 7; i++) {
-        const ph = ((t * 0.05 + i / 7) % 1 + 1) % 1, r = inR + ph * span, a = 0.24 * k * Math.sin(Math.PI * ph);
+        const ph = ((t * 0.05 + i / 7) % 1 + 1) % 1, r = inR + ph * span, a = 0.36 * k * Math.sin(Math.PI * ph);
         ctx.strokeStyle = K.rgba(col, a); ctx.lineWidth = u * (1.6 + 2.2 * (1 - ph));
         ctx.beginPath();
         for (let q = 0; q <= 108; q++) { const th = q / 108 * TAU, rr = r + 3 * u * Math.sin(9 * th + t * 0.7 + i) + 2 * u * Math.sin(5 * th - t * 0.5); const x = Lt.cx + rr * Math.cos(th), y = Lt.cy + rr * Math.sin(th); q ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }
@@ -1124,7 +1124,7 @@
         const h1 = hash(i, 3, 1), h2 = hash(i, 5, 2), h3 = hash(i, 7, 3);
         const r = inR + 6 * u + h1 * (span - 12 * u), speed = (0.1 + 0.22 * h2) * (h3 > 0.5 ? 1 : -1);
         const th = h3 * TAU + t * speed, len = (18 + 40 * h2) * u / r;
-        const a = 0.34 * k * (0.45 + 0.55 * Math.sin(t * 1.1 + i * 0.9));
+        const a = 0.48 * k * (0.45 + 0.55 * Math.sin(t * 1.1 + i * 0.9));
         ctx.strokeStyle = K.rgba(col, a); ctx.lineWidth = u * (1.1 + 1.1 * h1);
         ctx.beginPath(); ctx.arc(Lt.cx, Lt.cy, r, th, th + len); ctx.stroke();
       }
@@ -1136,7 +1136,7 @@
         const len = span * (0.22 + 0.5 * h2) * fl, r0 = inR - 2 * u, r1 = r0 + len;
         const cs = Math.cos(th), sn = Math.sin(th), bend = 9 * u * Math.sin(t * 1.4 + i);
         const x0 = Lt.cx + r0 * cs, y0 = Lt.cy + r0 * sn, x1 = Lt.cx + r1 * cs - bend * sn, y1 = Lt.cy + r1 * sn + bend * cs;
-        const g = ctx.createLinearGradient(x0, y0, x1, y1); g.addColorStop(0, K.rgba(col, 0.32 * k)); g.addColorStop(1, K.rgba(col, 0));
+        const g = ctx.createLinearGradient(x0, y0, x1, y1); g.addColorStop(0, K.rgba(col, 0.46 * k)); g.addColorStop(1, K.rgba(col, 0));
         ctx.strokeStyle = g; ctx.lineWidth = u * (1.8 + 3.6 * h1) * fl;
         ctx.beginPath(); ctx.moveTo(x0, y0); ctx.quadraticCurveTo(Lt.cx + (r0 + len * 0.5) * cs - bend * 0.4 * sn, Lt.cy + (r0 + len * 0.5) * sn + bend * 0.4 * cs, x1, y1); ctx.stroke();
       }
@@ -1164,14 +1164,14 @@
     // saturn slow: the inner edge turns porous
     const sat = state.bodies.saturn.slow;
     const g = ctx.createRadialGradient(Lt.cx, Lt.cy, Lt.Rz * (1 - 0.06 * (0.3 + sat)), Lt.cx, Lt.cy, Lt.Rz);
-    g.addColorStop(0, 'rgba(2,3,10,0)'); g.addColorStop(1, `rgba(2,3,10,${0.55 + 0.35 * sat})`);
+    g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, `rgba(0,0,0,${0.55 + 0.35 * sat})`);
     ctx.fillStyle = g; ctx.beginPath(); ctx.arc(Lt.cx, Lt.cy, Lt.Rz, 0, TAU); ctx.fill();
     ctx.strokeStyle = C.PLANETS.saturn.rim; ctx.lineWidth = 1.4 * u; ctx.stroke(outer);
     ctx.strokeStyle = K.rgba(INK, 0.3); ctx.lineWidth = 1 * u;
     ctx.beginPath(); ctx.arc(Lt.cx, Lt.cy, Lt.Rz, 0, TAU); ctx.stroke();
 
     // houses: the cusps as spokes across the band (Regiomontanus unless set otherwise), the angles stronger, the number mid-house
-    ctx.font = `400 ${Math.round(19 * u * Lt.ts)}px ${MONO}`;
+    ctx.font = `400 ${Math.round(18 * u * Lt.ts)}px ${SANS}`;    // Roman numerals, in the text face
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     const inR = Lt.Rb * Math.cos(Math.PI / 12);
     const edgeR = a => inR / Math.cos(((a % (Math.PI / 6)) + Math.PI / 6) % (Math.PI / 6) - Math.PI / 12);   // the dodecagon edge at this angle
@@ -1185,13 +1185,13 @@
       const lp = polar(Lt, eclAngle(state, state.cusps[h] + span / 2), (Lt.Rz + inR) / 2);
       const sunHouse = state.bodies.sun.house === h;
       ctx.fillStyle = K.rgba(sunHouse ? C.PLANETS.sun.tincture : INK, sunHouse ? 0.95 : 0.6);
-      ctx.fillText(String(h).padStart(2, '0'), lp.x, lp.y);
+      ctx.fillText(I().roman(h), lp.x, lp.y);
     }
     // cardinal labels outside the container
     ctx.font = `400 ${Math.round(18 * u * Lt.ts)}px ${SANS}`;
     ctx.fillStyle = K.rgba(INK, 0.55);
     const am = eclAngle(state, state.mc);
-    const lab = [['asc', Math.PI], ['dsc', 0], ['mc', am], ['ic', am + Math.PI]];
+    const lab = [['ASC', Math.PI], ['DSC', 0], ['MC', am], ['IC', am + Math.PI]];
     for (const [s, a] of lab) {
       const rOut = Lt.Rb / Math.cos(((a % (Math.PI / 6)) + Math.PI / 6) % (Math.PI / 6) - Math.PI / 12);  // to the dodecagon edge
       const p = polar(Lt, a, Math.min(rOut, Lt.Rb) + 26 * u); ctx.fillText(s, p.x, p.y);
@@ -1239,10 +1239,10 @@
     const parts = Object.fromEntries(f.formatToParts(date).map(p => [p.type, p.value]));
     let zone = loc.zoneLabel;
     if (!zone) {
-      try { zone = new Intl.DateTimeFormat('en-GB', { timeZone: tz, timeZoneName: 'short' }).formatToParts(date).find(p => p.type === 'timeZoneName').value.toLowerCase(); }
-      catch (e) { zone = tz.toLowerCase(); }
+      try { zone = new Intl.DateTimeFormat('en-GB', { timeZone: tz, timeZoneName: 'short' }).formatToParts(date).find(p => p.type === 'timeZoneName').value; }
+      catch (e) { zone = tz; }
     }
-    return { day: parts.weekday.toLowerCase(), date: `${parts.day} ${parts.month.toLowerCase()} ${parts.year}`, time: `${parts.hour}:${parts.minute}`, zone };
+    return { day: I().cap1(parts.weekday), date: `${parts.day} ${parts.month} ${parts.year}`, time: `${parts.hour}:${parts.minute}`, zone };
   }
   function moonLine(state) {
     const m = state.moon, i = I();
@@ -1254,7 +1254,7 @@
   function fmtShort(date, loc) {
     const f = new Intl.DateTimeFormat(I().locale(), { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: loc.tz || 'UTC' });
     const p = Object.fromEntries(f.formatToParts(date).map(x => [x.type, x.value]));
-    return `${p.weekday} ${p.day} ${p.month} ${p.hour}:${p.minute}`.toLowerCase().replace(/\.$/, '');
+    return `${I().cap1(p.weekday)} ${p.day} ${I().cap1(p.month)} ${p.hour}:${p.minute}`.replace(/\.$/, '');
   }
   function captionLines(state) {
     const i = I(), T = fmtTime(state.date, state.loc), B = state.bodies, H = state.hour;
@@ -1266,17 +1266,18 @@
       : !fig ? i.t('cap.quiet')
       : fig.natal ? `${i.t('cap.transit')} ${i.planet(fig.a)} ${i.aspect(fig.aspect)} ${i.t('cap.natal')} ${i.planet(fig.b)} · ${fig.orb.toFixed(1)}°`
       : `${i.planet(fig.a)} ${i.aspect(fig.aspect)} ${i.planet(fig.b)}${ev ? ' · ' + ev : ''}`;
-    const d = B.sun.decan;
+    const d = B.sun.decan, c1 = i.cap1;
     return {
-      l1: `${state.natalView ? i.t('cap.nativity') + (state.relocated ? ' · ' + i.t('cap.relocated') + ' ' + state.relocated : '') + ' · ' : ''}${T.day} · ${T.date} · ${T.time} ${T.zone} · ${state.loc.name}`,
-      l2: `${i.t('cap.dayOf')} ${i.planet(H.dayRuler)} · ${i.t('cap.hourOf')} ${i.planet(H.hourRuler)} · ${i.t('cap.angel')} ${H.angel}`,
-      l3: `${i.t('cap.sunIn')} ${i.ordinal(B.sun.house)} ${i.t('cap.house')} · ${dms(B.sun.deg)} ${i.sign(B.sun.sign)}`,
-      fig: figLine,
-      moon: moonLine(state),
-      chord: `${i.t('cap.chord')} ${state.chord.name}${state.chord.interval ? ' · ' + i.interval(state.chord.interval) : state.chord.notes.length > 1 ? ' · ' + state.chord.notes.join(' ') : ''}`,
-      decan: `${i.t('cap.decanOf')} ${i.planet(d.ruler)} · ${i.card(d)} · ${i.title(d)}`,
-      mansion: `${i.t('cap.moonIn')} ${i.ordinal(B.moon.mansion.index)} ${i.t('cap.mansion')} · ${B.moon.mansion.name}`,
-      next: state.nextChord ? `${i.t('cap.nextChord')} ${state.nextChord.to} · ${fmtShort(state.nextChord.at, state.loc)}` : ''
+      l1: c1(`${state.natalView ? i.t('cap.nativity') + (state.relocated ? ' · ' + i.t('cap.relocated') + ' ' + i.placeName(state.relocated) : '') + ' · ' : ''}${T.day} · ${T.date} · ${T.time} ${T.zone} · ${i.placeName(state.loc.name)}`),
+      l2: c1(`${i.t('cap.dayOf')} ${i.planet(H.dayRuler)} · ${i.t('cap.hourOf')} ${i.planet(H.hourRuler)} · ${i.t('cap.angel')} ${i.name(H.angel)}`),
+      l3: c1(`${i.t('cap.sunIn')} ${i.t('cap.house')} ${i.roman(B.sun.house)} · ${dms(B.sun.deg)} ${i.sign(B.sun.sign)}`),
+      fig: c1(figLine),
+      moon: c1(moonLine(state)),
+      chord: c1(`${i.t('cap.chord')} ${state.chord.name}${state.chord.interval ? ' · ' + i.interval(state.chord.interval) : state.chord.notes.length > 1 ? ' · ' + state.chord.notes.join(' ') : ''}`),
+      decan: c1(`${i.t('cap.decanOf')} ${i.planet(d.ruler)} · ${i.card(d)} · ${i.title(d)}`),
+      mansion: c1(`${i.t('cap.moonIn')} ${i.ordinal(B.moon.mansion.index)} ${i.t('cap.mansion')} · ${i.name(B.moon.mansion.name)}`),
+      next: state.nextChord ? c1(`${i.t('cap.nextChord')} ${state.nextChord.to} · ${fmtShort(state.nextChord.at, state.loc)}`) : '',
+      label: i.t('cap.clockLabel')
     };
   }
   function drawCaption(ctx, state, Lt) {
@@ -1300,17 +1301,27 @@
     put(c.chord, m, row(3));
     put(c.decan, m, row(4));
     ctx.textAlign = 'right';
-    ctx.fillStyle = K.rgba(INK, 0.95); ctx.font = `500 ${Math.round(26 * k)}px ${SANS}`;
-    if ('letterSpacing' in ctx) ctx.letterSpacing = `${(5 * k).toFixed(1)}px`;
-    ctx.fillText('siderarium', Lt.S - m, row(0));
+    ctx.fillStyle = K.rgba(INK, 0.5); ctx.font = `400 ${Math.round(19 * k)}px ${SANS}`;
+    if ('letterSpacing' in ctx) ctx.letterSpacing = `${(1.2 * k).toFixed(1)}px`;
+    ctx.fillText(c.label, Lt.S - m, row(0));                // 'Astrological clock' over the figure; the wordmark lives in the bar and the icon
     if ('letterSpacing' in ctx) ctx.letterSpacing = '0px';
-    ctx.fillStyle = K.rgba(INK, 0.55); ctx.font = `400 ${Math.round(19 * k)}px ${MONO}`;
+    ctx.fillStyle = K.rgba(INK, 0.95); ctx.font = `500 ${Math.round(26 * k)}px ${SANS}`;
     put(c.fig, Lt.S - m, row(1));
-    ctx.fillStyle = K.rgba(INK, state.moon.verdict === 'void' || state.moon.verdict === 'unripe' ? 0.9 : 0.55);
+    ctx.fillStyle = K.rgba(INK, state.moon.verdict === 'void' || state.moon.verdict === 'unripe' ? 0.9 : 0.55); ctx.font = `400 ${Math.round(21 * k)}px ${SANS}`;
     put(`${c.moon} · ${Math.round(state.moon.illum * 100)}%`, Lt.S - m, row(2));
     if (c.next) { ctx.fillStyle = K.rgba(INK, 0.55); put(c.next, Lt.S - m, row(3)); }
     ctx.fillStyle = K.rgba(INK, 0.55); put(c.mansion, Lt.S - m, row(4));
+    // every print carries the notice, under the last line
+    ctx.textAlign = 'left'; ctx.fillStyle = K.rgba(INK, 0.3); ctx.font = `400 ${Math.round(14 * k)}px ${SANS}`;
+    ctx.fillText(NOTICE(), m, Math.min(row(5) + 6 * k, Lt.S - 10 * u));
     ctx.restore();
+  }
+  const NOTICE = () => `© ${new Date().getFullYear()} Siderarium · proprietary design and method · all rights reserved`;
+  /* the bare wallpaper carries the notice in its lower right corner, small */
+  function drawNotice(ctx, W, H) {
+    const s = Math.min(W, H), px = Math.max(10, Math.round(0.011 * s));
+    ctx.save(); ctx.textAlign = 'right'; ctx.textBaseline = 'alphabetic'; ctx.fillStyle = K.rgba(INK, 0.28); ctx.font = `400 ${px}px ${SANS}`;
+    ctx.fillText(NOTICE(), W - 0.02 * s, H - 0.02 * s); ctx.restore();
   }
 
   /* ---------- clock mode ---------- */
@@ -1320,7 +1331,7 @@
   const ELEMENT_DARK = { fire: '#2c100c', air: '#2d2a22', water: '#0a1838', earth: '#17150f' };
   let GROUND_EL = false;
   const ground = (state, el = GROUND_EL) => {
-    const base = K.mixLight(VOID, MIDNIGHT, 0.12 + 0.4 * state.moon.illum, 0);
+    const base = K.mixLight(VOID, MIDNIGHT, 0.3 + 0.45 * state.moon.illum, 0);
     if (!el || !state.elements) return base;
     const [d0, d1] = state.elements.order, sh = state.elements.shares;
     const tint = K.mixLight(ELEMENT_DARK[d0], ELEMENT_DARK[d1], sh[d1] / (sh[d0] + sh[d1]), 0);
@@ -1463,7 +1474,7 @@
     // the sigil layer: veil the sky, draw the figure of the moment in solid ink to be copied
     if (opts.sigil && cf.primary) {
       ctx.save();
-      ctx.fillStyle = 'rgba(2,3,10,0.82)';
+      ctx.fillStyle = 'rgba(0,0,0,0.82)';
       if (bare) ctx.fillRect(0, 0, W, H); else { ctx.beginPath(); ctx.arc(Lt.cx, Lt.cy, Lt.R + 1, 0, TAU); ctx.fill(); }
       if (!bare) { ctx.beginPath(); ctx.arc(Lt.cx, Lt.cy, Lt.R, 0, TAU); ctx.clip(); }
       PURE = true;
@@ -1487,6 +1498,7 @@
       if (!GROUND_EL) { drawAura(ctx, state, Lt); if (!opts.plate) drawAuraLive(ctx, state, Lt, t); }
       if (opts.caption !== false) drawCaption(ctx, state, Lt);
     }
+    if (bare) drawNotice(ctx, W, H);
     return { mode: 'clock', sigil: !!opts.sigil, bare: !!bare, groundEl: GROUND_EL, layout: Lt, positions: pos, stars, rippleCol, Rp, E, lw, weave, state };
   }
 
@@ -1611,7 +1623,7 @@
     }
     // labels
     ctx.font = `400 ${Math.round(18 * u * Lt.ts)}px ${SANS}`; ctx.fillStyle = K.rgba(INK, 0.6);
-    for (const [s, a] of [['asc', Math.PI], ['dsc', 0], ['mc', am], ['ic', am + Math.PI]]) { const p = polar(Lt, a, r1 + 22 * u); ctx.fillText(s, p.x, p.y); }
+    for (const [s, a] of [['ASC', Math.PI], ['DSC', 0], ['MC', am], ['IC', am + Math.PI]]) { const p = polar(Lt, a, r1 + 22 * u); ctx.fillText(s, p.x, p.y); }
     // legend
     ctx.font = `400 ${Math.round(15 * u * Lt.ts)}px ${MONO}`; ctx.textAlign = 'left';
     const leg = ['opposition', 'square', 'trine', 'sextile', 'quincunx', 'semisquare', 'quintile', 'septile'].map(k => [k, I().aspectShort(k)]);

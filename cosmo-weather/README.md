@@ -4,14 +4,16 @@ Macrocosmic clock visually tracking the astrological energy of the moment. Forme
 
 Siderarium draws the sky of the present moment as a living mandala. Through synesthesia it conveys, in a multi-sensory experience, the astrological energy of the hour: its colour, its geometry, its chord. It captures the moment and its vibration, to be seen, heard and kept as an image; for practitioners of the Arts it is also a timing tool. Classical aspects are divisions of the circle, so each is drawn as its star polygon: the pattern that results is the key to the present moment.
 
-Open `index.html` in a browser: no build step, no server, works offline except for the fonts.
+Open `index.html` in a browser: no build step, no server, works offline (the fonts ship with it).
 
-**Controls:** clock / chart / natal / transits · `readout` · `menu` (sigil, listen, screen, about; language, houses, field, planets; nativity, relocation, saved charts) · `now` · `±1h` · `±1d` · `run` / `pause` (15 min, 1 h, 4 h, 24 h of sky per second) · date field (place's own time) · one city per time zone · `here` · `birth` · save 2048 · wallpaper
+**Controls:** clock / chart / natal / transits · `readout` · `menu` (sigil, listen, screen, about; language, houses, field, planets; nativity, relocation, saved charts) · `now` · `±1h` · `±1d` · `run` / `pause` (15 min, 1 h, 4 h, 24 h of sky per second) · date field (place's own time) · one city per time zone · `here` · `birth` · print HD art (2048) · wallpaper
 **Gestures:** turn the dial to travel in time (one turn = one day, wheel = ten minutes) · pinch or ctrl+wheel to zoom · double tap to reset
 **Keys:** `space` run · `←/→` hour · `shift+←/→` day · `f` screen · `i` readout · `esc`
 **URL:** `?t=2027-01-15T21:00:00Z` fixes the moment · `?place=rome` · `?mode=chart` · `?lang=es` · `?field=glow` (the glow field instead of the engraving) · `?hd=1` shows the 4096 export
 
-**Install:** the folder is a PWA (manifest, service worker, icons). Served over https it can be added to the home screen; `wallpaper` saves a portrait image at the phone's pixel size. `.github/workflows/pages.yml` publishes the folder to the `gh-pages` branch on every push; GitHub serves that branch at `https://<owner>.github.io/mosaicgen/` once Pages is set to deploy from it (settings → pages → source: deploy from a branch → gh-pages).
+**Install:** the folder is a PWA (manifest, service worker, icons). Served over https it can be added to the home screen; `wallpaper` saves a portrait image at the phone's pixel size. `.github/workflows/pages.yml` publishes the website (`../site/`) at the root of the `gh-pages` branch and this folder under `/app/`, with the hourly sky renders at `/sky/`; GitHub serves that branch at `https://<owner>.github.io/mosaicgen/` (the app at `/mosaicgen/app/`) once Pages is set to deploy from it (settings → pages → source: deploy from a branch → gh-pages). A custom domain (siderarium.com) is a `CNAME` file in `site/` plus DNS at the registrar.
+
+**Website:** `../site/` is a static page in two widths (index, privacy and legal, images, self-hosted fonts), no build step.
 
 Samples in `samples/`: today at sunrise, the Venus cazimi of 24 Oct 2026, the exact Uranus–Neptune sextile of 15 Jan 2027, and the chart mode.
 

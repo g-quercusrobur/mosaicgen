@@ -85,17 +85,25 @@ function draw(variant, S, inset = 1) {
     const R = 200 * u, kk = 0.36, over = 0.075;
     // glow inside the mandorla: the hairline's light, clipped to the inside
     ctx.save(); lensPath(ctx, cx, cy, 195 * u, kk); ctx.clip();
-    ctx.shadowColor = 'rgba(61,127,92,0.95)'; ctx.shadowBlur = 36 * u; ctx.strokeStyle = GREEN_HI; ctx.lineWidth = 2.6 * u;
-    lensPath(ctx, cx, cy, 195 * u, kk); ctx.stroke(); ctx.stroke(); ctx.stroke();                    // the glow hugs the heavy line's inner edge, a little stronger
+    ctx.shadowColor = 'rgba(61,127,92,0.95)'; ctx.shadowBlur = 46 * u; ctx.strokeStyle = GREEN_HI; ctx.lineWidth = 3 * u;
+    lensPath(ctx, cx, cy, 195 * u, kk); ctx.stroke(); ctx.stroke(); ctx.stroke(); ctx.stroke();      // the glow hugs the heavy line's inner edge, stronger
     ctx.restore();
     ctx.lineCap = 'round';
     ctx.strokeStyle = GREEN; ctx.lineWidth = 10 * u; lensArcs(ctx, cx, cy, R, kk, 0.42);               // the heavy line runs on past the points: two circles crossing, one weight, one colour
     ctx.lineCap = 'butt';
     // the star: chamfered points, a glow, the heart filled
     const P = starPath(cx, cy, 108 * u);
-    ctx.save(); ctx.shadowColor = 'rgba(61,127,92,0.9)'; ctx.shadowBlur = 26 * u;
-    ctx.strokeStyle = GREEN_HI; ctx.lineWidth = 9.5 * u; ctx.lineJoin = 'bevel'; ctx.lineCap = 'butt';
-    ctx.beginPath(); P.forEach((p, i) => i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])); ctx.closePath(); ctx.stroke(); ctx.stroke();   // the star's glow, a little stronger
+    const starP = new Path2D(); P.forEach((p, i) => i ? starP.lineTo(p[0], p[1]) : starP.moveTo(p[0], p[1])); starP.closePath();
+    const W = ctx.canvas.width, H = ctx.canvas.height;
+    // the glow around the star: outside the outline only, strong
+    ctx.save(); const outside = new Path2D(); outside.rect(0, 0, W, H); outside.addPath(starP); ctx.clip(outside, 'evenodd');
+    ctx.shadowColor = 'rgba(61,127,92,0.95)'; ctx.shadowBlur = 36 * u; ctx.strokeStyle = GREEN_HI; ctx.lineWidth = 9.5 * u; ctx.lineJoin = 'bevel'; ctx.lineCap = 'butt';
+    ctx.stroke(starP); ctx.stroke(starP); ctx.stroke(starP);
+    ctx.restore();
+    // inside the star: almost none
+    ctx.save(); ctx.clip(starP);
+    ctx.shadowColor = 'rgba(61,127,92,0.3)'; ctx.shadowBlur = 10 * u; ctx.strokeStyle = GREEN_HI; ctx.lineWidth = 9.5 * u; ctx.lineJoin = 'bevel'; ctx.lineCap = 'butt';
+    ctx.stroke(starP);
     ctx.restore();
     ctx.strokeStyle = GREEN_HI; ctx.lineWidth = 9.5 * u; ctx.lineJoin = 'bevel';
     ctx.beginPath(); P.forEach((p, i) => i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])); ctx.closePath(); ctx.stroke();

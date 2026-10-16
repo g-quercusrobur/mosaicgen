@@ -1171,15 +1171,14 @@
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     const inR = Lt.Rb * Math.cos(Math.PI / 12);
     const edgeR = a => inR / Math.cos(((a % (Math.PI / 6)) + Math.PI / 6) % (Math.PI / 6) - Math.PI / 12);   // the dodecagon edge at this angle
-    const taken = [];                                     // angles the band already uses: cusps and numerals
     for (let h = 1; h <= 12; h++) {
-      const a = eclAngle(state, state.cusps[h]); taken.push(a);
+      const a = eclAngle(state, state.cusps[h]);
       const angle = h % 3 === 1;
       const p0 = polar(Lt, a, Lt.Rz), p1 = polar(Lt, a, edgeR(a) * (angle ? 0.985 : 0.965));
       ctx.strokeStyle = K.rgba(INK, angle ? 0.7 : 0.3); ctx.lineWidth = (angle ? 1.6 : 1) * u;
       ctx.beginPath(); ctx.moveTo(p0.x, p0.y); ctx.lineTo(p1.x, p1.y); ctx.stroke();
       const span = E_.norm360(state.cusps[h % 12 + 1] - state.cusps[h]);
-      const lp = polar(Lt, eclAngle(state, state.cusps[h] + span / 2), (Lt.Rz + inR) / 2); taken.push(eclAngle(state, state.cusps[h] + span / 2));
+      const lp = polar(Lt, eclAngle(state, state.cusps[h] + span / 2), (Lt.Rz + inR) / 2);
       const sunHouse = state.bodies.sun.house === h;
       ctx.fillStyle = K.rgba(sunHouse ? C.PLANETS.sun.tincture : INK, sunHouse ? 0.95 : 0.6);
       ctx.fillText(I().roman(h), lp.x, lp.y);
@@ -1193,18 +1192,6 @@
       const rOut = Lt.Rb / Math.cos(((a % (Math.PI / 6)) + Math.PI / 6) % (Math.PI / 6) - Math.PI / 12);  // to the dodecagon edge
       const p = polar(Lt, a, Math.min(rOut, Lt.Rb) + 26 * u); ctx.fillText(s, p.x, p.y);
     }
-    // the signature, as a dial carries its maker's: tiny, in the band at the foot, on whichever of the three lowest
-    // facets is furthest from a cusp or a numeral
-    const dist = (a, b) => Math.abs(Math.atan2(Math.sin(a - b), Math.cos(a - b)));
-    const foot = [-Math.PI / 2, -Math.PI / 2 - Math.PI / 6, -Math.PI / 2 + Math.PI / 6]
-      .map(a => [a, Math.min(...taken.map(b => dist(a, b)))]).sort((p, q) => q[1] - p[1])[0][0];
-    const sp = polar(Lt, foot, (Lt.Rz + inR) / 2);
-    ctx.save(); ctx.translate(sp.x, sp.y); ctx.rotate(foot + Math.PI / 2);
-    ctx.font = `400 ${Math.max(7, Math.round(8.5 * u * Math.min(1.6, Lt.ts)))}px ${SANS}`;
-    if ('letterSpacing' in ctx) ctx.letterSpacing = `${(2.6 * u * Math.min(1.6, Lt.ts)).toFixed(1)}px`;
-    ctx.fillStyle = K.rgba(INK, 0.5); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText('SIDERARIUM', 0, 0);
-    ctx.restore();
     ctx.restore();
   }
 

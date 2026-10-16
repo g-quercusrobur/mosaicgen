@@ -73,7 +73,7 @@
   function layout(S, tight = TIGHT) {
     const u = S / 2048, t = tight ? 1.17 : 1;
     return {
-      S, u, cx: S / 2, cy: S * (tight ? 0.5 : 0.435),
+      S, u, tight, cx: S / 2, cy: S * (tight ? 0.5 : 0.435),
       Rb: S * 0.405 * t,              // dodecagon circumradius — the container, a narrow band; the houses are drawn across it
       Rz: S * 0.375 * t,              // bezel inner edge / zodiac ring outer
       Rzi: S * (tight ? 0.343 : 0.35) * t,   // zodiac ring inner: the ring is wider on a phone, for the glyphs
@@ -1069,19 +1069,78 @@
   /* the element of the hour: an aura outside the sky, the dominant element mixed with the next by their shares.
      earth, near black as a pigment, is lifted to umber as a light. */
   const ELEMENT_LIGHT = { air: '#f2e8a0', water: '#4a7ef0', fire: '#ff5a2a', earth: '#9a6a3a' };
+  function auraClip(ctx, Lt) {
+    const clip = new Path2D(); clip.rect(0, 0, Lt.S, Lt.tight ? Lt.S : Lt.capY - 36 * Lt.u); clip.addPath(dodecagon(Lt, Lt.Rb));
+    ctx.clip(clip, 'evenodd');                             // outside the container only, above the caption
+  }
   function drawAura(ctx, state, Lt) {
     const el = state.elements; if (!el) return;
-    const [d0, d1] = el.order;
+    const [d0, d1] = el.order, u = Lt.u;
     const col = K.mixLight(ELEMENT_LIGHT[d0], ELEMENT_LIGHT[d1], el.shares[d1] / (el.shares[d0] + el.shares[d1]), 0);
-    const a = 0.09 + 0.17 * el.shares[d0];
-    ctx.save();
-    const clip = new Path2D(); clip.rect(0, 0, Lt.S, TIGHT ? Lt.S : Lt.capY - 36 * Lt.u); clip.addPath(dodecagon(Lt, Lt.Rb));
-    ctx.clip(clip, 'evenodd');                             // outside the container only, above the caption
+    const a = (d0 === 'earth' ? 0.1 : 0.06) + 0.12 * el.shares[d0];
+    ctx.save(); auraClip(ctx, Lt);
     ctx.globalCompositeOperation = 'screen';
-    const inR = Lt.Rb * Math.cos(Math.PI / 12);
-    const g = ctx.createRadialGradient(Lt.cx, Lt.cy, inR, Lt.cx, Lt.cy, Lt.Rb * 1.4);
+    const inR = Lt.Rb * Math.cos(Math.PI / 12), outR = Lt.Rb * 1.4;
+    const g = ctx.createRadialGradient(Lt.cx, Lt.cy, inR, Lt.cx, Lt.cy, outR);
     g.addColorStop(0, K.rgba(col, a)); g.addColorStop(0.35, K.rgba(col, a * 0.4)); g.addColorStop(1, K.rgba(col, 0));
-    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(Lt.cx, Lt.cy, Lt.Rb * 1.4, 0, TAU); ctx.fill();
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(Lt.cx, Lt.cy, outR, 0, TAU); ctx.fill();
+    if (d0 === 'earth') {                                 // earth is still: a firm dark ground with a stone's grain, specks and hairline cracks
+      const span = outR - inR;
+      for (let i = 0; i < 900; i++) {
+        const h1 = hash(i, 17, 1), h2 = hash(i, 19, 2), h3 = hash(i, 23, 3);
+        const r = inR + Math.pow(h1, 0.7) * span, th = h2 * TAU, fade = 1 - (r - inR) / span;
+        ctx.fillStyle = K.rgba(h3 > 0.8 ? '#c9a070' : ELEMENT_LIGHT.earth, (0.05 + 0.1 * h3) * fade);
+        ctx.beginPath(); ctx.arc(Lt.cx + r * Math.cos(th), Lt.cy + r * Math.sin(th), u * (0.7 + 1.6 * h3), 0, TAU); ctx.fill();
+      }
+      ctx.strokeStyle = K.rgba(ELEMENT_LIGHT.earth, 0.16); ctx.lineWidth = u * 0.9; ctx.lineJoin = 'round';
+      for (let i = 0; i < 36; i++) {
+        const th = hash(i, 29, 4) * TAU, r0 = inR + hash(i, 31, 5) * span * 0.6; let r = r0, a0 = th;
+        ctx.beginPath(); ctx.moveTo(Lt.cx + r * Math.cos(a0), Lt.cy + r * Math.sin(a0));
+        for (let k = 1; k <= 4; k++) { r += span * (0.05 + 0.08 * hash(i, 37 + k, 6)); a0 += (hash(i, 41 + k, 7) - 0.5) * 0.12; ctx.lineTo(Lt.cx + r * Math.cos(a0), Lt.cy + r * Math.sin(a0)); }
+        ctx.stroke();
+      }
+    }
+    ctx.restore();
+  }
+  /* the aura alive, drawn every frame over the plate: water ripples outward in slow rings; air is small lines
+     drifting round the container, each at its own pace; fire is faint tongues rising from the edge and flickering.
+     earth does not move. */
+  function drawAuraLive(ctx, state, Lt, t) {
+    const el = state.elements; if (!el) return;
+    const d0 = el.order[0]; if (d0 === 'earth') return;
+    const col = ELEMENT_LIGHT[d0], u = Lt.u, inR = Lt.Rb * Math.cos(Math.PI / 12), outR = Lt.Rb * 1.42, span = outR - inR;
+    const k = 0.5 + el.shares[d0];
+    ctx.save(); auraClip(ctx, Lt); ctx.globalCompositeOperation = 'screen'; ctx.lineCap = 'round';
+    if (d0 === 'water') {
+      for (let i = 0; i < 7; i++) {
+        const ph = ((t * 0.05 + i / 7) % 1 + 1) % 1, r = inR + ph * span, a = 0.11 * k * Math.sin(Math.PI * ph);
+        ctx.strokeStyle = K.rgba(col, a); ctx.lineWidth = u * (1.1 + 1.6 * (1 - ph));
+        ctx.beginPath();
+        for (let q = 0; q <= 108; q++) { const th = q / 108 * TAU, rr = r + 3 * u * Math.sin(9 * th + t * 0.7 + i) + 2 * u * Math.sin(5 * th - t * 0.5); const x = Lt.cx + rr * Math.cos(th), y = Lt.cy + rr * Math.sin(th); q ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }
+        ctx.closePath(); ctx.stroke();
+      }
+    } else if (d0 === 'air') {
+      for (let i = 0; i < 72; i++) {
+        const h1 = hash(i, 3, 1), h2 = hash(i, 5, 2), h3 = hash(i, 7, 3);
+        const r = inR + 6 * u + h1 * (span - 12 * u), speed = (0.1 + 0.22 * h2) * (h3 > 0.5 ? 1 : -1);
+        const th = h3 * TAU + t * speed, len = (14 + 30 * h2) * u / r;
+        const a = 0.15 * k * (0.45 + 0.55 * Math.sin(t * 1.1 + i * 0.9));
+        ctx.strokeStyle = K.rgba(col, a); ctx.lineWidth = u * (0.7 + 0.7 * h1);
+        ctx.beginPath(); ctx.arc(Lt.cx, Lt.cy, r, th, th + len); ctx.stroke();
+      }
+    } else if (d0 === 'fire') {
+      for (let i = 0; i < 48; i++) {
+        const h1 = hash(i, 11, 1), h2 = hash(i, 13, 2);
+        const th = (i / 48) * TAU + 0.04 * Math.sin(t * 1.9 + i * 1.7);
+        const fl = 0.55 + 0.45 * Math.sin(t * (1.6 + 2.6 * h1) + i * 2.3) * Math.sin(t * 0.8 + h2 * 6);
+        const len = span * (0.22 + 0.5 * h2) * fl, r0 = inR - 2 * u, r1 = r0 + len;
+        const cs = Math.cos(th), sn = Math.sin(th), bend = 9 * u * Math.sin(t * 1.4 + i);
+        const x0 = Lt.cx + r0 * cs, y0 = Lt.cy + r0 * sn, x1 = Lt.cx + r1 * cs - bend * sn, y1 = Lt.cy + r1 * sn + bend * cs;
+        const g = ctx.createLinearGradient(x0, y0, x1, y1); g.addColorStop(0, K.rgba(col, 0.15 * k)); g.addColorStop(1, K.rgba(col, 0));
+        ctx.strokeStyle = g; ctx.lineWidth = u * (1.4 + 3 * h1) * fl;
+        ctx.beginPath(); ctx.moveTo(x0, y0); ctx.quadraticCurveTo(Lt.cx + (r0 + len * 0.5) * cs - bend * 0.4 * sn, Lt.cy + (r0 + len * 0.5) * sn + bend * 0.4 * cs, x1, y1); ctx.stroke();
+      }
+    }
     ctx.restore();
   }
 
@@ -1425,10 +1484,10 @@
     if (!bare) {
       drawRete(ctx, state, Lt, lw);
       drawFrame(ctx, state, Lt, lw);
-      if (!GROUND_EL) drawAura(ctx, state, Lt);
+      if (!GROUND_EL) { drawAura(ctx, state, Lt); if (!opts.plate) drawAuraLive(ctx, state, Lt, t); }
       if (opts.caption !== false) drawCaption(ctx, state, Lt);
     }
-    return { mode: 'clock', sigil: !!opts.sigil, layout: Lt, positions: pos, stars, rippleCol, Rp, E, lw, weave, state };
+    return { mode: 'clock', sigil: !!opts.sigil, bare: !!bare, groundEl: GROUND_EL, layout: Lt, positions: pos, stars, rippleCol, Rp, E, lw, weave, state };
   }
 
   function drawRipple(ctx, Lt, Rp, col, lw, E, t) {
@@ -1442,6 +1501,7 @@
   function overlay(ctx, info, t) {
     if (!info || info.mode !== 'clock') return;
     const Lt = info.layout;
+    if (!info.bare && !info.groundEl) drawAuraLive(ctx, info.state, Lt, t);
     ctx.save();
     ctx.beginPath(); ctx.arc(Lt.cx, Lt.cy, Lt.R, 0, TAU); ctx.clip();
     if (info.rippleCol) drawRipple(ctx, Lt, info.Rp, info.rippleCol, info.lw, info.E, t);

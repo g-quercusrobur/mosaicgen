@@ -250,3 +250,8 @@ Angels of the days and hours from the Heptameron: michael, gabriel, samael, raph
 - **Retrogrades.** Pluto retrograde: the occultation's limb and corona lose focus. Mercury slow or retrograde: the caption prints with a ghost offset, like a misregistered plate, and the readout gets a faint second impression. Mars retrograde dulls the points, Venus the curves, as before.
 - **Void Moon and the guardians.** The light at the pole goes out and the portal darkens; the guardians' star stays nearly full. The Moon's course decides whether a work takes in the world; the day and hour rulers decide who holds the room. The readout says so.
 - **Floors (round 10b).** The Moon's light still sets the weight and intensity of every mark, but never below 70% of the full Moon's; at full Moon (illumination above 90%) a further luminosity is added. The portal never draws below 0.85 of its base radius, whatever Saturn and a quiet sky take from it. A dark, Saturn-bound, void hour reads as quiet, not as a fault.
+
+## 17 · Name and glyph
+
+- **Siderarium**, "the room of the stars", on the pattern of planetarium. The descriptor: *macrocosmic clock visually tracking the astrological energy of the moment*. The three modes are the Hermetic pair: clock is the macrocosm, natal the microcosm, transits one laid on the other. The folder and the Instagram feed keep "cosmo weather" for now.
+- **Glyph.** The Seed of Life is gone. The icon is a vesica piscis (the door, the lens, Euclid I.1) holding the heptagram {7/3}: the seven planets in Chaldean order joined every third point give the days of the week, so the star is the clock of the week drawn from the planetary order. Forest green lines on the void, a gold point at the centre for the light of the moment.

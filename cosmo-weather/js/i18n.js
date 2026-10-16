@@ -1,4 +1,4 @@
-/*  cosmo weather — language
+/*  siderarium — language
     English and Spanish. Lowercase throughout, as the frame is. Names of angels, mansions, chords and
     the wordmark stay as they are. The Book T titles are translated plainly; the originals are in the about page.
 */
@@ -37,7 +37,7 @@
       },
       ui: {
         clock: 'clock', chart: 'chart', natal: 'natal', synastry: 'transits', sigil: 'sigil', listen: 'listen', listening: 'listening', readout: 'readout', screen: 'screen', about: 'about',
-        menu: 'menu', view: 'view', settings: 'settings', houses: 'houses', housesOpt: { regiomontanus: 'regiomontanus', equal: 'equal', placidus: 'placidus' },
+        tagline: 'the macrocosmic clock', menu: 'menu', view: 'view', settings: 'settings', houses: 'houses', housesOpt: { regiomontanus: 'regiomontanus', equal: 'equal', placidus: 'placidus' },
         field: 'field', fieldOpt: { engraved: 'engraved', glow: 'glow' }, bodiesLabel: 'planets', bodiesOpt: { metal: 'bodies', lights: 'lights' }, language: 'language',
         nativity: 'nativity', noneSet: 'none set', edit: 'edit', seenFrom: 'seen from', birthplace: 'birthplace', currentPlace: 'current place',
         charts: 'saved charts', saveAs: 'save as', rename: 'rename', del: 'delete', confirm: 'confirm', load: 'load', name: 'name', namePrompt: 'a name for this chart', ok: 'ok', noCharts: 'no saved charts yet',
@@ -88,7 +88,7 @@
       },
       ui: {
         clock: 'reloj', chart: 'carta', natal: 'natal', synastry: 'tránsitos', sigil: 'sigilo', listen: 'escuchar', listening: 'escuchando', readout: 'lectura', screen: 'pantalla', about: 'acerca',
-        menu: 'menú', view: 'vista', settings: 'ajustes', houses: 'casas', housesOpt: { regiomontanus: 'regiomontanus', equal: 'iguales', placidus: 'placidus' },
+        tagline: 'el reloj macrocósmico', menu: 'menú', view: 'vista', settings: 'ajustes', houses: 'casas', housesOpt: { regiomontanus: 'regiomontanus', equal: 'iguales', placidus: 'placidus' },
         field: 'campo', fieldOpt: { engraved: 'grabado', glow: 'luz' }, bodiesLabel: 'planetas', bodiesOpt: { metal: 'cuerpos', lights: 'luces' }, language: 'idioma',
         nativity: 'natividad', noneSet: 'sin definir', edit: 'editar', seenFrom: 'vista desde', birthplace: 'lugar de nacimiento', currentPlace: 'lugar actual',
         charts: 'cartas guardadas', saveAs: 'guardar como', rename: 'renombrar', del: 'borrar', confirm: 'confirmar', load: 'cargar', name: 'nombre', namePrompt: 'un nombre para esta carta', ok: 'ok', noCharts: 'aún no hay cartas guardadas',

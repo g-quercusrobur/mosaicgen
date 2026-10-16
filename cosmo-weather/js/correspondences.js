@@ -1,4 +1,4 @@
-/*  cosmo weather — correspondences
+/*  siderarium — correspondences
     Renaissance core, two declared modern windows.
       core     astrology     Lilly (1647): dignities, terms (Egyptian), faces (Chaldean), solar phase
                kabbalah      Agrippa III (1533): the seven planets on the seven lower Sephiroth, Kircher's Tree (1652)

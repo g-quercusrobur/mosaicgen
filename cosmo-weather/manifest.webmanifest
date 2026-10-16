@@ -1,7 +1,7 @@
 {
-  "name": "Cosmo Weather",
-  "short_name": "Cosmo",
-  "description": "A cosmic clock: the sky of the present moment drawn as a geometric figure.",
+  "name": "Siderarium",
+  "short_name": "Siderarium",
+  "description": "Siderarium: macrocosmic clock visually tracking the astrological energy of the moment.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

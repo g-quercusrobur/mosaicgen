@@ -1,4 +1,6 @@
-# cosmo weather — prototype
+# siderarium
+
+Macrocosmic clock visually tracking the astrological energy of the moment. Formerly cosmo weather; the folder keeps the old name.
 
 The sky of the moment as an instrument. Open `index.html` in a browser: no build step, no server, works offline except for the fonts.
 

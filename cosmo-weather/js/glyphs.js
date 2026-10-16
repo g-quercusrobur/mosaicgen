@@ -1,4 +1,4 @@
-/*  cosmo weather — glyphs
+/*  siderarium — glyphs
     Every symbol is built from circle, line and arc on a unit grid [-1, 1],
     one stroke weight, round caps. No font glyphs: they drift between platforms.
 */

@@ -63,7 +63,7 @@
     charts: store.get('charts', []),                           // saved nativities, on this device
     reading: store.get('reading', true),                       // the readout open by default
     groundEl: params.get('ground') === 'element',              // prototype: the element of the hour as the ground
-    wall: params.get('wall') === '1',                          // live wallpaper: the sky alone, filling the window, for lively / plash / wallpaper engine
+    wall: params.get('wall') === '1', ox: 0,                          // live wallpaper: the sky alone, filling the window, for lively / plash / wallpaper engine
     state: null,
     lastCompute: 0
   };
@@ -110,10 +110,10 @@
     }
     S.lastCompute = performance.now();
     S.dirty = true;
-    document.documentElement.style.setProperty('--ground', CW.render.ground(S.state, S.groundEl));
+    document.documentElement.style.setProperty('--ground', S.groundEl ? CW.render.ground(S.state, true) : '#000000');
     document.body.classList.toggle('mrx', viewState().bodies.mercury.slow > 0.5);   // mercury retrograde: the print misregisters
     const c = CW.render.captionLines(viewState());
-    $('caption').innerHTML = `<p class="l1">${c.l1}</p><p>${c.l2}</p><p>${c.l3}</p><p>${c.chord}</p><p>${c.decan}</p><p class="mono">${c.next}</p><p class="mono label">${c.label}</p><p class="mono">${c.fig}</p><p class="mono">${c.moon}</p><p class="mono">${c.mansion}</p>`;
+    $('caption').innerHTML = `<p class="label">${c.label}</p><p class="l1">${c.l1}</p><p>${c.l2}</p><p>${c.l3}</p><p>${c.chord}</p><p>${c.decan}</p><p class="mono">${c.next}</p><p class="mono">${c.fig}</p><p class="mono">${c.moon}</p><p class="mono">${c.mansion}</p>`;
     if (!busy) scanIfNeeded();
     drawStrip();
     if (!busy) updateReadout();                            // the heavy parts wait until the clock rests
@@ -135,10 +135,13 @@
     const side = Math.floor(Math.min(box.width - 16, small ? box.width : box.height - reserve - 16));
     $('ahead').style.width = side + 'px';
     const dpr = Math.min(2, window.devicePixelRatio || 1);
-    canvas.style.width = canvas.style.height = side + 'px';
-    canvas.width = canvas.height = Math.round(side * dpr);
+    const W = small ? side : Math.floor(box.width - 16);     // on desktop the canvas spans the stage: the aura runs beside the square
+    S.ox = Math.floor((W - side) / 2);
+    canvas.style.width = W + 'px'; canvas.style.height = side + 'px';
+    canvas.width = Math.round(W * dpr); canvas.height = Math.round(side * dpr);
+    document.querySelector('.dialwrap').style.setProperty('--ox', S.ox + 'px');
     S.side = side; S.dpr = dpr;
-    plate.width = plate.height = canvas.width;
+    plate.width = canvas.width; plate.height = canvas.height;
     S.dirty = true;
     document.body.classList.toggle('small', side < 560);
     const st = $('strip'); st.width = Math.round(side * dpr); st.height = Math.round(44 * dpr);
@@ -233,14 +236,15 @@
     }
     if (S.dirty) {
       pctx.setTransform(1, 0, 0, 1, 0, 0); pctx.clearRect(0, 0, plate.width, plate.height);
-      pctx.setTransform(S.dpr * view.z, 0, 0, S.dpr * view.z, S.dpr * view.x, S.dpr * view.y);   // the view: zoom and pan
+      pctx.setTransform(S.dpr * view.z, 0, 0, S.dpr * view.z, S.dpr * (view.x + S.ox), S.dpr * view.y);   // the view: zoom and pan, the square centred in the canvas
       const busy = S.playing || S.dragging || view.pinching;
-      info = CW.render.render(pctx, viewState(), S.side, t, { mode: S.mode === 'chart' || S.mode === 'natalchart' ? 'chart' : 'clock', fieldRes: busy ? 110 : 200, caption: S.side >= 560, plate: true, fast: busy, field: S.field, sigil: S.sigil, engrave: S.engrave, luminous: S.luminous, tight: S.side < 560, groundEl: S.groundEl });
+      const bounds = { x: -(view.x + S.ox) / view.z, y: -view.y / view.z, w: (S.side + 2 * S.ox) / view.z, h: S.side / view.z };   // the canvas, in dial coordinates
+      info = CW.render.render(pctx, viewState(), S.side, t, { mode: S.mode === 'chart' || S.mode === 'natalchart' ? 'chart' : 'clock', fieldRes: busy ? 110 : 200, caption: S.side >= 560, plate: true, fast: busy, field: S.field, sigil: S.sigil, engrave: S.engrave, luminous: S.luminous, tight: S.side < 560, groundEl: S.groundEl, bounds });
       S.dirty = false; lastPlate = ts;
     }
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.drawImage(plate, 0, 0);
-    ctx.setTransform(S.dpr * view.z, 0, 0, S.dpr * view.z, S.dpr * view.x, S.dpr * view.y);
+    ctx.setTransform(S.dpr * view.z, 0, 0, S.dpr * view.z, S.dpr * (view.x + S.ox), S.dpr * view.y);
     CW.render.overlay(ctx, info, t);
   }
 
@@ -587,7 +591,7 @@
        double click or double tap returns to the whole dial. */
     const pts = new Map();
     let drag = null, pinch = null, lastTap = 0;
-    const local = e => { const r = canvas.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
+    const local = e => { const r = canvas.getBoundingClientRect(); return { x: e.clientX - r.left - (S.ox || 0), y: e.clientY - r.top }; };
     const toDial = p => ({ x: (p.x - view.x) / view.z, y: (p.y - view.y) / view.z });
     const clampView = () => {
       view.z = Math.max(1, Math.min(8, view.z));

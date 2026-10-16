@@ -1,4 +1,4 @@
-/*  cosmo weather — engine
+/*  siderarium — engine
     sky → state. Pure computation, no drawing. This file is the part that
     survives every port (desktop, android, wallpaper, the daily export).
 */

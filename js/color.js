@@ -1,4 +1,4 @@
-/*  cosmo weather — colour
+/*  siderarium — colour
     OKLab is the working space for every mix. Two mixing laws:
       light   (soft aspects)  additive, interpolated in OKLab, lifted
       pigment (hard aspects)  multiplicative in linear RGB, muddied

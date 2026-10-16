@@ -1,4 +1,4 @@
-/*  cosmo weather — app shell
+/*  siderarium — app shell
     Live clock, time scrubber, places, modes, export.
 */
 (function (CW) {
@@ -291,7 +291,7 @@
     const st = viewState(), cv = document.createElement('canvas');
     cv.width = cv.height = px;
     CW.render.render(cv.getContext('2d'), st, px, (performance.now() - t0) / 1000, { mode: S.mode === 'chart' || S.mode === 'natalchart' ? 'chart' : 'clock', fieldRes: px >= 3000 ? 420 : 300, field: S.field, sigil: S.sigil, engrave: S.engrave, luminous: S.luminous });
-    download(cv, `cosmo-weather_${st.loc.name}_${stampOf(st)}_${px}.png`);
+    download(cv, `siderarium_${st.loc.name}_${stampOf(st)}_${px}.png`);
   }
   /* a wallpaper at this screen's size: the square render set in a portrait field of the same ground */
   function exportWallpaper() {
@@ -300,7 +300,7 @@
     const cv = document.createElement('canvas');
     cv.width = W; cv.height = H;
     CW.render.renderWallpaper(cv.getContext('2d'), st, W, H, 3, { fieldRes: 300, field: S.field, sigil: S.sigil, engrave: S.engrave, luminous: S.luminous });
-    download(cv, `cosmo-weather_wallpaper_${st.loc.name}_${stampOf(st)}.png`);
+    download(cv, `siderarium_wallpaper_${st.loc.name}_${stampOf(st)}.png`);
   }
 
   const ordinalWord = n => n + (n % 100 >= 11 && n % 100 <= 13 ? 'th' : ['th', 'st', 'nd', 'rd'][n % 10] || 'th');

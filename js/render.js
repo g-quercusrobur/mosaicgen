@@ -1,4 +1,4 @@
-/*  cosmo weather — renderer
+/*  siderarium — renderer
     Austere frame, maximal content. Everything outside the dial is grid and type;
     everything inside the circle is computed light.
 
@@ -1197,7 +1197,7 @@
     ctx.textAlign = 'right';
     ctx.fillStyle = K.rgba(INK, 0.95); ctx.font = `500 ${Math.round(26 * k)}px ${SANS}`;
     if ('letterSpacing' in ctx) ctx.letterSpacing = `${(5 * k).toFixed(1)}px`;
-    ctx.fillText('cosmo weather', Lt.S - m, row(0));
+    ctx.fillText('siderarium', Lt.S - m, row(0));
     if ('letterSpacing' in ctx) ctx.letterSpacing = '0px';
     ctx.fillStyle = K.rgba(INK, 0.55); ctx.font = `400 ${Math.round(19 * k)}px ${MONO}`;
     put(c.fig, Lt.S - m, row(1));

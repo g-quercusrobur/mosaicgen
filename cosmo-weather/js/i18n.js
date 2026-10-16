@@ -36,12 +36,12 @@
         moonApplying: 'moon applying', moonVoid: 'moon void of course', to: '', relocated: 'relocated to', tolerable: 'tolerable', clockLabel: 'Macrocosmic Clock'
       },
       ui: {
-        clock: 'clock', chart: 'chart', natal: 'natal', synastry: 'transits', sigil: 'sigil', listen: 'listen', listening: 'listening', readout: 'readout', screen: 'screen', about: 'about',
+        clock: 'clock', chart: 'chart', natal: 'natal', synastry: 'transits', sigil: 'sigil', listen: 'listen', listening: 'listening', readout: 'readout', screen: 'screen', about: 'About Siderarium',
         tagline: 'The macrocosmic clock', menu: 'menu', view: 'view', settings: 'settings', houses: 'houses', housesOpt: { regiomontanus: 'regiomontanus', equal: 'equal', placidus: 'placidus' },
         field: 'field', fieldOpt: { engraved: 'engraved', guilloche: 'guilloché', glow: 'glow' }, bodiesLabel: 'planets', bodiesOpt: { metal: 'bodies', lights: 'lights' }, language: 'language',
         nativity: 'nativity', noneSet: 'none set', edit: 'edit', seenFrom: 'seen from', birthplace: 'birthplace', currentPlace: 'current place',
         charts: 'saved charts', saveAs: 'save as', rename: 'rename', del: 'delete', confirm: 'confirm', load: 'load', name: 'name', namePrompt: 'a name for this chart', ok: 'OK', noCharts: 'no saved charts yet',
-        keys: 'keys', keysNote: 'space run · ← → hour · shift ← → day · f screen · i readout · s sigil · l listen · esc close',
+        keys: 'keys', keysNote: 'space run · ← → hour · shift ← → day · f full screen · s sigil · l listen · esc close',
         now: 'now', run: 'run', pause: 'pause', here: 'here', birth: 'birth', save: 'Print HD art', saveHd: 'Print HD art 4096', wallpaper: 'Wallpaper', close: 'close', lang: 'es',
         yourNativity: 'your nativity', kept: 'kept on this device only · never sent anywhere', date: 'date', time: 'time',
         unknown: 'time unknown (noon is used; the houses and the Moon’s degree are then uncertain)', city: 'city of the time zone', placeName: 'place name', placeHint: 'optional, e.g. Rome',
@@ -89,12 +89,12 @@
         moonApplying: 'luna aplicando', moonVoid: 'luna vacía de curso', to: 'a', relocated: 'reubicada a', tolerable: 'tolerable', clockLabel: 'Reloj Macrocósmico'
       },
       ui: {
-        clock: 'reloj', chart: 'carta', natal: 'natal', synastry: 'tránsitos', sigil: 'sigilo', listen: 'escuchar', listening: 'escuchando', readout: 'lectura', screen: 'pantalla', about: 'acerca',
+        clock: 'reloj', chart: 'carta', natal: 'natal', synastry: 'tránsitos', sigil: 'sigilo', listen: 'escuchar', listening: 'escuchando', readout: 'lectura', screen: 'pantalla', about: 'Acerca de Siderarium',
         tagline: 'El reloj macrocósmico', menu: 'menú', view: 'vista', settings: 'ajustes', houses: 'casas', housesOpt: { regiomontanus: 'regiomontanus', equal: 'iguales', placidus: 'placidus' },
         field: 'campo', fieldOpt: { engraved: 'grabado', guilloche: 'guilloché', glow: 'luz' }, bodiesLabel: 'planetas', bodiesOpt: { metal: 'cuerpos', lights: 'luces' }, language: 'idioma',
         nativity: 'natividad', noneSet: 'sin definir', edit: 'editar', seenFrom: 'vista desde', birthplace: 'lugar de nacimiento', currentPlace: 'lugar actual',
         charts: 'cartas guardadas', saveAs: 'guardar como', rename: 'renombrar', del: 'borrar', confirm: 'confirmar', load: 'cargar', name: 'nombre', namePrompt: 'un nombre para esta carta', ok: 'OK', noCharts: 'aún no hay cartas guardadas',
-        keys: 'teclas', keysNote: 'espacio correr · ← → hora · mayús ← → día · f pantalla · i lectura · s sigilo · l escuchar · esc cerrar',
+        keys: 'teclas', keysNote: 'espacio correr · ← → hora · mayús ← → día · f pantalla completa · s sigilo · l escuchar · esc cerrar',
         now: 'ahora', run: 'correr', pause: 'pausa', here: 'aquí', birth: 'nacimiento', save: 'Imprimir arte HD', saveHd: 'Imprimir arte HD 4096', wallpaper: 'Fondo de pantalla', close: 'cerrar', lang: 'en',
         yourNativity: 'tu natividad', kept: 'guardada solo en este dispositivo · nunca se envía', date: 'fecha', time: 'hora',
         unknown: 'hora desconocida (se usa el mediodía; las casas y el grado de la luna quedan inciertos)', city: 'ciudad del huso horario', placeName: 'nombre del lugar', placeHint: 'opcional, p. ej. Roma',

@@ -61,7 +61,7 @@
     luminous: params.get('bodies') === 'luminous' || (!params.get('bodies') && store.get('bodies', 'lights') === 'lights'),   // planets as lights (default); bodies on request
     relocate: store.get('relocate', false),                   // the nativity seen from the current place
     charts: store.get('charts', []),                           // saved nativities, on this device
-    reading: store.get('reading', true),                       // the readout open by default
+    reading: true,                                             // the readout is always there
     groundEl: params.get('ground') === 'element',              // prototype: the element of the hour as the ground
     wall: params.get('wall') === '1', ox: 0,                          // live wallpaper: the sky alone, filling the window, for lively / plash / wallpaper engine
     state: null,
@@ -296,8 +296,7 @@
     if (!audio.ctx) return;
     if (on) { audio.ctx.resume(); soundChord(S.state.chord); }
     else soundChord(null);
-    $('listen').classList.toggle('on', on); $('listen-corner').classList.toggle('on', on);
-    $('listen').textContent = CW.i18n.t(on ? 'ui.listening' : 'ui.listen');
+    $('listen-corner').classList.toggle('on', on); $('listen-corner').title = CW.i18n.t(on ? 'ui.listening' : 'ui.listen');
   }
   function followChord() { if (audio.on && S.state && S.state.chord.name !== audio.key) soundChord(S.state.chord, 2.5); }
 
@@ -512,26 +511,23 @@
     $('sigil').addEventListener('click', () => { S.sigil = !S.sigil; S.dirty = true; updateControls(); });
     $('preview').addEventListener('input', e => { S.playing = false; S.offsetMs = Number(e.target.value) * 60000; recompute(); });
     $('save-hd').addEventListener('click', () => exportPNG(4096));
-    $('info').addEventListener('click', () => { S.reading = !S.reading; store.set('reading', S.reading); document.body.classList.toggle('reading', S.reading); size(); });
     $('listen-corner').addEventListener('click', () => listen(!audio.on));
     $('about-open').addEventListener('click', () => { $('about').hidden = !$('about').hidden; $('about-open').classList.toggle('on', !$('about').hidden); if (!$('about').hidden) openMenu(false); });
     $('about-close').addEventListener('click', () => { $('about').hidden = true; $('about-open').classList.remove('on'); });
-    $('listen').addEventListener('click', () => listen(!audio.on));
-    $('full').addEventListener('click', () => {
+    const fullScreen = () => {                              // the f key: the bare dial, full screen where the browser allows it
       document.body.classList.toggle('bare');
       if (document.body.classList.contains('bare') && document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(() => {});
       else if (document.fullscreenElement) document.exitFullscreen();
-    });
+    };
     window.addEventListener('keydown', e => {
       if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
-      if (e.key === 'f') $('full').click();
-      if (e.key === 'i') $('info').click();
+      if (e.key === 'f') fullScreen();
       if (e.key === 's') $('sigil').click();
-      if (e.key === 'l') $('listen').click();
+      if (e.key === 'l') $('listen-corner').click();
       if (e.key === ' ') { e.preventDefault(); $('play').click(); }
       if (e.key === 'ArrowRight') { S.offsetMs += (e.shiftKey ? 24 : 1) * 3600e3; recompute(); }
       if (e.key === 'ArrowLeft') { S.offsetMs -= (e.shiftKey ? 24 : 1) * 3600e3; recompute(); }
-      if (e.key === 'Escape') { document.body.classList.remove('bare', 'reading'); $('about').hidden = true; $('about-open').classList.remove('on'); $('birth').hidden = true; openMenu(false); }
+      if (e.key === 'Escape') { document.body.classList.remove('bare'); $('about').hidden = true; $('about-open').classList.remove('on'); $('birth').hidden = true; openMenu(false); }
     });
     window.addEventListener('resize', () => { size(); slideSeg(); });
     $('readout').addEventListener('transitionend', e => { if (e.propertyName === 'width') size(); });   // the stage is only final once the panel has opened

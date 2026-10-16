@@ -63,6 +63,7 @@
     charts: store.get('charts', []),                           // saved nativities, on this device
     reading: store.get('reading', true),                       // the readout open by default
     groundEl: params.get('ground') === 'element',              // prototype: the element of the hour as the ground
+    wall: params.get('wall') === '1',                          // live wallpaper: the sky alone, filling the window, for lively / plash / wallpaper engine
     state: null,
     lastCompute: 0
   };
@@ -121,6 +122,13 @@
   }
 
   function size() {
+    if (S.wall) {                                           // the whole window, no wheel: a live wallpaper
+      const W = window.innerWidth, H = window.innerHeight, dpr = Math.min(2, window.devicePixelRatio || 1);
+      canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
+      canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr);
+      plate.width = canvas.width; plate.height = canvas.height;
+      S.side = Math.min(W, H); S.dpr = dpr; S.dirty = true; return;
+    }
     const box = $('stage').getBoundingClientRect();
     const small = box.width < 560;
     const reserve = small ? 0 : 110;                        // room for the 24-hour strip under the dial
@@ -213,6 +221,16 @@
     else if (performance.now() - S.lastCompute > 20000) recompute();
     lastFrame = ts;
     const t = (ts - t0) / 1000;
+    if (S.wall) {
+      if (S.dirty) {
+        pctx.setTransform(1, 0, 0, 1, 0, 0); pctx.clearRect(0, 0, plate.width, plate.height);
+        info = CW.render.renderWallpaper(pctx, viewState(), plate.width, plate.height, t, { fieldRes: 300, plate: true, fast: S.playing, field: S.field, sigil: S.sigil, engrave: S.engrave, luminous: S.luminous });
+        S.dirty = false; lastPlate = ts;
+      }
+      ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.drawImage(plate, 0, 0);
+      CW.render.overlay(ctx, info, t);
+      return;
+    }
     if (S.dirty) {
       pctx.setTransform(1, 0, 0, 1, 0, 0); pctx.clearRect(0, 0, plate.width, plate.height);
       pctx.setTransform(S.dpr * view.z, 0, 0, S.dpr * view.z, S.dpr * view.x, S.dpr * view.y);   // the view: zoom and pan
@@ -665,8 +683,8 @@
       await Promise.all(['400 20px Geist', '500 20px Geist', '400 20px "Geist Mono"'].map(f => document.fonts.load(f)));
     } catch (e) { /* fonts are a nicety */ }
     if (natalModes.includes(S.mode) && !S.natal) S.mode = 'clock';
-    document.body.classList.toggle('reading', S.reading);
-    bind(); bindMenu(); bindGesture(); size(); recompute(); drawNexts(); requestAnimationFrame(slideSeg);
+    document.body.classList.toggle('reading', S.reading && !S.wall); document.body.classList.toggle('wall', S.wall);
+    bind(); bindMenu(); if (!S.wall) bindGesture(); size(); recompute(); drawNexts(); requestAnimationFrame(slideSeg);
     if (S.firstVisit || S.place.name === 'here') locate(false);
     requestAnimationFrame(frame);
     if ('serviceWorker' in navigator && /^https?:/.test(location.protocol) && !/claude\.ai$/.test(location.hostname)) navigator.serviceWorker.register('./sw.js').catch(() => {});

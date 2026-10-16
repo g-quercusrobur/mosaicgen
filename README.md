@@ -2,7 +2,9 @@
 
 Macrocosmic clock visually tracking the astrological energy of the moment. Formerly cosmo weather; the folder keeps the old name.
 
-The sky of the moment as an instrument. Open `index.html` in a browser: no build step, no server, works offline except for the fonts.
+Siderarium draws the sky of the present moment as a living mandala. Through synesthesia it conveys, in a multi-sensory experience, the astrological energy of the hour: its colour, its geometry, its chord. It captures the moment and its vibration, to be seen, heard and kept as an image; for practitioners of the Arts it is also a timing tool. Classical aspects are divisions of the circle, so each is drawn as its star polygon: the pattern that results is the key to the present moment.
+
+Open `index.html` in a browser: no build step, no server, works offline except for the fonts.
 
 **Controls:** clock / chart / natal / transits · `readout` · `menu` (sigil, listen, screen, about; language, houses, field, planets; nativity, relocation, saved charts) · `now` · `±1h` · `±1d` · `run` / `pause` (15 min, 1 h, 4 h, 24 h of sky per second) · date field (place's own time) · one city per time zone · `here` · `birth` · save 2048 · wallpaper
 **Gestures:** turn the dial to travel in time (one turn = one day, wheel = ten minutes) · pinch or ctrl+wheel to zoom · double tap to reset

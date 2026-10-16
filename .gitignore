@@ -117,8 +117,7 @@ venv.bak/
 # Rope project settings
 .ropeproject
 
-# mkdocs documentation
-/site
+# mkdocs documentation (not used here: /site is the siderarium website)
 
 # mypy
 .mypy_cache/

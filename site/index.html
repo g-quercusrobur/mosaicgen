@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<title>Siderarium · the macrocosmic clock</title>
+<meta name="description" content="Siderarium: macrocosmic clock visually tracking the astrological energy of the moment. The sky of now as a living mandala; a timing tool for practitioners of the Arts.">
+<meta property="og:title" content="Siderarium · the macrocosmic clock">
+<meta property="og:description" content="The sky of the present moment as a living mandala. Colour, geometry and chord, computed from the ephemeris.">
+<meta property="og:image" content="img/hero.jpg">
+<meta property="og:type" content="website">
+<link rel="icon" href="img/icon-192.png">
+<link rel="apple-touch-icon" href="img/icon-192.png">
+<style>
+@font-face { font-family: Geist; font-weight: 400; font-display: swap; src: url("fonts/Geist-Regular.woff2") format("woff2"); }
+@font-face { font-family: Geist; font-weight: 500; font-display: swap; src: url("fonts/Geist-Medium.woff2") format("woff2"); }
+@font-face { font-family: "Geist Mono"; font-weight: 400; font-display: swap; src: url("fonts/GeistMono-Regular.woff2") format("woff2"); }
+</style>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="bar">
+  <a class="brand" href="#top" aria-label="Siderarium"><img src="img/icon-192.png" alt=""><span class="mark">siderarium</span></a>
+  <nav>
+    <a href="#how">How it works</a>
+    <a href="#timing">Timing</a>
+    <a href="#views">Views</a>
+    <a href="#lineage">Lineage</a>
+    <a href="#get">Get the app</a>
+    <a class="btn small primary" href="app/">Open Siderarium</a>
+  </nav>
+</header>
+
+<main id="top">
+  <section class="hero">
+    <div class="sky" aria-hidden="true">
+      <picture>
+        <source media="(max-width: 700px)" srcset="img/hero-square.jpg">
+        <img src="img/hero.jpg" alt="">
+      </picture>
+      <iframe id="live" title="Siderarium, live" data-src="app/?wall=1&amp;place=rome" tabindex="-1"></iframe>
+    </div>
+    <div class="wrap">
+      <h1>The macrocosmic clock.</h1>
+      <p class="lede">Siderarium draws the sky of the present moment as a living mandala: the astrological energy of the hour as colour, geometry and chord. See it, hear it, keep it, return to it.</p>
+      <div class="cta">
+        <a class="btn primary" href="app/">Open Siderarium</a>
+        <a class="btn" href="#get">Install on your phone</a>
+      </div>
+      <p class="live-note" id="live-note">The sky over Rome, now.</p>
+    </div>
+  </section>
+
+  <section id="what">
+    <div class="wrap two">
+      <div class="prose">
+        <p class="kicker">What it is</p>
+        <h2>The moment and its vibration.</h2>
+        <p>Through synesthesia we wanted an instrument that conveys, in a multi-sensory experience, the astrological energy of the hour. The dial captures the moment and its vibration, so that it can be seen, heard, kept as an image and returned to.</p>
+        <p>For practitioners of the Arts it is also a timing tool: the light at the centre, the guardians of the hour and the windows of the coming day show when a working finds the sky ready.</p>
+        <p><strong>Every mark can be traced.</strong> Planetary positions come from an ephemeris accurate to the arcminute. A fixed set of rules turns them into colour, number, geometry and sound, and the readout names the rule behind each one.</p>
+      </div>
+      <figure>
+        <img src="img/desk-clock.jpg" alt="Siderarium on a desktop screen: the dial with its readout" width="1800" height="1125">
+        <figcaption>Clock view with the readout open.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section id="how">
+    <div class="wrap">
+      <div class="two flip">
+        <figure>
+          <img src="img/figure.jpg" alt="The figure of the moment drawn as a sigil: a star polygon with its circles" width="1000" height="1000">
+          <figcaption>The sigil layer: the figure alone, for copying by hand.</figcaption>
+        </figure>
+        <div class="prose">
+          <p class="kicker">How it works</p>
+          <h2>How the sky becomes a figure.</h2>
+          <p>Classical astrology reads the angles between planets as aspects: the trine at 120°, the square at 90°, the sextile at 60°. Kepler showed that these angles are the divisions of the circle by its regular polygons.</p>
+          <p>Siderarium takes that literally. An aspect of k·360/n is drawn as the star polygon {n/k}: a trine becomes a triangle, a square a square, a quintile a pentagram. The ruling aspect gives the central figure; the others stand fainter behind it.</p>
+          <p>Each planet brings its number, its tincture and its light. The mandala that results is the key to the present moment: a pattern that exists only now.</p>
+        </div>
+      </div>
+      <div class="steps">
+        <div class="step"><span class="n">01</span><h3>Ephemeris</h3><p>Positions of the Sun, Moon and planets for this minute, at your place, with houses on the local horizon.</p></div>
+        <div class="step"><span class="n">02</span><h3>Aspects as divisions of the circle</h3><p>Each angle between two bodies is read against the regular polygons, as Kepler did, with the orbs of tradition.</p></div>
+        <div class="step"><span class="n">03</span><h3>Number, tincture, light</h3><p>Saturn the three, the Sun the six, Mercury the eight; gold, silver and the King scale of colours; a glow that follows dignity and strength.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="timing">
+    <div class="wrap two">
+      <div class="prose">
+        <p class="kicker">Timing</p>
+        <h2>When the sky is ready.</h2>
+        <p>The centre of the dial answers one question: is this a good hour to work? Three indicators sit there, drawn from the Renaissance tradition of elections.</p>
+        <div class="rows">
+          <div class="row"><span class="k">The Moon's verdict</span><p>Ripe, open, unripe or void of course. The light at the pole warms, cools or goes dark with it.</p></div>
+          <div class="row"><span class="k">The guardians</span><p>The ruler of the day and the ruler of the planetary hour, as their stars. The angel of the hour is named in the caption.</p></div>
+          <div class="row"><span class="k">The windows</span><p>The next twenty-four hours scanned for the moments of ideation, incarnation and destruction. Tap one to travel there.</p></div>
+          <div class="row"><span class="k">Your nativity</span><p>Enter your birth once, kept on your device. The transits view shows which natal figures the sky is setting off, and whether harmony or strife prevails.</p></div>
+        </div>
+      </div>
+      <figure class="phone">
+        <img src="img/phone.png" alt="Siderarium on a phone" width="780" height="1688">
+      </figure>
+    </div>
+  </section>
+
+  <section id="views">
+    <div class="wrap">
+      <p class="kicker">Views</p>
+      <h2>One sky, four readings.</h2>
+      <div class="views">
+        <div class="view"><img src="img/desk-chart.jpg" alt="The chart view: a conventional wheel with aspect lines"><h3>Chart</h3><p>The same moment as a conventional wheel: houses, degrees, aspect lines, for the astrologer's eye.</p></div>
+        <div class="view"><img src="img/sigil.jpg" alt="The sigil view"><h3>Sigil</h3><p>The figure isolated in solid ink, with no field and no glow, to be copied onto paper or metal.</p></div>
+        <div class="view"><img src="img/readout.png" alt="The readout: bodies, dignities, the figure, sound, tarot"><h3>Readout</h3><p>Bodies and dignities, the figure and its orb, the chord, the decans and their cards, the hours of the day. Every mark, traceable.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="lineage">
+    <div class="wrap two flip">
+      <figure>
+        <img src="img/hero-square.jpg" alt="The dial without its frame, as a wallpaper" width="1080" height="1080">
+        <figcaption>The wallpaper render: the field runs to the edges.</figcaption>
+      </figure>
+      <div class="prose">
+        <p class="kicker">Lineage</p>
+        <h2>A cosmic clock, in a long line of them.</h2>
+        <p>The Antikythera mechanism geared the Sun, the Moon and the eclipses two thousand years ago. Su Song's tower turned a celestial globe in Kaifeng in 1092. Giovanni Dondi's Astrarium gave Padua one dial for each of the seven planets in 1364, and the Prague Orloj has shown day, twilight and night on an astrolabe since 1410.</p>
+        <p>Modern haute horlogerie kept the thread alive in the astronomical complications of Oechslin, van der Klaauw, Patek Philippe and Vacheron Constantin. Siderarium borrows their functional discipline: a dial on which every mark earns its place, a chapter ring, applied Roman numerals, the Moon shown in its phase, and nothing that does not read.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="get">
+    <div class="wrap">
+      <p class="kicker">Get the app</p>
+      <h2>Siderarium installs from the browser.</h2>
+      <p class="dim">There is nothing to download from a store. Open the app once, then add it to your device; it keeps working offline and updates itself.</p>
+      <div class="cards">
+        <div class="card">
+          <h3>iPhone and iPad</h3>
+          <ol><li>Open <a href="app/">Siderarium</a> in Safari.</li><li>Tap Share, then <strong>Add to Home Screen</strong>.</li><li>Open it from the home screen; it runs full screen.</li></ol>
+        </div>
+        <div class="card">
+          <h3>Android</h3>
+          <ol><li>Open <a href="app/">Siderarium</a> in Chrome.</li><li>Tap the menu, then <strong>Install app</strong> (or Add to Home screen).</li><li>Find it with your other apps.</li></ol>
+        </div>
+        <div class="card">
+          <h3>Mac and Windows</h3>
+          <ol><li>Open <a href="app/">Siderarium</a> in Chrome or Edge.</li><li>Click the install icon at the right of the address bar.</li><li>It opens in its own window, in the Dock or the Start menu.</li></ol>
+          <p class="soon">Native installers for macOS and Windows are in preparation.</p>
+        </div>
+        <div class="card wide">
+          <h3>Live wallpaper</h3>
+          <p>The bare dial, no controls, filling any screen and moving with the sky. Give this address to Lively Wallpaper on Windows or to Plash on macOS:</p>
+          <p><code>https://g-quercusrobur.github.io/mosaicgen/app/?wall=1</code></p>
+          <p>Add <code>&amp;place=rome</code>, <code>&amp;place=new-york</code> or any city of the list to fix the horizon. For phone wallpaper automations, a still of the sky is rendered every hour for Rome, New York and Greenwich:</p>
+          <div class="links">
+            <a class="btn small" href="https://g-quercusrobur.github.io/mosaicgen/sky/rome.png">Rome, portrait</a>
+            <a class="btn small" href="https://g-quercusrobur.github.io/mosaicgen/sky/new-york.png">New York, portrait</a>
+            <a class="btn small" href="https://g-quercusrobur.github.io/mosaicgen/sky/greenwich-square.png">Greenwich, square</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="wrap">
+    <span class="mark">siderarium</span>
+    <p>Macrocosmic clock visually tracking the astrological energy of the moment.</p>
+    <div class="line">
+      <a href="app/">Open the app</a>
+      <a href="app/?lang=es">Español</a>
+      <a href="privacy.html">Privacy and legal</a>
+    </div>
+    <p>No cookies, no tracking. Your nativity stays on your device.</p>
+    <p>© 2026 Siderarium · Hippocrene Design Works LLC · proprietary design and method · all rights reserved.</p>
+  </footer>
+</main>
+
+<script>
+  // the live sky, loaded after the page is up; the still underneath stays if it never arrives
+  (function () {
+    var f = document.getElementById('live');
+    if (!f || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    setTimeout(function () {
+      f.addEventListener('load', function () {
+        var ok = false; try { ok = !!(f.contentDocument && f.contentDocument.getElementById('dial')); } catch (e) { ok = false; }   // the app answered, not an error page
+        if (ok) setTimeout(function () { f.classList.add('live'); }, 1800);
+      });
+      f.src = f.dataset.src;
+    }, 600);
+  })();
+</script>
+</body>
+</html>

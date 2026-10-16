@@ -53,12 +53,14 @@
     playing: false,
     preview: 0,                                            // minutes ahead, from the 24-hour strip
     sigil: params.get('sigil') === '1',
-    engrave: params.get('field') !== 'glow' && params.get('engrave') !== '0',   // engraved at rest; glow only on request
+    engrave: params.get('field') ? params.get('field') !== 'glow' : (params.get('engrave') !== '0' && store.get('field', 'engraved') !== 'glow'),   // engraved at rest; glow on request
     natal: store.get('natal', null),                        // { date, place, unknownTime } — stays on this device
     lang: params.get('lang') || store.get('lang', null) || ((navigator.language || 'en').toLowerCase().startsWith('es') ? 'es' : 'en'),
     field: params.get('field') || 'waves',
-    houses: params.get('houses') || 'regiomontanus',            // lilly's system; ?houses=equal or placidus to compare
-    luminous: params.get('bodies') === 'luminous',               // prototype: planets as lights
+    houses: params.get('houses') || store.get('houses', 'regiomontanus'),   // lilly's system; equal and placidus to compare
+    luminous: params.get('bodies') === 'luminous' || (!params.get('bodies') && store.get('bodies', 'lights') === 'lights'),   // planets as lights (default); bodies on request
+    relocate: store.get('relocate', false),                   // the nativity seen from the current place
+    charts: store.get('charts', []),                           // saved nativities, on this device
     state: null,
     lastCompute: 0
   };
@@ -79,10 +81,11 @@
   const natalCache = { key: null, state: null };
   function natalState() {
     if (!S.natal) return null;
-    const key = JSON.stringify(S.natal);
+    const place = S.relocate ? S.place : S.natal.place;     // relocated: the same instant, the houses of another horizon
+    const key = JSON.stringify([S.natal.date, place, S.houses]);
     if (natalCache.key !== key) {
-      const st = CW.engine.compute(new Date(S.natal.date), S.natal.place, { houses: S.houses });
-      st.natalView = true; st.nextChord = null;
+      const st = CW.engine.compute(new Date(S.natal.date), place, { houses: S.houses });
+      st.natalView = true; st.nextChord = null; st.relocated = S.relocate ? place.name : null;
       natalCache.key = key; natalCache.state = st;
     }
     return natalCache.state;
@@ -102,6 +105,7 @@
     S.lastCompute = performance.now();
     S.dirty = true;
     document.documentElement.style.setProperty('--ground', CW.render.ground(S.state));
+    document.body.classList.toggle('mrx', viewState().bodies.mercury.slow > 0.5);   // mercury retrograde: the print misregisters
     const c = CW.render.captionLines(viewState());
     $('caption').innerHTML = `<p class="l1">${c.l1}</p><p>${c.l2}</p><p>${c.l3}</p><p>${c.chord}</p><p>${c.decan}</p><p class="mono">${c.next}</p><p class="mono">${c.fig}</p><p class="mono">${c.moon}</p><p class="mono">${c.mansion}</p>`;
     if (!busy) scanIfNeeded();
@@ -307,7 +311,7 @@
     const P = k => i.planet(k), A = k => i.aspect(k);
     const rows = C.ORDER.map(k => {
       const b = st.bodies[k];
-      const flags = [b.retro ? i.flag('retrograde') : '', b.station ? i.flag('stationary') : '', b.cazimi ? i.flag('cazimi') : b.combust ? i.flag('combust') : b.beams ? i.flag('beams') : ''].filter(Boolean).join(', ');
+      const flags = [b.retro ? i.flag('retrograde') : '', b.station ? i.flag('stationary') : '', b.cazimi ? i.flag('cazimi') : b.combust ? i.flag('combust') : b.beams ? i.flag('beams') : '', b.oob ? i.flag('oob') : ''].filter(Boolean).join(', ');
       const dig = C.PLANETS[k].kind === 'optic' ? i.flag('noDignity') : `${b.dignity.score > 0 ? '+' : ''}${b.dignity.score} · ${b.dignity.labels.map(l => i.dignity(l)).join(', ') || '—'}`;
       return `<tr><td>${P(k)}</td><td>${Math.floor(b.deg)}°${String(Math.floor((b.deg % 1) * 60)).padStart(2, '0')}′ ${i.sign(b.sign)}</td><td>${R('house')} ${b.house}</td></tr><tr class="sub"><td></td><td colspan="2">${dig}${flags ? ' · ' + flags : ''}</td></tr>`;
     }).join('');
@@ -339,7 +343,7 @@
       <h3>${H('portal')}</h3><p>${R('scale')} ×${(cf.scale || 1).toFixed(2)} (${R('widens')})${cf.cut ? ` · ${R('cut')} ${P(cf.cut.by)} ${A(cf.cut.aspect)} ${P(cf.cut.target)}, ${Math.round(cf.cut.width)}°` : ' · ' + R('whole')}</p>
       <p>${R('guardians')} ${P(st.hour.dayRuler)}${st.hour.dayRuler === st.hour.hourRuler ? ' ' + R('alone') : ' ' + R('and') + ' ' + P(st.hour.hourRuler)}</p>
       <h3>${H('windows')}</h3><p>${W('ideation')} · ${W('incarnation')} · ${W('destruction')}</p>
-      <h3>${H('moon')}</h3><p>${i.verdict(st.moon.verdict)} · ${st.moon.next ? `${R('nextMoon')} ${A(st.moon.next.aspect)} ${P(st.moon.next.planet)} ${R('in')} ${(st.moon.next.days * 24).toFixed(1)}h` : i.flag('void of course')}${st.moon.flags.filter(f => f !== 'void of course').map(f => ' · ' + i.flag(f === 'under the beams' ? 'beams' : f)).join('')}</p>
+      <h3>${H('moon')}</h3>${st.moon.verdict === 'void' ? `<p class="dim">${R('voidNote')}</p>` : ''}<p>${i.verdict(st.moon.verdict)} · ${st.moon.next ? `${R('nextMoon')} ${A(st.moon.next.aspect)} ${P(st.moon.next.planet)} ${R('in')} ${(st.moon.next.days * 24).toFixed(1)}h` : i.flag('void of course')}${st.moon.flags.filter(f => f !== 'void of course').map(f => ' · ' + i.flag(f === 'under the beams' ? 'beams' : f)).join('')}</p>
       <p>${i.ordinal(st.bodies.moon.mansion.index)} ${R('mansion')} · ${st.bodies.moon.mansion.name} (agrippa II.33)</p>
       <h3>${H('hours')}</h3><p class="hours">${hours}</p>
       <h3>${H('events')}</h3><p>${ev}</p>
@@ -359,6 +363,69 @@
     document.querySelectorAll('[data-mode]').forEach(b => b.classList.toggle('on', b.dataset.mode === S.mode || (S.mode === 'natalchart' && (b.dataset.mode === 'chart' || b.dataset.mode === 'natal'))));
     document.body.classList.toggle('natal', S.mode === 'natal' || S.mode === 'natalchart');
     $('sigil').classList.toggle('on', S.sigil);
+  }
+
+  /* ---------- the menu: view, settings, nativity and saved charts ---------- */
+  const uid = () => Math.random().toString(36).slice(2, 10);
+  function natalSummary() {
+    const i = CW.i18n;
+    if (!S.natal) return i.t('ui.noneSet');
+    const p = placeParts(new Date(S.natal.date), S.natal.place.tz);
+    return `${S.natal.name ? S.natal.name + ' · ' : ''}${p.year}-${p.month}-${p.day} ${S.natal.unknownTime ? '' : p.hour + ':' + p.minute + ' '}· ${S.natal.place.name}`;
+  }
+  function refreshMenu() {
+    const i = CW.i18n;
+    $('set-lang').value = S.lang; $('set-houses').value = S.houses; $('set-field').value = S.engrave ? 'engraved' : 'glow'; $('set-bodies').value = S.luminous ? 'lights' : 'metal';
+    $('set-relocate').value = S.relocate ? '1' : '0';
+    $('natal-summary').textContent = natalSummary();
+    $('natal-saveas').disabled = !S.natal;
+    const ul = $('charts');
+    ul.innerHTML = S.charts.length ? S.charts.map(c => `<li data-id="${c.id}"${S.natal && S.natal.id === c.id ? ' class="on"' : ''}><span class="name" data-act="load" role="button" tabindex="0" title="${i.t('ui.load')}">${esc(c.name)}</span><span class="ops"><button data-act="rename">${i.t('ui.rename')}</button><button data-act="delete">${i.t('ui.del')}</button></span></li>`).join('')
+      : `<li class="empty">${i.t('ui.noCharts')}</li>`;
+  }
+  const esc = t => String(t).replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
+  function openMenu(open) { $('menu').hidden = !open; $('menu-open').classList.toggle('on', open); if (open) refreshMenu(); }
+  function upsertChart(chart) {
+    const k = S.charts.findIndex(c => c.id === chart.id);
+    if (k >= 0) S.charts[k] = chart; else S.charts.push(chart);
+    store.set('charts', S.charts);
+  }
+  function saveChartAs(name) {
+    if (!S.natal || !name) return;
+    const chart = { ...S.natal, id: uid(), name };
+    upsertChart(chart); S.natal = chart; store.set('natal', S.natal); refreshMenu();
+  }
+  function bindMenu() {
+    $('menu-open').addEventListener('click', () => openMenu($('menu').hidden));
+    $('menu-close').addEventListener('click', () => openMenu(false));
+    document.addEventListener('pointerdown', e => { if (!$('menu').hidden && !e.target.closest('#menu, #menu-open')) openMenu(false); });
+    $('set-lang').addEventListener('change', e => setLang(e.target.value));
+    $('set-houses').addEventListener('change', e => { S.houses = e.target.value; store.set('houses', S.houses); natalCache.key = null; scan.key = null; recompute(); });
+    $('set-field').addEventListener('change', e => { S.engrave = e.target.value !== 'glow'; store.set('field', e.target.value); S.dirty = true; });
+    $('set-bodies').addEventListener('change', e => { S.luminous = e.target.value === 'lights'; store.set('bodies', e.target.value); S.dirty = true; });
+    $('set-relocate').addEventListener('change', e => { S.relocate = e.target.value === '1'; store.set('relocate', S.relocate); natalCache.key = null; recompute(); });
+    $('natal-edit').addEventListener('click', () => { openMenu(false); openBirth(); });
+    $('natal-saveas').addEventListener('click', () => { const row = $('chart-new'); row.hidden = !row.hidden; if (!row.hidden) { $('chart-name').value = S.natal && S.natal.name || ''; $('chart-name').focus(); } });
+    const commitNew = () => { const name = $('chart-name').value.trim(); if (!name) return; saveChartAs(name); $('chart-new').hidden = true; };
+    $('chart-ok').addEventListener('click', commitNew);
+    $('chart-name').addEventListener('keydown', e => { if (e.key === 'Enter') commitNew(); if (e.key === 'Escape') $('chart-new').hidden = true; });
+    $('charts').addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('span[data-act]')) { e.preventDefault(); e.target.click(); } });
+    $('charts').addEventListener('click', e => {
+      const b = e.target.closest('[data-act]'); if (!b || e.target.tagName === 'INPUT') return;
+      const li = b.closest('li'), id = li.dataset.id, chart = S.charts.find(c => c.id === id); if (!chart) return;
+      if (b.dataset.act === 'load') { S.natal = { ...chart }; store.set('natal', S.natal); natalCache.key = null; if (!natalModes.includes(S.mode)) S.mode = 'natal'; store.set('mode', S.mode); recompute(); refreshMenu(); openMenu(false); }
+      else if (b.dataset.act === 'rename') {
+        const nameBtn = li.querySelector('.name'); const input = document.createElement('input'); input.type = 'text'; input.value = chart.name;
+        nameBtn.replaceChildren(input); input.focus(); input.select();
+        let finished = false;
+        const done = () => { if (finished) return; finished = true; const v = input.value.trim(); if (v) { chart.name = v; if (S.natal && S.natal.id === id) { S.natal.name = v; store.set('natal', S.natal); } store.set('charts', S.charts); } refreshMenu(); };
+        input.addEventListener('keydown', ev => { if (ev.key === 'Enter') done(); if (ev.key === 'Escape') { finished = true; refreshMenu(); } ev.stopPropagation(); });
+        input.addEventListener('blur', done);
+      } else if (b.dataset.act === 'delete') {
+        if (b.dataset.armed) { S.charts = S.charts.filter(c => c.id !== id); store.set('charts', S.charts); refreshMenu(); }
+        else { b.dataset.armed = '1'; b.textContent = CW.i18n.t('ui.confirm'); setTimeout(() => { if (b.isConnected) { delete b.dataset.armed; b.textContent = CW.i18n.t('ui.del'); } }, 3000); }
+      }
+    });
   }
 
   function bind() {
@@ -393,14 +460,13 @@
     $('birth-save').addEventListener('click', saveBirth);
     $('birth-clear').addEventListener('click', () => { S.natal = null; store.set('natal', null); if (natalModes.includes(S.mode)) S.mode = 'clock'; $('birth').hidden = true; recompute(); });
     $('wallpaper').addEventListener('click', exportWallpaper);
-    $('lang').addEventListener('click', () => setLang(S.lang === 'es' ? 'en' : 'es'));
     $('save').addEventListener('click', () => exportPNG(2048));
     const bc = $('birth-city'); bc.innerHTML = ZONES.map(z => `<option value="${z.name}">${offsetOf(z.tz)} · ${z.name}</option>`).join('');
     $('sigil').addEventListener('click', () => { S.sigil = !S.sigil; S.dirty = true; updateControls(); });
     $('preview').addEventListener('input', e => { S.preview = Number(e.target.value); recompute(); });
     $('save-hd').addEventListener('click', () => exportPNG(4096));
     $('info').addEventListener('click', () => document.body.classList.toggle('reading'));
-    $('about-open').addEventListener('click', () => { $('about').hidden = !$('about').hidden; $('about-open').classList.toggle('on', !$('about').hidden); });
+    $('about-open').addEventListener('click', () => { $('about').hidden = !$('about').hidden; $('about-open').classList.toggle('on', !$('about').hidden); if (!$('about').hidden) openMenu(false); });
     $('about-close').addEventListener('click', () => { $('about').hidden = true; $('about-open').classList.remove('on'); });
     $('listen').addEventListener('click', () => listen(!audio.on));
     $('full').addEventListener('click', () => {
@@ -417,7 +483,7 @@
       if (e.key === ' ') { e.preventDefault(); $('play').click(); }
       if (e.key === 'ArrowRight') { S.offsetMs += (e.shiftKey ? 24 : 1) * 3600e3; recompute(); }
       if (e.key === 'ArrowLeft') { S.offsetMs -= (e.shiftKey ? 24 : 1) * 3600e3; recompute(); }
-      if (e.key === 'Escape') { document.body.classList.remove('bare', 'reading'); $('about').hidden = true; $('about-open').classList.remove('on'); $('birth').hidden = true; }
+      if (e.key === 'Escape') { document.body.classList.remove('bare', 'reading'); $('about').hidden = true; $('about-open').classList.remove('on'); $('birth').hidden = true; openMenu(false); }
     });
     window.addEventListener('resize', size);
     if (params.get('hd') !== '1') $('save-hd').hidden = true;
@@ -428,11 +494,12 @@
     const n = S.natal;
     if (n) {
       const p = placeParts(new Date(n.date), n.place.tz);
+      $('birth-name').value = n.name || '';
       $('birth-date').value = `${p.year}-${p.month}-${p.day}`; $('birth-time').value = n.unknownTime ? '' : `${p.hour}:${p.minute}`;
       $('birth-unknown').checked = !!n.unknownTime;
       if (PLACES[n.place.name]) $('birth-city').value = n.place.name;
       $('birth-lat').value = n.place.lat; $('birth-lon').value = n.place.lon;
-    } else { $('birth-city').value = S.place.name in PLACES ? S.place.name : 'greenwich'; $('birth-lat').value = ''; $('birth-lon').value = ''; }
+    } else { $('birth-name').value = ''; $('birth-city').value = S.place.name in PLACES ? S.place.name : 'greenwich'; $('birth-lat').value = ''; $('birth-lon').value = ''; }
     $('birth-note').textContent = '';
     $('birth').hidden = false;
   }
@@ -443,8 +510,10 @@
     const place = Number.isFinite(lat) && Number.isFinite(lon) ? { name: $('birth-place').value.trim().toLowerCase() || city.name, lat, lon, tz: city.tz } : { ...city };
     const d = fromStamp(`${dateTxt} ${timeTxt}`, place.tz);
     if (!d) { $('birth-note').textContent = CW.i18n.t('ui.badDate'); return; }
-    S.natal = { date: d.toISOString(), place, unknownTime: unknown };
-    store.set('natal', S.natal);
+    const name = $('birth-name').value.trim();
+    S.natal = { date: d.toISOString(), place, unknownTime: unknown, name: name || undefined, id: name ? (S.natal && S.natal.id) || uid() : undefined };
+    if (name) upsertChart(S.natal);                         // a named nativity is kept in the saved charts
+    store.set('natal', S.natal); natalCache.key = null;
     $('birth').hidden = true;
     if (S.mode !== 'natal' && S.mode !== 'synastry') S.mode = 'synastry';
     store.set('mode', S.mode); recompute();
@@ -553,6 +622,8 @@
 
   function setLang(l) {
     S.lang = l; store.set('lang', l); CW.i18n.set(l); CW.i18n.apply();
+    if ($('set-lang').value !== l) $('set-lang').value = l;
+    if (!$('menu').hidden) refreshMenu();
     document.querySelectorAll('[data-about]').forEach(el => { el.hidden = el.dataset.about !== l; });
     scan.key = null;                                        // the week's labels are rebuilt in the new language
     if (S.state) recompute(); drawNexts();
@@ -565,7 +636,7 @@
       await Promise.all(['400 20px Geist', '500 20px Geist', '400 20px "Geist Mono"'].map(f => document.fonts.load(f)));
     } catch (e) { /* fonts are a nicety */ }
     if (natalModes.includes(S.mode) && !S.natal) S.mode = 'clock';
-    bind(); bindGesture(); size(); recompute(); drawNexts();
+    bind(); bindMenu(); bindGesture(); size(); recompute(); drawNexts();
     if (S.firstVisit || S.place.name === 'here') locate(false);
     requestAnimationFrame(frame);
     if ('serviceWorker' in navigator && /^https?:/.test(location.protocol) && !/claude\.ai$/.test(location.hostname)) navigator.serviceWorker.register('./sw.js').catch(() => {});

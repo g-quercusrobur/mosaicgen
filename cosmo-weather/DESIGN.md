@@ -239,3 +239,13 @@ Angels of the days and hours from the Heptameron: michael, gabriel, samael, raph
 - **Void Moon:** the pupil at the pole is near black and the whole portal dims around it; the guardians' star fades to a ghost.
 - **Wallpaper:** no wheel. The field, and the engraving, run to the edges of a portrait canvas the size of the phone; the dial is sized to the width and set below the lock-screen clock. No caption.
 - **Prototype, not built:** `?bodies=luminous` draws the planets as lights instead of bodies: flat tincture, glowing by power, no sheen or shadow. For comparison against the metallic default.
+
+## 16 · Round 10 changes
+
+- **Planets as lights** is now the default: flat tincture with a hairline edge, glowing by power. The metallic bodies remain as a setting.
+- **Menu.** The top bar is a wordmark, a segmented control (clock · chart · natal · transits) and two buttons, readout and menu. The menu holds view (sigil, listen, screen, about), settings (language, houses, field, planets), the nativity (summary, edit, save as, seen from) and the saved charts. "Synastry" is now called transits, which is what the mode computes.
+- **Saved charts.** Named nativities are kept on the device (`cw.charts`): save as, rename inline, delete with a confirm, load. No account: nothing leaves the phone. Sync and a licence key, if ever, come later.
+- **Relocation.** "Seen from · current place" recasts the nativity for the horizon of the current place: same instant, new angles and houses. The caption says "relocated to".
+- **Out of bounds.** A planet whose declination exceeds the obliquity is flagged in the readout and wears a dotted fence beyond its ring.
+- **Retrogrades.** Pluto retrograde: the occultation's limb and corona lose focus. Mercury slow or retrograde: the caption prints with a ghost offset, like a misregistered plate, and the readout gets a faint second impression. Mars retrograde dulls the points, Venus the curves, as before.
+- **Void Moon and the guardians.** The light at the pole goes out and the portal darkens; the guardians' star stays nearly full. The Moon's course decides whether a work takes in the world; the day and hour rulers decide who holds the room. The readout says so.

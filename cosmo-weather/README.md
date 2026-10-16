@@ -2,7 +2,7 @@
 
 The sky of the moment as an instrument. Open `index.html` in a browser: no build step, no server, works offline except for the fonts.
 
-**Controls:** `now` · `±1h` · `±1d` · `run` / `pause` (15 min, 1 h, 4 h, 24 h of sky per second) · date field (place's own time) · one city per time zone · `here` · `birth` · clock / chart / natal / synastry · sigil · listen · readout · screen · `es`/`en` · save 2048 · wallpaper
+**Controls:** clock / chart / natal / transits · `readout` · `menu` (sigil, listen, screen, about; language, houses, field, planets; nativity, relocation, saved charts) · `now` · `±1h` · `±1d` · `run` / `pause` (15 min, 1 h, 4 h, 24 h of sky per second) · date field (place's own time) · one city per time zone · `here` · `birth` · save 2048 · wallpaper
 **Gestures:** turn the dial to travel in time (one turn = one day, wheel = ten minutes) · pinch or ctrl+wheel to zoom · double tap to reset
 **Keys:** `space` run · `←/→` hour · `shift+←/→` day · `f` screen · `i` readout · `esc`
 **URL:** `?t=2027-01-15T21:00:00Z` fixes the moment · `?place=rome` · `?mode=chart` · `?lang=es` · `?field=glow` (the glow field instead of the engraving) · `?hd=1` shows the 4096 export

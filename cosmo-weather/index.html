@@ -21,21 +21,50 @@
 <body>
   <header class="bar top">
     <span class="mark">cosmo weather</span>
-    <nav class="group">
+    <nav class="seg" aria-label="view">
       <button data-mode="clock" data-i18n="ui.clock">clock</button>
       <button data-mode="chart" data-i18n="ui.chart">chart</button>
       <button data-mode="natal" data-i18n="ui.natal">natal</button>
-      <button data-mode="synastry" data-i18n="ui.synastry">synastry</button>
-      <button id="sigil" data-i18n="ui.sigil" title="s">sigil</button>
+      <button data-mode="synastry" data-i18n="ui.synastry">transits</button>
     </nav>
     <nav class="group">
-      <button id="listen" data-i18n="ui.listen" title="l">listen</button>
       <button id="info" data-i18n="ui.readout" title="i">readout</button>
-      <button id="full" data-i18n="ui.screen" title="f">screen</button>
-      <button id="about-open" data-i18n="ui.about">about</button>
-      <button id="lang" data-i18n="ui.lang" title="english · español">es</button>
+      <button id="menu-open" data-i18n="ui.menu" aria-haspopup="dialog" aria-controls="menu">menu</button>
     </nav>
   </header>
+
+  <aside id="menu" class="sheet" hidden aria-label="menu">
+    <div class="sheet-head"><span class="mark" data-i18n="ui.menu">menu</span><button id="menu-close" data-i18n="ui.close">close</button></div>
+    <section>
+      <h2 data-i18n="ui.view">view</h2>
+      <div class="rowbtns">
+        <button id="sigil" data-i18n="ui.sigil" title="s">sigil</button>
+        <button id="listen" data-i18n="ui.listen" title="l">listen</button>
+        <button id="full" data-i18n="ui.screen" title="f">screen</button>
+        <button id="about-open" data-i18n="ui.about">about</button>
+      </div>
+    </section>
+    <section>
+      <h2 data-i18n="ui.settings">settings</h2>
+      <label class="row"><span data-i18n="ui.language">language</span><select id="set-lang"><option value="en">english</option><option value="es">español</option></select></label>
+      <label class="row"><span data-i18n="ui.houses">houses</span><select id="set-houses"><option value="regiomontanus">regiomontanus</option><option value="equal" data-i18n="ui.housesOpt.equal">equal</option><option value="placidus">placidus</option></select></label>
+      <label class="row"><span data-i18n="ui.field">field</span><select id="set-field"><option value="engraved" data-i18n="ui.fieldOpt.engraved">engraved</option><option value="glow" data-i18n="ui.fieldOpt.glow">glow</option></select></label>
+      <label class="row"><span data-i18n="ui.bodiesLabel">planets</span><select id="set-bodies"><option value="metal" data-i18n="ui.bodiesOpt.metal">bodies</option><option value="lights" data-i18n="ui.bodiesOpt.lights">lights</option></select></label>
+    </section>
+    <section>
+      <h2 data-i18n="ui.nativity">nativity</h2>
+      <p id="natal-summary" class="meta"></p>
+      <div class="rowbtns"><button id="natal-edit" data-i18n="ui.edit">edit</button><button id="natal-saveas" data-i18n="ui.saveAs">save as</button></div>
+      <div id="chart-new" class="row" hidden><input id="chart-name" type="text" autocomplete="off" data-i18n="ui.namePrompt" data-i18n-attr="placeholder" placeholder="a name for this chart"><button id="chart-ok" data-i18n="ui.ok">ok</button></div>
+      <label class="row"><span data-i18n="ui.seenFrom">seen from</span><select id="set-relocate"><option value="0" data-i18n="ui.birthplace">birthplace</option><option value="1" data-i18n="ui.currentPlace">current place</option></select></label>
+      <h2 data-i18n="ui.charts">saved charts</h2>
+      <ul id="charts" class="list"></ul>
+    </section>
+    <section>
+      <h2 data-i18n="ui.keys">keys</h2>
+      <p class="meta" data-i18n="ui.keysNote">space run · ← → hour · shift ← → day · f screen · i readout · s sigil · l listen · esc close</p>
+    </section>
+  </aside>
 
   <main id="stage">
     <canvas id="dial" aria-label="the sky of the moment, as a dial"></canvas>
@@ -55,6 +84,7 @@
       <h1 data-i18n="ui.yourNativity">your nativity</h1>
       <p class="meta" data-i18n="ui.kept">kept on this device only · never sent anywhere</p>
       <div class="form">
+        <label><span data-i18n="ui.name">name</span> <input id="birth-name" type="text" autocomplete="off" data-i18n="ui.namePrompt" data-i18n-attr="placeholder" placeholder="a name for this chart"></label>
         <label><span data-i18n="ui.date">date</span> <input id="birth-date" type="text" inputmode="numeric" placeholder="yyyy-mm-dd" autocomplete="off"></label>
         <label><span data-i18n="ui.time">time</span> <input id="birth-time" type="text" inputmode="numeric" placeholder="hh:mm" autocomplete="off"></label>
         <label class="check"><input id="birth-unknown" type="checkbox"> <span data-i18n="ui.unknown">time unknown</span></label>

@@ -585,7 +585,7 @@
       g.addColorStop(0, 'rgba(2,3,10,0.97)'); g.addColorStop(0.5, 'rgba(2,3,10,0.85)'); g.addColorStop(1, 'rgba(2,3,10,0)');
       ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, rg * 2.4, 0, TAU); ctx.fill();
     }
-    const ghost = v === 'void' ? 0.22 : v === 'unripe' ? 0.7 : 1;
+    const ghost = v === 'void' ? 0.8 : v === 'unripe' ? 0.7 : 1;   // void: the light goes out, the guardians still hold the room
     const lw = Lt.u * 1.6;
     const star = (key, alpha) => {
       const n = C.PLANETS[key].number, k = GUARD_K[n];
@@ -796,7 +796,7 @@
     const spec = RING[st];
     if (spec.inward) rr *= 0.92;
     const rot = Math.PI / 2 + (n ? spec.off * Math.PI / n : 0);
-    return { rr, n, rot, stroke, spec, slow: b.slow };
+    return { rr, n, rot, stroke, spec, slow: b.slow, oob: !!b.oob };
   }
   function strokeRing(ctx, sp, q, lw, alpha, wIn = 1, wOut = 0.8) {
     ctx.save();
@@ -806,6 +806,10 @@
     if (sp.spec.broken) { const per = sp.n ? 2 * sp.rr * Math.sin(Math.PI / sp.n) : TAU * sp.rr / 12; ctx.setLineDash([per * 0.55, per * 0.45]); }
     ctx.stroke(polyPath(q.x, q.y, sp.rr, sp.n, sp.rot));
     if (sp.spec.double) { ctx.lineWidth = lw * wOut; ctx.stroke(polyPath(q.x, q.y, sp.rr * 1.3, sp.n, sp.rot)); }
+    if (sp.oob) {                                           // out of bounds: a dotted fence beyond the ring, the planet outside the sun's road
+      ctx.setLineDash([lw * 0.9, lw * 1.6]); ctx.lineWidth = lw * 0.7; ctx.globalAlpha = alpha * 0.7;
+      ctx.beginPath(); ctx.arc(q.x, q.y, sp.rr * 1.5, 0, TAU); ctx.stroke();
+    }
     ctx.restore();
   }
   function drawStateRing(ctx, state, Lt, key, q, coreR, lw, E, dim, t) {
@@ -865,9 +869,11 @@
       ctx.globalCompositeOperation = 'screen'; ctx.fillStyle = g; ctx.beginPath(); ctx.arc(q.x, q.y, coreR * 2.2, 0, TAU); ctx.fill();
     } else if (key === 'pluto') {
       // no body colour: pluto is the occultation drawn after everything
-    } else if (LUMINOUS) {                                // prototype: a light, not a body. flat, and it glows by its power
+    } else if (LUMINOUS) {                                // a light, not a body: flat, a hairline edge, and it glows by its power
       glow(ctx, q.x, q.y, coreR, core, m.pw, m.dim);
-      ctx.fillStyle = K.shade(core, 0.08 + 0.22 * m.pw); ctx.fill(shapePath(m));
+      const p = shapePath(m);
+      ctx.fillStyle = K.shade(core, 0.08 + 0.22 * m.pw); ctx.fill(p);
+      ctx.strokeStyle = K.rgba(K.shade(core, 0.4), 0.55); ctx.lineWidth = Lt.u; ctx.lineJoin = 'round'; ctx.stroke(p);
     } else {
       const p = shapePath(m);
       // a material, not a flat: a sheen off-centre, the tincture, a shadow at the edge. gold and silver shine hardest.
@@ -988,7 +994,7 @@
   /* occultation: pluto hides. inside its circle the field is put out and only the structure remains, as under an
      eclipse; at the limb the light that was there stands out as a corona of streamers. no magnification, no pigment
      of its own: the corona takes the colour of what it covers. */
-  function occult(ctx, cx, cy, r, strength, u, disc = true) {
+  function occult(ctx, cx, cy, r, strength, u, disc = true, soft = 0) {
     if (strength < 0.05) return;
     const s = Math.min(1, strength);
     let col = INK;
@@ -1006,8 +1012,9 @@
     ctx.globalCompositeOperation = 'source-over'; ctx.filter = 'none'; ctx.setLineDash([]);
     if (disc) {
       ctx.fillStyle = `rgba(2,3,10,${(0.82 * s).toFixed(2)})`; ctx.beginPath(); ctx.arc(cx, cy, r, 0, TAU); ctx.fill();
-      ctx.strokeStyle = K.rgba(col, s); ctx.lineWidth = Math.max(u, r * 0.04); ctx.beginPath(); ctx.arc(cx, cy, r, 0, TAU); ctx.stroke();
+      withBlur(ctx, 2.5 * u * soft, () => { ctx.strokeStyle = K.rgba(col, s * (1 - 0.3 * soft)); ctx.lineWidth = Math.max(u, r * 0.04); ctx.beginPath(); ctx.arc(cx, cy, r, 0, TAU); ctx.stroke(); });
     }
+    withBlur(ctx, 4 * u * soft, () => {                    // retrograde: the corona loses focus
     ctx.globalCompositeOperation = 'screen'; ctx.lineCap = 'round';
     const N = 84;
     for (let i = 0; i < N; i++) {                           // streamers, their lengths fixed by a hash so the corona keeps its shape
@@ -1023,6 +1030,7 @@
     const hg = ctx.createRadialGradient(cx, cy, r, cx, cy, r * 1.8);
     hg.addColorStop(0, K.rgba(col, 0.32 * s)); hg.addColorStop(1, K.rgba(col, 0));
     ctx.fillStyle = hg; ctx.beginPath(); ctx.arc(cx, cy, r * 1.8, 0, TAU); ctx.fill();
+    });
     ctx.restore();
   }
 
@@ -1145,7 +1153,7 @@
       : `${i.planet(fig.a)} ${i.aspect(fig.aspect)} ${i.planet(fig.b)}${ev ? ' · ' + ev : ''}`;
     const d = B.sun.decan;
     return {
-      l1: `${state.natalView ? i.t('cap.nativity') + ' · ' : ''}${T.day} · ${T.date} · ${T.time} ${T.zone} · ${state.loc.name}`,
+      l1: `${state.natalView ? i.t('cap.nativity') + (state.relocated ? ' · ' + i.t('cap.relocated') + ' ' + state.relocated : '') + ' · ' : ''}${T.day} · ${T.date} · ${T.time} ${T.zone} · ${state.loc.name}`,
       l2: `${i.t('cap.dayOf')} ${i.planet(H.dayRuler)} · ${i.t('cap.hourOf')} ${i.planet(H.hourRuler)} · ${i.t('cap.angel')} ${H.angel}`,
       l3: `${i.t('cap.sunIn')} ${i.ordinal(B.sun.house)} ${i.t('cap.house')} · ${dms(B.sun.deg)} ${i.sign(B.sun.sign)}`,
       fig: figLine,
@@ -1160,28 +1168,33 @@
     const u = Lt.u, m = Lt.S * 0.0625, k = u * Lt.ts;     // type scales up on small screens; the 2048 export is unchanged
     const c = captionLines(state);
     const row = i => Lt.capY + (8 + 34 * i) * k;
+    const mrx = state.bodies.mercury.slow;                // mercury slow or retrograde: the print misregisters, a ghost beside each line
+    const put = (txt, x, y) => {
+      if (mrx > 0.3 && !PURE) { const a = ctx.globalAlpha, f = ctx.fillStyle; ctx.globalAlpha = a * 0.32 * mrx; ctx.fillText(txt, x + 2.2 * u * mrx, y); ctx.globalAlpha = a; ctx.fillStyle = f; }
+      ctx.fillText(txt, x, y);
+    };
     ctx.save();
     ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'left';
     ctx.strokeStyle = K.rgba(INK, 0.22); ctx.lineWidth = 1 * u;
     ctx.beginPath(); ctx.moveTo(m, Lt.capY - 30 * u); ctx.lineTo(Lt.S - m, Lt.capY - 30 * u); ctx.stroke();
     ctx.fillStyle = K.rgba(INK, 0.95); ctx.font = `500 ${Math.round(26 * k)}px ${SANS}`;
-    ctx.fillText(c.l1, m, row(0));
+    put(c.l1, m, row(0));
     ctx.fillStyle = K.rgba(INK, 0.74); ctx.font = `400 ${Math.round(23 * k)}px ${SANS}`;
-    ctx.fillText(c.l2, m, row(1));
-    ctx.fillText(c.l3, m, row(2));
-    ctx.fillText(c.chord, m, row(3));
-    ctx.fillText(c.decan, m, row(4));
+    put(c.l2, m, row(1));
+    put(c.l3, m, row(2));
+    put(c.chord, m, row(3));
+    put(c.decan, m, row(4));
     ctx.textAlign = 'right';
     ctx.fillStyle = K.rgba(INK, 0.95); ctx.font = `500 ${Math.round(26 * k)}px ${SANS}`;
     if ('letterSpacing' in ctx) ctx.letterSpacing = `${(5 * k).toFixed(1)}px`;
     ctx.fillText('cosmo weather', Lt.S - m, row(0));
     if ('letterSpacing' in ctx) ctx.letterSpacing = '0px';
     ctx.fillStyle = K.rgba(INK, 0.55); ctx.font = `400 ${Math.round(19 * k)}px ${MONO}`;
-    ctx.fillText(c.fig, Lt.S - m, row(1));
+    put(c.fig, Lt.S - m, row(1));
     ctx.fillStyle = K.rgba(INK, state.moon.verdict === 'void' || state.moon.verdict === 'unripe' ? 0.9 : 0.55);
-    ctx.fillText(`${c.moon} · ${Math.round(state.moon.illum * 100)}%`, Lt.S - m, row(2));
-    if (c.next) { ctx.fillStyle = K.rgba(INK, 0.55); ctx.fillText(c.next, Lt.S - m, row(3)); }
-    ctx.fillStyle = K.rgba(INK, 0.55); ctx.fillText(c.mansion, Lt.S - m, row(4));
+    put(`${c.moon} · ${Math.round(state.moon.illum * 100)}%`, Lt.S - m, row(2));
+    if (c.next) { ctx.fillStyle = K.rgba(INK, 0.55); put(c.next, Lt.S - m, row(3)); }
+    ctx.fillStyle = K.rgba(INK, 0.55); put(c.mansion, Lt.S - m, row(4));
     ctx.restore();
   }
 
@@ -1288,7 +1301,7 @@
     const pl = pos.pluto;
     const plPower = planetPower(state, 'pluto', involved.pluto);
     const plStrength = (0.7 + 0.3 * Math.min(1, involved.pluto || 0)) * (B.pluto.retro ? 0.8 : 1);
-    occult(ctx, pl.x, pl.y, Lt.S * 0.0145 * (0.95 + 0.5 * plPower) * 2.1, Math.min(1, plStrength), Lt.u);   // the disc is its state ring
+    occult(ctx, pl.x, pl.y, Lt.S * 0.0145 * (0.95 + 0.5 * plPower) * 2.1, Math.min(1, plStrength), Lt.u, true, B.pluto.slow);   // the disc is its state ring; retrograde: soft
     if (involved.pluto) occult(ctx, Lt.cx, Lt.cy, Rp * 0.3, Math.min(1, involved.pluto) * 0.6, Lt.u);      // in the figure: its heart goes into eclipse
     // the outer planets have no number, so a station of theirs is an optic at the portal's rim, not hour-marks
     if (B.pluto.station) {                                // pluto: a corona around the whole portal

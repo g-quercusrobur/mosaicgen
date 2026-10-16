@@ -12,7 +12,7 @@
       aspects: { conjunction: 'conjunction', opposition: 'opposition', square: 'square', trine: 'trine', sextile: 'sextile', quincunx: 'quincunx', sesquisquare: 'sesquisquare', semisquare: 'semisquare', quintile: 'quintile', biquintile: 'biquintile', septile: 'septile', biseptile: 'biseptile', triseptile: 'triseptile', novile: 'novile' },
       aspectShort: { opposition: 'opp', square: 'sq', trine: 'tri', sextile: 'sxt', quincunx: 'qx', semisquare: '45/135', quintile: 'quint', septile: 'sept' },
       dignity: { domicile: 'domicile', detriment: 'detriment', exaltation: 'exaltation', fall: 'fall', triplicity: 'triplicity', term: 'term', face: 'face', peregrine: 'peregrine', reception: 'reception with' },
-      flags: { retrograde: 'retrograde', stationary: 'stationary', cazimi: 'cazimi', combust: 'combust', beams: 'under the beams', 'via combusta': 'via combusta', 'void of course': 'void of course', noDignity: 'no essential dignity', outOfSign: 'out of sign' },
+      flags: { retrograde: 'retrograde', stationary: 'stationary', cazimi: 'cazimi', combust: 'combust', beams: 'under the beams', 'via combusta': 'via combusta', 'void of course': 'void of course', noDignity: 'no essential dignity', outOfSign: 'out of sign', oob: 'out of bounds' },
       verdict: { ripe: 'ripe', open: 'open', unripe: 'unripe', void: 'void' },
       windows: { ideation: 'ideation', incarnation: 'incarnation', destruction: 'destruction' },
       intervals: { unison: 'unison', 'minor second': 'minor second', 'major second': 'major second', 'minor third': 'minor third', 'major third': 'major third', 'perfect fourth': 'perfect fourth', tritone: 'tritone' },
@@ -33,10 +33,15 @@
       cap: {
         nativity: 'nativity', dayOf: 'day of', hourOf: 'hour of', angel: 'angel of the hour', sunIn: 'sun in the', house: 'house', chord: 'chord', decanOf: 'decan of',
         moonIn: 'moon in the', mansion: 'mansion', nextChord: 'next chord', quiet: 'quiet sky', transit: 'transit', natal: 'natal', exact: 'exact',
-        moonApplying: 'moon applying', moonVoid: 'moon void of course', to: ''
+        moonApplying: 'moon applying', moonVoid: 'moon void of course', to: '', relocated: 'relocated to'
       },
       ui: {
-        clock: 'clock', chart: 'chart', natal: 'natal', synastry: 'synastry', sigil: 'sigil', listen: 'listen', listening: 'listening', readout: 'readout', screen: 'screen', about: 'about',
+        clock: 'clock', chart: 'chart', natal: 'natal', synastry: 'transits', sigil: 'sigil', listen: 'listen', listening: 'listening', readout: 'readout', screen: 'screen', about: 'about',
+        menu: 'menu', view: 'view', settings: 'settings', houses: 'houses', housesOpt: { regiomontanus: 'regiomontanus', equal: 'equal', placidus: 'placidus' },
+        field: 'field', fieldOpt: { engraved: 'engraved', glow: 'glow' }, bodiesLabel: 'planets', bodiesOpt: { metal: 'bodies', lights: 'lights' }, language: 'language',
+        nativity: 'nativity', noneSet: 'none set', edit: 'edit', seenFrom: 'seen from', birthplace: 'birthplace', currentPlace: 'current place',
+        charts: 'saved charts', saveAs: 'save as', rename: 'rename', del: 'delete', confirm: 'confirm', load: 'load', name: 'name', namePrompt: 'a name for this chart', ok: 'ok', noCharts: 'no saved charts yet',
+        keys: 'keys', keysNote: 'space run · ← → hour · shift ← → day · f screen · i readout · s sigil · l listen · esc close',
         now: 'now', run: 'run', pause: 'pause', here: 'here', birth: 'birth', save: 'save 2048', saveHd: 'save 4096', wallpaper: 'wallpaper', close: 'close', lang: 'es',
         yourNativity: 'your nativity', kept: 'kept on this device only · never sent anywhere', date: 'date', time: 'time',
         unknown: 'time unknown (noon is used; the houses and the Moon’s degree are then uncertain)', city: 'city of the time zone', placeName: 'place name', placeHint: 'optional, e.g. rome',
@@ -46,7 +51,7 @@
         strip: ['now', '+6h', '+12h', '+18h', '+24h'],
         polar: 'polar day or night: equal hours assumed', quietSky: 'quiet sky', noContact: 'no contact within orb',
         h: { bodies: 'bodies', figure: 'the figure', sound: 'sound', tarot: 'tarot', transits: 'transits to the nativity', windows: 'windows', moon: 'moon', hours: 'hours of the day', events: 'events', hierarchy: 'hierarchy', portal: 'portal' },
-        r: { figure: 'figure', ring: 'ring', orb: 'orb', applying: 'applying', separating: 'separating', house: 'house', notes: 'notes', from: 'from', next: 'next', at: 'at',
+        r: { voidNote: 'void of course: nothing begun now takes in the world; the guardians still hold the room. inner work, undoing, divination.', figure: 'figure', ring: 'ring', orb: 'orb', applying: 'applying', separating: 'separating', house: 'house', notes: 'notes', from: 'from', next: 'next', at: 'at',
           scale: 'scale', widens: 'jupiter widens, saturn narrows', cut: 'cut by', whole: 'whole', guardians: 'guardians', alone: 'alone: one pure figure', and: 'and',
           nextMoon: 'next', in: 'in', sect: 'sect', day: 'day', night: 'night', hour: 'hour', sun: 'sun', moon: 'moon', ascendant: 'ascendant', dayRuler: 'day', hourRuler: 'hour', mansion: 'mansion' }
       }
@@ -58,7 +63,7 @@
       aspects: { conjunction: 'conjunción', opposition: 'oposición', square: 'cuadratura', trine: 'trígono', sextile: 'sextil', quincunx: 'quincuncio', sesquisquare: 'sesquicuadratura', semisquare: 'semicuadratura', quintile: 'quintil', biquintile: 'biquintil', septile: 'septil', biseptile: 'biseptil', triseptile: 'triseptil', novile: 'novil' },
       aspectShort: { opposition: 'opo', square: 'cuad', trine: 'trig', sextile: 'sext', quincunx: 'quinc', semisquare: '45/135', quintile: 'quint', septile: 'sept' },
       dignity: { domicile: 'domicilio', detriment: 'exilio', exaltation: 'exaltación', fall: 'caída', triplicity: 'triplicidad', term: 'término', face: 'faz', peregrine: 'peregrino', reception: 'recepción con' },
-      flags: { retrograde: 'retrógrado', stationary: 'estacionario', cazimi: 'cazimi', combust: 'combusto', beams: 'bajo los rayos', 'via combusta': 'vía combusta', 'void of course': 'vacía de curso', noDignity: 'sin dignidad esencial', outOfSign: 'fuera de signo' },
+      flags: { retrograde: 'retrógrado', stationary: 'estacionario', cazimi: 'cazimi', combust: 'combusto', beams: 'bajo los rayos', 'via combusta': 'vía combusta', 'void of course': 'vacía de curso', noDignity: 'sin dignidad esencial', outOfSign: 'fuera de signo', oob: 'fuera de límites' },
       verdict: { ripe: 'madura', open: 'abierta', unripe: 'inmadura', void: 'vacía' },
       windows: { ideation: 'ideación', incarnation: 'encarnación', destruction: 'destrucción' },
       intervals: { unison: 'unísono', 'minor second': 'segunda menor', 'major second': 'segunda mayor', 'minor third': 'tercera menor', 'major third': 'tercera mayor', 'perfect fourth': 'cuarta justa', tritone: 'tritono' },
@@ -79,10 +84,15 @@
       cap: {
         nativity: 'natividad', dayOf: 'día de', hourOf: 'hora de', angel: 'ángel de la hora', sunIn: 'sol en la', house: 'casa', chord: 'acorde', decanOf: 'decanato de',
         moonIn: 'luna en la', mansion: 'mansión', nextChord: 'próximo acorde', quiet: 'cielo quieto', transit: 'tránsito', natal: 'natal', exact: 'exacto',
-        moonApplying: 'luna aplicando', moonVoid: 'luna vacía de curso', to: 'a'
+        moonApplying: 'luna aplicando', moonVoid: 'luna vacía de curso', to: 'a', relocated: 'reubicada a'
       },
       ui: {
-        clock: 'reloj', chart: 'carta', natal: 'natal', synastry: 'sinastría', sigil: 'sigilo', listen: 'escuchar', listening: 'escuchando', readout: 'lectura', screen: 'pantalla', about: 'acerca',
+        clock: 'reloj', chart: 'carta', natal: 'natal', synastry: 'tránsitos', sigil: 'sigilo', listen: 'escuchar', listening: 'escuchando', readout: 'lectura', screen: 'pantalla', about: 'acerca',
+        menu: 'menú', view: 'vista', settings: 'ajustes', houses: 'casas', housesOpt: { regiomontanus: 'regiomontanus', equal: 'iguales', placidus: 'placidus' },
+        field: 'campo', fieldOpt: { engraved: 'grabado', glow: 'luz' }, bodiesLabel: 'planetas', bodiesOpt: { metal: 'cuerpos', lights: 'luces' }, language: 'idioma',
+        nativity: 'natividad', noneSet: 'sin definir', edit: 'editar', seenFrom: 'vista desde', birthplace: 'lugar de nacimiento', currentPlace: 'lugar actual',
+        charts: 'cartas guardadas', saveAs: 'guardar como', rename: 'renombrar', del: 'borrar', confirm: 'confirmar', load: 'cargar', name: 'nombre', namePrompt: 'un nombre para esta carta', ok: 'ok', noCharts: 'aún no hay cartas guardadas',
+        keys: 'teclas', keysNote: 'espacio correr · ← → hora · mayús ← → día · f pantalla · i lectura · s sigilo · l escuchar · esc cerrar',
         now: 'ahora', run: 'correr', pause: 'pausa', here: 'aquí', birth: 'nacimiento', save: 'guardar 2048', saveHd: 'guardar 4096', wallpaper: 'fondo', close: 'cerrar', lang: 'en',
         yourNativity: 'tu natividad', kept: 'guardada solo en este dispositivo · nunca se envía', date: 'fecha', time: 'hora',
         unknown: 'hora desconocida (se usa el mediodía; las casas y el grado de la luna quedan inciertos)', city: 'ciudad del huso horario', placeName: 'nombre del lugar', placeHint: 'opcional, p. ej. roma',
@@ -92,7 +102,7 @@
         strip: ['ahora', '+6h', '+12h', '+18h', '+24h'],
         polar: 'día o noche polar: se asumen horas iguales', quietSky: 'cielo quieto', noContact: 'ningún contacto dentro del orbe',
         h: { bodies: 'cuerpos', figure: 'la figura', sound: 'sonido', tarot: 'tarot', transits: 'tránsitos a la natividad', windows: 'ventanas', moon: 'luna', hours: 'horas del día', events: 'eventos', hierarchy: 'jerarquía', portal: 'portal' },
-        r: { figure: 'figura', ring: 'anillo', orb: 'orbe', applying: 'aplicativo', separating: 'separativo', house: 'casa', notes: 'notas', from: 'de', next: 'siguiente', at: 'a las',
+        r: { voidNote: 'vacía de curso: nada que empiece ahora cuaja en el mundo; los guardianes siguen rigiendo la sala. trabajo interior, deshacer, adivinación.', figure: 'figura', ring: 'anillo', orb: 'orbe', applying: 'aplicativo', separating: 'separativo', house: 'casa', notes: 'notas', from: 'de', next: 'siguiente', at: 'a las',
           scale: 'escala', widens: 'júpiter ensancha, saturno estrecha', cut: 'cortada por', whole: 'entera', guardians: 'guardianes', alone: 'solo: una figura pura', and: 'y',
           nextMoon: 'próximo', in: 'en', sect: 'secta', day: 'diurna', night: 'nocturna', hour: 'hora', sun: 'sol', moon: 'luna', ascendant: 'ascendente', dayRuler: 'día', hourRuler: 'hora', mansion: 'mansión' }
       }

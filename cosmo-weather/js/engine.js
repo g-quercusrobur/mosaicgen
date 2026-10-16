@@ -477,6 +477,7 @@
         ra, dec, alt: hor.altitude, az: hor.azimuth, H, dsa, p, house: houseIn(cusps, lon), angular,
         sign: signIdx, deg, combust: key !== 'sun' && dSun < 8.5 && dSun >= 0.2833, cazimi: key !== 'sun' && key !== 'moon' && dSun < 0.2833,
         beams: key !== 'sun' && dSun >= 8.5 && dSun < 17,
+        oob: Math.abs(dec) > eps * R2D,                    // out of bounds: declination beyond the sun's
         decan: C.decanOf(lon), mansion: C.mansionOf(lon)
       };
     }

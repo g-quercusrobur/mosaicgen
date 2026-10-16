@@ -74,8 +74,10 @@
   let info = null, lastPlate = 0;
   const view = { z: 1, x: 0, y: 0, pinching: false };      // screen = view.xy + view.z × dial
 
-  function base() { return S.fixed ? new Date(S.fixed.getTime() + S.offsetMs) : new Date(Date.now() + S.offsetMs); }
-  function now() { return new Date(base().getTime() + S.preview * 60000); }
+  /* one displacement: the moment shown = anchor (real now, or a fixed moment) + offsetMs. the dial, the slider, the arrows and the run all move it. */
+  const anchor = () => S.fixed ? S.fixed.getTime() : Date.now();
+  function base() { return new Date(anchor() + S.offsetMs); }
+  function now() { return base(); }
 
   /* the nativity, computed once per birth data */
   const natalCache = { key: null, state: null };
@@ -136,7 +138,7 @@
   const MOTHER_INK = { ideation: '#f2e8a0', incarnation: '#4a7ef0', destruction: '#ff5a2a' };   // king scale of the mother letters
   const scan = { key: null, t0: 0, step: 20, vals: null, nexts: null, token: 0 };
   function scanIfNeeded() {
-    const b = base().getTime();
+    const b = anchor();                                     // the strip stays anchored at now; the playhead moves along it
     const key = S.place.name + S.place.lat + S.place.lon;
     if (scan.key === key && Math.abs(b - scan.t0) < 30 * 60000) return;
     scan.key = key; scan.t0 = b; scan.vals = null; scan.nexts = null;
@@ -181,7 +183,7 @@
     }
     c.font = `${10 * d}px "Geist Mono", monospace`; c.fillStyle = 'rgba(235,231,220,0.5)'; c.textBaseline = 'top';
     CW.i18n.t('ui.strip').map((l, n) => [l, n * 6]).forEach(([l, h]) => { c.textAlign = h === 0 ? 'left' : h === 24 ? 'right' : 'center'; c.fillText(l, h / 24 * W, 2 * d); });
-    const x = S.preview / 1440 * W;
+    const x = Math.max(0, Math.min(1, S.offsetMs / 864e5)) * W;
     c.fillStyle = 'rgba(235,231,220,0.9)'; c.fillRect(Math.min(W - 2 * d, x), 0, 2 * d, H);
   }
   function fmtAt(d) {
@@ -196,7 +198,7 @@
       return n ? `<button data-jump="${n.at.toISOString()}" title="${i.t('ui.goTo')}"><i style="background:${col}"></i>${i.window(m)} · ${fmtAt(n.at)}</button>`
                : `<span><i style="background:${col}"></i>${i.window(m)} · ${i.t('ui.notThisWeek')}</span>`;
     }).join('');
-    el.querySelectorAll('[data-jump]').forEach(b => b.addEventListener('click', () => { S.playing = false; S.fixed = new Date(b.dataset.jump); S.offsetMs = 0; S.preview = 0; $('preview').value = 0; recompute(); }));
+    el.querySelectorAll('[data-jump]').forEach(b => b.addEventListener('click', () => { S.playing = false; S.offsetMs = new Date(b.dataset.jump).getTime() - anchor(); recompute(); }));
   }
 
   let t0 = performance.now(), lastFrame = 0;
@@ -212,7 +214,7 @@
       pctx.setTransform(1, 0, 0, 1, 0, 0); pctx.clearRect(0, 0, plate.width, plate.height);
       pctx.setTransform(S.dpr * view.z, 0, 0, S.dpr * view.z, S.dpr * view.x, S.dpr * view.y);   // the view: zoom and pan
       const busy = S.playing || S.dragging || view.pinching;
-      info = CW.render.render(pctx, viewState(), S.side, t, { mode: S.mode === 'chart' || S.mode === 'natalchart' ? 'chart' : 'clock', fieldRes: busy ? 110 : 200, caption: S.side >= 560, plate: true, fast: busy, field: S.field, sigil: S.sigil, engrave: S.engrave, luminous: S.luminous });
+      info = CW.render.render(pctx, viewState(), S.side, t, { mode: S.mode === 'chart' || S.mode === 'natalchart' ? 'chart' : 'clock', fieldRes: busy ? 110 : 200, caption: S.side >= 560, plate: true, fast: busy, field: S.field, sigil: S.sigil, engrave: S.engrave, luminous: S.luminous, tight: S.side < 560 });
       S.dirty = false; lastPlate = ts;
     }
     ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -354,7 +356,10 @@
   function updateControls() {
     if (document.activeElement !== $('when')) $('when').value = placeStamp(S.state.date);
     $('zone').textContent = offsetOf(S.place.tz || 'UTC', S.state.date);
-    $('live').classList.toggle('on', S.offsetMs === 0 && !S.fixed && !S.playing);
+    const live = S.offsetMs === 0 && !S.fixed && !S.playing;
+    $('live').classList.toggle('on', live);
+    $('now-float').hidden = live;                           // the way back, in sight whenever the clock has been moved
+    if (document.activeElement !== $('preview')) $('preview').value = Math.max(0, Math.min(1440, Math.round(S.offsetMs / 60000)));
     $('play').classList.toggle('on', S.playing);
     $('play').textContent = CW.i18n.t(S.playing ? 'ui.pause' : 'ui.run');
     $('speed').textContent = S.speed < 1 ? `${S.speed * 60}m/s` : `${S.speed}h/s`;
@@ -430,7 +435,8 @@
 
   function bind() {
     document.querySelectorAll('[data-step]').forEach(b => b.addEventListener('click', () => { S.offsetMs += Number(b.dataset.step) * 3600e3; recompute(); }));
-    $('live').addEventListener('click', () => { S.offsetMs = 0; S.fixed = null; S.playing = false; S.preview = 0; $('preview').value = 0; recompute(); });
+    $('live').addEventListener('click', () => { S.offsetMs = 0; S.fixed = null; S.playing = false; recompute(); });
+    $('now-float').addEventListener('click', () => $('live').click());
     $('play').addEventListener('click', () => {
       S.playing = !S.playing;
       if (!S.playing) recompute(); else updateControls();  // on pause, the full reading of the moment where it stopped
@@ -442,7 +448,7 @@
     $('city').addEventListener('change', e => { if (!PLACES[e.target.value]) return; S.place = PLACES[e.target.value]; store.set('place', S.place); recompute(); });
     const commit = e => {
       const v = fromPlaceStamp(e.target.value.trim());
-      if (v) { S.playing = false; S.fixed = v; S.offsetMs = 0; S.preview = 0; $('preview').value = 0; recompute(); e.target.classList.remove('bad'); }
+      if (v) { S.playing = false; S.fixed = v; S.offsetMs = 0; recompute(); e.target.classList.remove('bad'); }
       else e.target.classList.add('bad');
     };
     $('when').addEventListener('change', commit);
@@ -463,7 +469,7 @@
     $('save').addEventListener('click', () => exportPNG(2048));
     const bc = $('birth-city'); bc.innerHTML = ZONES.map(z => `<option value="${z.name}">${offsetOf(z.tz)} · ${z.name}</option>`).join('');
     $('sigil').addEventListener('click', () => { S.sigil = !S.sigil; S.dirty = true; updateControls(); });
-    $('preview').addEventListener('input', e => { S.preview = Number(e.target.value); recompute(); });
+    $('preview').addEventListener('input', e => { S.playing = false; S.offsetMs = Number(e.target.value) * 60000; recompute(); });
     $('save-hd').addEventListener('click', () => exportPNG(4096));
     $('info').addEventListener('click', () => document.body.classList.toggle('reading'));
     $('about-open').addEventListener('click', () => { $('about').hidden = !$('about').hidden; $('about-open').classList.toggle('on', !$('about').hidden); if (!$('about').hidden) openMenu(false); });
@@ -553,7 +559,7 @@
       S.dirty = true;
     };
     const zoomAt = (p, z) => { const w = toDial(p); view.z = z; view.x = p.x - w.x * view.z; view.y = p.y - w.y * view.z; clampView(); };
-    const angleAt = p => { const Lt = CW.render.layout(S.side), q = toDial(p); return { a: Math.atan2(q.y - Lt.cy, q.x - Lt.cx), d: Math.hypot(q.y - Lt.cy, q.x - Lt.cx), R: Lt.Rb }; };
+    const angleAt = p => { const Lt = CW.render.layout(S.side, S.side < 560), q = toDial(p); return { a: Math.atan2(q.y - Lt.cy, q.x - Lt.cx), d: Math.hypot(q.y - Lt.cy, q.x - Lt.cx), R: Lt.Rb }; };
     const endTurn = () => { if (!drag) return; drag = null; S.dragging = false; canvas.classList.remove('turning'); recompute(); };
     canvas.addEventListener('pointerdown', e => {
       canvas.setPointerCapture(e.pointerId);
@@ -568,7 +574,7 @@
       if (now - lastTap < 300) { view.z = 1; clampView(); lastTap = 0; return; }   // double tap: the whole dial
       lastTap = now;
       const p = angleAt(local(e)); if (p.d > p.R) return;
-      drag = { last: p.a, base: base().getTime() + S.preview * 60000, turned: 0 };
+      drag = { last: p.a, base: S.offsetMs, turned: 0 };
       S.playing = false; S.dragging = true; canvas.classList.add('turning');
     });
     canvas.addEventListener('pointermove', e => {
@@ -584,7 +590,7 @@
       const p = angleAt(local(e));
       let d = p.a - drag.last; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI;
       drag.last = p.a; drag.turned += d;                    // screen y points down: a positive delta is clockwise
-      S.fixed = new Date(drag.base + drag.turned / (2 * Math.PI) * 864e5); S.offsetMs = 0; S.preview = 0; $('preview').value = 0;
+      S.offsetMs = drag.base + drag.turned / (2 * Math.PI) * 864e5;   // one turn, one day; the slider under the dial follows
       recompute();
     });
     const up = e => {
@@ -597,7 +603,7 @@
     canvas.addEventListener('wheel', e => {
       e.preventDefault();
       if (e.ctrlKey || e.metaKey) { zoomAt(local(e), view.z * Math.exp(-e.deltaY * 0.005)); return; }   // trackpad pinch arrives as ctrl + wheel
-      S.playing = false; S.fixed = new Date(base().getTime() + S.preview * 60000 + Math.sign(e.deltaY) * 600000); S.offsetMs = 0; S.preview = 0; $('preview').value = 0;
+      S.playing = false; S.offsetMs += Math.sign(e.deltaY) * 600000;
       recompute();
     }, { passive: false });
     window.addEventListener('keydown', e => {

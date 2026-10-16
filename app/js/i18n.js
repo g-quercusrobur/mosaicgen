@@ -38,7 +38,7 @@
       ui: {
         clock: 'clock', chart: 'chart', natal: 'natal', synastry: 'transits', sigil: 'sigil', listen: 'listen', listening: 'listening', readout: 'readout', screen: 'screen', about: 'about',
         tagline: 'The macrocosmic clock', menu: 'menu', view: 'view', settings: 'settings', houses: 'houses', housesOpt: { regiomontanus: 'regiomontanus', equal: 'equal', placidus: 'placidus' },
-        field: 'field', fieldOpt: { engraved: 'engraved', glow: 'glow' }, bodiesLabel: 'planets', bodiesOpt: { metal: 'bodies', lights: 'lights' }, language: 'language',
+        field: 'field', fieldOpt: { engraved: 'guilloché', glow: 'glow' }, bodiesLabel: 'planets', bodiesOpt: { metal: 'bodies', lights: 'lights' }, language: 'language',
         nativity: 'nativity', noneSet: 'none set', edit: 'edit', seenFrom: 'seen from', birthplace: 'birthplace', currentPlace: 'current place',
         charts: 'saved charts', saveAs: 'save as', rename: 'rename', del: 'delete', confirm: 'confirm', load: 'load', name: 'name', namePrompt: 'a name for this chart', ok: 'OK', noCharts: 'no saved charts yet',
         keys: 'keys', keysNote: 'space run · ← → hour · shift ← → day · f screen · i readout · s sigil · l listen · esc close',
@@ -91,7 +91,7 @@
       ui: {
         clock: 'reloj', chart: 'carta', natal: 'natal', synastry: 'tránsitos', sigil: 'sigilo', listen: 'escuchar', listening: 'escuchando', readout: 'lectura', screen: 'pantalla', about: 'acerca',
         tagline: 'El reloj macrocósmico', menu: 'menú', view: 'vista', settings: 'ajustes', houses: 'casas', housesOpt: { regiomontanus: 'regiomontanus', equal: 'iguales', placidus: 'placidus' },
-        field: 'campo', fieldOpt: { engraved: 'grabado', glow: 'luz' }, bodiesLabel: 'planetas', bodiesOpt: { metal: 'cuerpos', lights: 'luces' }, language: 'idioma',
+        field: 'campo', fieldOpt: { engraved: 'guilloché', glow: 'luz' }, bodiesLabel: 'planetas', bodiesOpt: { metal: 'cuerpos', lights: 'luces' }, language: 'idioma',
         nativity: 'natividad', noneSet: 'sin definir', edit: 'editar', seenFrom: 'vista desde', birthplace: 'lugar de nacimiento', currentPlace: 'lugar actual',
         charts: 'cartas guardadas', saveAs: 'guardar como', rename: 'renombrar', del: 'borrar', confirm: 'confirmar', load: 'cargar', name: 'nombre', namePrompt: 'un nombre para esta carta', ok: 'OK', noCharts: 'aún no hay cartas guardadas',
         keys: 'teclas', keysNote: 'espacio correr · ← → hora · mayús ← → día · f pantalla · i lectura · s sigilo · l escuchar · esc cerrar',

@@ -170,6 +170,7 @@ Rejected and why: a noise nebula (encodes nothing) and a planetary interference 
 
 - **Geist** (OFL, self-hosted) for all text, the readout and the wordmark (wide tracking); **Geist Mono** only for typed inputs and the chart legend. One family, no third-party request.
 - Ordinary capitals: names, days, places and the start of every line. The wordmark alone stays lowercase. Houses in Roman numerals, in the text face.
+- **The field is guilloché.** The engraving is grain d'orge: rings 4 u apart, each a wave of 64 lobes, alternate rings half a period apart so the lines close into barleycorn lenses; line weight still carries the light as before. Never finer than 3.2 px between rings or 1.8 px of wave, so a phone does not turn it to moiré. `?field=waves` keeps the older engraving, `?field=glow` the glow field.
 - Every export, square or wallpaper, carries the notice: © year Siderarium · proprietary design and method · all rights reserved.
 - The interface owns one colour, off-white `#ebe7dc` at three opacities. All other colour belongs to the sky.
 - The square master is 2048 px. The dial is centred at 45% of the height. The caption band sits on a hairline at the bottom, with 6.25% margins.

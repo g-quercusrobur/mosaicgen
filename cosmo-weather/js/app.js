@@ -56,7 +56,7 @@
     engrave: params.get('field') ? params.get('field') !== 'glow' : (params.get('engrave') !== '0' && store.get('field', 'engraved') !== 'glow'),   // engraved at rest; glow on request
     natal: store.get('natal', null),                        // { date, place, unknownTime } — stays on this device
     lang: params.get('lang') || store.get('lang', null) || ((navigator.language || 'en').toLowerCase().startsWith('es') ? 'es' : 'en'),
-    field: params.get('field') || 'waves',
+    field: params.get('field') || 'guilloche',
     houses: params.get('houses') || store.get('houses', 'regiomontanus'),   // lilly's system; equal and placidus to compare
     luminous: params.get('bodies') === 'luminous' || (!params.get('bodies') && store.get('bodies', 'lights') === 'lights'),   // planets as lights (default); bodies on request
     relocate: store.get('relocate', false),                   // the nativity seen from the current place
@@ -113,7 +113,8 @@
     document.documentElement.style.setProperty('--ground', S.groundEl ? CW.render.ground(S.state, true) : '#000000');
     document.body.classList.toggle('mrx', viewState().bodies.mercury.slow > 0.5);   // mercury retrograde: the print misregisters
     const c = CW.render.captionLines(viewState());
-    $('caption').innerHTML = `<p class="label">${c.label}</p><p class="l1">${c.l1}</p><p>${c.l2}</p><p>${c.l3}</p><p>${c.chord}</p><p>${c.decan}</p><p class="mono">${c.next}</p><p class="mono">${c.fig}</p><p class="mono">${c.moon}</p><p class="mono">${c.mansion}</p>`;
+    const low = s => s.replace(/^./, ch => ch.toLowerCase());
+    $('caption').innerHTML = `<p class="eyebrow">${c.label} · ${c.l1}</p><h2 class="h1">${c.fig}</h2><p class="deck">${c.verdict}</p><p class="detail">${c.l2}<br>${c.l3} · ${low(c.decan)}</p><p class="detail">${c.moon} · ${c.mansionShort}<br>${c.chord}${c.next ? ' · ' + low(c.next) : ''}</p>`;
     if (!busy) scanIfNeeded();
     drawStrip();
     if (!busy) updateReadout();                            // the heavy parts wait until the clock rests

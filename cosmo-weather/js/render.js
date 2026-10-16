@@ -238,8 +238,8 @@
   }
   function engrave(ctx, state, Lt, density) {
     const L = lights(state, Lt).map(l => ({ ...l, rgb: K.hexToRgb(l.color) }));
-    const E = lunarE(state), u = Lt.u, step = (GUILLOCHE ? 4.0 : 4.4) * u / density, segLen = (GUILLOCHE ? 5 : 7) * u / density;
-    const lobes = 64, amp = 2.3 * u;                        // guilloché: grain d'orge, alternate rings half a period apart
+    const E = lunarE(state), u = Lt.u, step = (GUILLOCHE ? Math.max(4.0 * u, 3.2) : 4.4 * u) / density, segLen = (GUILLOCHE ? 5 : 7) * u / density;
+    const lobes = 64, amp = Math.max(2.3 * u, 1.8);          // guilloché: grain d'orge, alternate rings half a period apart; never finer than the pixel grid can hold
     let ring = 0;
     ctx.save(); ctx.lineCap = 'butt';
     for (let r = step; r < Lt.R * (Lt.ext || 1); r += step, ring++) {
@@ -1273,7 +1273,11 @@
       decan: c1(`${i.t('cap.decanOf')} ${i.planet(d.ruler)} · ${i.card(d)} · ${i.title(d)}`),
       mansion: c1(`${i.t('cap.moonIn')} ${i.ordinal(B.moon.mansion.index)} ${i.t('cap.mansion')} · ${i.name(B.moon.mansion.name)}`),
       next: state.nextChord ? c1(`${i.t('cap.nextChord')} ${state.nextChord.to} · ${fmtShort(state.nextChord.at, state.loc)}`) : '',
-      label: i.t('cap.clockLabel')
+      label: i.t('cap.clockLabel'),
+      decanHead: c1(`${i.t('cap.decanOf')} ${i.planet(d.ruler)}`),
+      card: `${i.card(d)} · ${i.title(d)}`,
+      mansionShort: `${i.ordinal(B.moon.mansion.index)} ${i.t('cap.mansion')} · ${i.name(B.moon.mansion.name)}`,
+      verdict: c1(`${i.t('ui.r.moonIs')} ${i.verdict(state.moon.verdict)} · ${i.t('ui.r.guardians')} ${i.planet(H.dayRuler)}${H.dayRuler === H.hourRuler ? ' ' + i.t('ui.r.alone') : ' ' + i.t('ui.r.and') + ' ' + i.planet(H.hourRuler)}`)
     };
   }
   function drawCaption(ctx, state, Lt) {
@@ -1290,23 +1294,28 @@
     ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'left';
     ctx.strokeStyle = K.rgba(INK, 0.22); ctx.lineWidth = 1 * u;
     ctx.beginPath(); ctx.moveTo(m, Lt.capY - 30 * u); ctx.lineTo(Lt.S - m, Lt.capY - 30 * u); ctx.stroke();
-    ctx.fillStyle = K.rgba(INK, 0.92); ctx.font = `500 ${Math.round(20 * k)}px ${SANS}`;
-    if ('letterSpacing' in ctx) ctx.letterSpacing = `${(2.4 * k).toFixed(1)}px`;
-    ctx.fillText(c.label, m, row(0));                       // Macrocosmic Clock, in light ink, over the date
+    // eyebrow: the instrument's name and the moment, one tracked line in light ink
+    ctx.fillStyle = K.rgba(INK, 0.9); ctx.font = `500 ${Math.round(18 * k)}px ${SANS}`;
+    if ('letterSpacing' in ctx) ctx.letterSpacing = `${(1.6 * k).toFixed(1)}px`;
+    ctx.fillText(`${c.label} · ${c.l1}`, m, row(0));
     if ('letterSpacing' in ctx) ctx.letterSpacing = '0px';
-    ctx.fillStyle = K.rgba(INK, 0.97); ctx.font = `500 ${Math.round(26 * k)}px ${SANS}`;
-    put(c.l1, m, row(1));
-    ctx.fillStyle = K.rgba(INK, 0.82); ctx.font = `400 ${Math.round(23 * k)}px ${SANS}`;
-    put(c.l2, m, row(2));
-    put(`${c.l3} · ${c.chord.replace(/^./, ch => ch.toLowerCase())}`, m, row(3));
-    put(c.decan, m, row(4));
-    ctx.textAlign = 'right';
-    ctx.fillStyle = K.rgba(INK, 0.97); ctx.font = `500 ${Math.round(26 * k)}px ${SANS}`;
-    put(c.fig, Lt.S - m, row(1));
-    ctx.fillStyle = K.rgba(INK, state.moon.verdict === 'void' || state.moon.verdict === 'unripe' ? 0.95 : 0.74); ctx.font = `400 ${Math.round(21 * k)}px ${SANS}`;
-    put(`${c.moon} · ${Math.round(state.moon.illum * 100)}%`, Lt.S - m, row(2));
-    if (c.next) { ctx.fillStyle = K.rgba(INK, 0.74); put(c.next, Lt.S - m, row(3)); }
-    ctx.fillStyle = K.rgba(INK, 0.74); put(c.mansion, Lt.S - m, row(4));
+    // headline: the figure of the moment
+    ctx.fillStyle = K.rgba(INK, 0.97); ctx.font = `500 ${Math.round(31 * k)}px ${SANS}`;
+    put(c.fig, m, row(1));
+    // deck: the verdict
+    ctx.fillStyle = K.rgba(INK, state.moon.verdict === 'void' || state.moon.verdict === 'unripe' ? 0.97 : 0.9); ctx.font = `400 ${Math.round(23 * k)}px ${SANS}`;
+    put(c.verdict, m, row(2));
+    // details, two columns; a row whose two halves would meet is set a little smaller
+    ctx.fillStyle = K.rgba(INK, 0.72); ctx.font = `400 ${Math.round(20 * k)}px ${SANS}`;
+    const low = s => s.replace(/^./, ch => ch.toLowerCase()), avail = Lt.S - 2 * m - 30 * u;
+    const pair = (l, r, y) => {
+      const f = ctx.font, w = ctx.measureText(l).width + ctx.measureText(r).width;
+      if (w > avail) { const px = parseFloat(f.match(/(\d+)px/)[1]); ctx.font = f.replace(/\d+px/, `${Math.round(Math.max(px * 0.78, px * avail / w))}px`); }
+      ctx.textAlign = 'left'; put(l, m, y); ctx.textAlign = 'right'; put(r, Lt.S - m, y); ctx.font = f;
+    };
+    pair('', `${c.moon} · ${Math.round(state.moon.illum * 100)}% · ${c.mansionShort}`, row(2));
+    pair(c.l2, c.next ? `${c.chord} · ${low(c.next)}` : c.chord, row(3));
+    pair(`${c.l3} · ${low(c.decanHead)}`, c.card, row(4));
     // every print carries the notice, under the last line
     ctx.textAlign = 'left'; ctx.fillStyle = K.rgba(INK, 0.45); ctx.font = `400 ${Math.round(14 * k)}px ${SANS}`;
     ctx.fillText(NOTICE(), m, Math.min(row(5) + 2 * k, Lt.S - 6 * u));
@@ -1635,7 +1644,8 @@
   }
 
   function render(ctx, state, S, t, opts = {}) {
-    FAST = !!opts.fast; ENGRAVE = !!opts.engrave || opts.field === 'guilloche'; LUMINOUS = !!opts.luminous; TIGHT = !!opts.tight; GROUND_EL = !!opts.groundEl; GUILLOCHE = opts.field === 'guilloche';
+    FAST = !!opts.fast; ENGRAVE = !!opts.engrave || opts.field === 'guilloche'; LUMINOUS = !!opts.luminous; TIGHT = !!opts.tight; GROUND_EL = !!opts.groundEl;
+    GUILLOCHE = ENGRAVE && opts.field !== 'waves';          // the engraving is grain d'orge; ?field=waves keeps the older wobble
     try { return (opts.mode === 'chart' ? renderChart : renderClock)(ctx, state, S, t, opts); }
     finally { FAST = false; ENGRAVE = false; LUMINOUS = false; TIGHT = false; GROUND_EL = false; GUILLOCHE = false; }
   }

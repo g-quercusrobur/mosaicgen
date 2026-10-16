@@ -1,0 +1,37 @@
+name: sky
+# renders the sky of now, every hour, into gh-pages/sky/: a phone wallpaper and a 2048 square per place in tools/wallpapers.json.
+# a phone automation (macrodroid, tasker, ios shortcuts) can fetch the png and set it as wallpaper.
+on:
+  schedule:
+    - cron: '7 * * * *'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: pages
+  cancel-in-progress: false
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: playwright
+        working-directory: cosmo-weather/tools
+        run: |
+          npm init -y >/dev/null
+          npm install --no-audit --no-fund playwright@1.47.2
+          npx playwright install --with-deps chromium
+      - name: render
+        working-directory: cosmo-weather
+        run: node tools/render-sky.js ../sky-out
+      - name: publish to gh-pages/sky
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./sky-out
+          destination_dir: sky
+          keep_files: true
+          commit_message: 'sky of the hour'

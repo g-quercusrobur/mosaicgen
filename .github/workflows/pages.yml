@@ -24,5 +24,5 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./dist
-          force_orphan: true
+          keep_files: true          # the hourly sky renders live beside the app in gh-pages/sky
           commit_message: 'publish cosmo weather'

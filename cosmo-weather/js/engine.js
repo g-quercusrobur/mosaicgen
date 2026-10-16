@@ -333,7 +333,8 @@
     if (m.lon >= 195 && m.lon < 225) ripe -= 0.3;
     if (m.speed > 13.2) ripe += 0.1;
     const verdict = !next ? 'void' : ripe >= 0.3 ? 'ripe' : ripe <= -0.3 ? 'unripe' : 'open';
-    return { next, flags, ripe, verdict };
+    const tolerable = verdict === 'void' && [1, 3, 8, 11].includes(m.sign);   // lilly: void in taurus, cancer, sagittarius or pisces 'performs somewhat'
+    return { next, flags, ripe, verdict, tolerable };
   }
 
   /* The chord of the moment. Each planet of the two strongest figures sounds the note of the sign it stands in

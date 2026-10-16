@@ -33,7 +33,7 @@
       cap: {
         nativity: 'nativity', dayOf: 'day of', hourOf: 'hour of', angel: 'angel of the hour', sunIn: 'sun in the', house: 'house', chord: 'chord', decanOf: 'decan of',
         moonIn: 'moon in the', mansion: 'mansion', nextChord: 'next chord', quiet: 'quiet sky', transit: 'transit', natal: 'natal', exact: 'exact',
-        moonApplying: 'moon applying', moonVoid: 'moon void of course', to: '', relocated: 'relocated to'
+        moonApplying: 'moon applying', moonVoid: 'moon void of course', to: '', relocated: 'relocated to', tolerable: 'tolerable'
       },
       ui: {
         clock: 'clock', chart: 'chart', natal: 'natal', synastry: 'transits', sigil: 'sigil', listen: 'listen', listening: 'listening', readout: 'readout', screen: 'screen', about: 'about',
@@ -84,7 +84,7 @@
       cap: {
         nativity: 'natividad', dayOf: 'día de', hourOf: 'hora de', angel: 'ángel de la hora', sunIn: 'sol en la', house: 'casa', chord: 'acorde', decanOf: 'decanato de',
         moonIn: 'luna en la', mansion: 'mansión', nextChord: 'próximo acorde', quiet: 'cielo quieto', transit: 'tránsito', natal: 'natal', exact: 'exacto',
-        moonApplying: 'luna aplicando', moonVoid: 'luna vacía de curso', to: 'a', relocated: 'reubicada a'
+        moonApplying: 'luna aplicando', moonVoid: 'luna vacía de curso', to: 'a', relocated: 'reubicada a', tolerable: 'tolerable'
       },
       ui: {
         clock: 'reloj', chart: 'carta', natal: 'natal', synastry: 'tránsitos', sigil: 'sigilo', listen: 'escuchar', listening: 'escuchando', readout: 'lectura', screen: 'pantalla', about: 'acerca',

@@ -570,19 +570,26 @@
     const v = state.moon.verdict;
     let tint = K.mixLight(K.mixLight(dc === '#040507' ? '#9aa0ab' : dc, hc === '#040507' ? '#9aa0ab' : hc, 0.5, 0), '#fff4dc', 0.6, 0);
     if (v === 'unripe') tint = K.mixLight(tint, '#7d889c', 0.7, -0.08);
-    const level = { ripe: 1.25, open: 0.9, unripe: 0.45, void: 0 }[v];
+    const level = { ripe: 1.25, open: 0.9, unripe: 0.45, void: state.moon.tolerable ? 0.28 : 0 }[v];   // void but tolerable (lilly): a low light stays
     if (PURE) { /* the sigil carries the stars only */ }
-    else if (level > 0) {
+    else if (level > 0 && v !== 'void') {
       const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, rg * 2.6);
       g.addColorStop(0, K.rgba(tint, 0.55 * E * level)); g.addColorStop(0.35, K.rgba(tint, 0.18 * E * level)); g.addColorStop(1, K.rgba(tint, 0));
       ctx.globalCompositeOperation = 'screen'; ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, rg * 2.6, 0, TAU); ctx.fill();
     } else {                                              // void: the door is closed — a dark pupil, and the whole portal dims around it
       ctx.globalCompositeOperation = 'source-over';
+      if (level > 0) {                                    // tolerable: a low light remains at the pole
+        const gl = ctx.createRadialGradient(cx, cy, 0, cx, cy, rg * 2.2);
+        gl.addColorStop(0, K.rgba(tint, 0.45 * E * level)); gl.addColorStop(1, K.rgba(tint, 0));
+        ctx.globalCompositeOperation = 'screen'; ctx.fillStyle = gl; ctx.beginPath(); ctx.arc(cx, cy, rg * 2.2, 0, TAU); ctx.fill();
+        ctx.globalCompositeOperation = 'source-over';
+      }
       const g0 = ctx.createRadialGradient(cx, cy, rg * 1.2, cx, cy, rg * 6);
       g0.addColorStop(0, 'rgba(2,3,10,0.55)'); g0.addColorStop(1, 'rgba(2,3,10,0)');
       ctx.fillStyle = g0; ctx.beginPath(); ctx.arc(cx, cy, rg * 6, 0, TAU); ctx.fill();
       const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, rg * 2.4);
-      g.addColorStop(0, 'rgba(2,3,10,0.97)'); g.addColorStop(0.5, 'rgba(2,3,10,0.85)'); g.addColorStop(1, 'rgba(2,3,10,0)');
+      const deep = level > 0 ? 0.72 : 0.97;
+      g.addColorStop(0, `rgba(2,3,10,${deep})`); g.addColorStop(0.5, `rgba(2,3,10,${(deep * 0.88).toFixed(2)})`); g.addColorStop(1, 'rgba(2,3,10,0)');
       ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, rg * 2.4, 0, TAU); ctx.fill();
     }
     const ghost = v === 'void' ? 0.8 : v === 'unripe' ? 0.7 : 1;   // void: the light goes out, the guardians still hold the room
@@ -1136,7 +1143,7 @@
   function moonLine(state) {
     const m = state.moon, i = I();
     const to = i.t('cap.to');
-    const head = m.next ? `${i.t('cap.moonApplying')} ${i.aspect(m.next.aspect)} ${to ? to + ' ' : ''}${i.planet(m.next.planet)}` : i.t('cap.moonVoid');
+    const head = m.next ? `${i.t('cap.moonApplying')} ${i.aspect(m.next.aspect)} ${to ? to + ' ' : ''}${i.planet(m.next.planet)}` : i.t('cap.moonVoid') + (m.tolerable ? ' · ' + i.t('cap.tolerable') : '');
     const extra = m.flags.filter(f => f !== 'void of course')[0];
     return extra ? `${head} · ${i.flag(extra === 'under the beams' ? 'beams' : extra)}` : head;
   }

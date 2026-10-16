@@ -26,7 +26,7 @@
     try { const c = document.createElement('canvas').getContext('2d'); c.filter = 'blur(2px)'; return c.filter === 'blur(2px)'; }
     catch (e) { return false; }
   })();
-  let FAST = false, PURE = false, ENGRAVE = false, LUMINOUS = false;   // LUMINOUS: prototype — planets as lights, flat, glowing by power   // ENGRAVE: prototype — light as engraved line weight, no glows, no gradients                    // PURE: the sigil layer — solid ink, no glow, no fill                       // scrubbing at speed: skip blurs and the neptune pass
+  let FAST = false, PURE = false, ENGRAVE = false, LUMINOUS = false, TIGHT = false;   // TIGHT: phones, caption outside the canvas: the dial fills the square   // LUMINOUS: prototype — planets as lights, flat, glowing by power   // ENGRAVE: prototype — light as engraved line weight, no glows, no gradients                    // PURE: the sigil layer — solid ink, no glow, no fill                       // scrubbing at speed: skip blurs and the neptune pass
   function withBlur(ctx, px, fn) {
     if (FAST || px < 0.35) return fn();
     if (supportsFilter) { ctx.save(); ctx.filter = `blur(${px.toFixed(2)}px)`; fn(); ctx.restore(); return; }
@@ -70,14 +70,14 @@
   const lightness = c => K.lab(c)[0];
 
   /* ---------- layout ---------- */
-  function layout(S) {
-    const u = S / 2048;
+  function layout(S, tight = TIGHT) {
+    const u = S / 2048, t = tight ? 1.19 : 1;
     return {
-      S, u, cx: S / 2, cy: S * 0.44,
-      Rb: S * 0.395,                  // dodecagon circumradius — the container; the houses are drawn across it
-      Rz: S * 0.35,                   // bezel inner edge / zodiac ring outer
-      Rzi: S * 0.33,                  // zodiac ring inner
-      R: S * 0.325,                   // sky
+      S, u, cx: S / 2, cy: S * (tight ? 0.5 : 0.44),
+      Rb: S * 0.395 * t,              // dodecagon circumradius — the container; the houses are drawn across it
+      Rz: S * 0.35 * t,               // bezel inner edge / zodiac ring outer
+      Rzi: S * 0.33 * t,              // zodiac ring inner
+      R: S * 0.325 * t,               // sky
       capY: S * 0.872,
       ts: Math.min(1.55, Math.max(1, 1400 / S))   // text scale: small screens get larger type, exports keep the master size
     };
@@ -221,7 +221,7 @@
   function drawEngravedField(ctx, state, Lt, density = 1) {
     const m = ctx.getTransform(), k = m.a;
     const ext = Lt.ext || 1;
-    const key = [Lt.S, k.toFixed(3), density, ext, Math.round(state.date.getTime() / 60000), state.loc.lat, state.loc.lon].join('|');
+    const key = [Lt.S, Lt.R, k.toFixed(3), density, ext, Math.round(state.date.getTime() / 60000), state.loc.lat, state.loc.lon].join('|');
     const px = Math.ceil(Lt.R * 2 * ext * k) + 4;
     if (engraveCache.key !== key) {
       const cv = engraveCache.canvas || document.createElement('canvas');
@@ -1507,9 +1507,9 @@
   }
 
   function render(ctx, state, S, t, opts = {}) {
-    FAST = !!opts.fast; ENGRAVE = !!opts.engrave; LUMINOUS = !!opts.luminous;
+    FAST = !!opts.fast; ENGRAVE = !!opts.engrave; LUMINOUS = !!opts.luminous; TIGHT = !!opts.tight;
     try { return (opts.mode === 'chart' ? renderChart : renderClock)(ctx, state, S, t, opts); }
-    finally { FAST = false; ENGRAVE = false; LUMINOUS = false; }
+    finally { FAST = false; ENGRAVE = false; LUMINOUS = false; TIGHT = false; }
   }
   /* a wallpaper: the sky without its wheel, the field running to the edges of a W × H canvas. the dial is sized to the width. */
   function renderWallpaper(ctx, state, W, H, t, opts = {}) {

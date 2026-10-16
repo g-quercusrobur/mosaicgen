@@ -1255,7 +1255,18 @@
   }
 
   /* ---------- clock mode ---------- */
-  const ground = state => K.mixLight(VOID, MIDNIGHT, 0.12 + 0.4 * state.moon.illum, 0);
+  /* the ground: midnight by the moon's light. prototype (?ground=element): tinted by the element of the hour through its
+     qualities, hot or cold as warmth of the dark, wet or dry as a lift of light. air, the hot and wet, is the lightest dark;
+     earth, the cold and dry, the deepest. none of them leaves the night. */
+  const ELEMENT_DARK = { fire: '#2c100c', air: '#2d2a22', water: '#0a1838', earth: '#17150f' };
+  let GROUND_EL = false;
+  const ground = (state, el = GROUND_EL) => {
+    const base = K.mixLight(VOID, MIDNIGHT, 0.12 + 0.4 * state.moon.illum, 0);
+    if (!el || !state.elements) return base;
+    const [d0, d1] = state.elements.order, sh = state.elements.shares;
+    const tint = K.mixLight(ELEMENT_DARK[d0], ELEMENT_DARK[d1], sh[d1] / (sh[d0] + sh[d1]), 0);
+    return K.mixLight(base, tint, 0.4 + 0.4 * sh[d0], 0);
+  };
   function renderClock(ctx, state, S, t, opts) {
     const bare = opts.bare;                               // wallpaper: no wheel, the field runs to the edges of a W × H canvas
     const Lt = layout(S); Lt.asc = state.asc;
@@ -1414,7 +1425,7 @@
     if (!bare) {
       drawRete(ctx, state, Lt, lw);
       drawFrame(ctx, state, Lt, lw);
-      drawAura(ctx, state, Lt);
+      if (!GROUND_EL) drawAura(ctx, state, Lt);
       if (opts.caption !== false) drawCaption(ctx, state, Lt);
     }
     return { mode: 'clock', sigil: !!opts.sigil, layout: Lt, positions: pos, stars, rippleCol, Rp, E, lw, weave, state };
@@ -1555,9 +1566,9 @@
   }
 
   function render(ctx, state, S, t, opts = {}) {
-    FAST = !!opts.fast; ENGRAVE = !!opts.engrave; LUMINOUS = !!opts.luminous; TIGHT = !!opts.tight;
+    FAST = !!opts.fast; ENGRAVE = !!opts.engrave; LUMINOUS = !!opts.luminous; TIGHT = !!opts.tight; GROUND_EL = !!opts.groundEl;
     try { return (opts.mode === 'chart' ? renderChart : renderClock)(ctx, state, S, t, opts); }
-    finally { FAST = false; ENGRAVE = false; LUMINOUS = false; TIGHT = false; }
+    finally { FAST = false; ENGRAVE = false; LUMINOUS = false; TIGHT = false; GROUND_EL = false; }
   }
   /* a wallpaper: the sky without its wheel, the field running to the edges of a W × H canvas. the dial is sized to the width. */
   function renderWallpaper(ctx, state, W, H, t, opts = {}) {

@@ -62,6 +62,7 @@
     relocate: store.get('relocate', false),                   // the nativity seen from the current place
     charts: store.get('charts', []),                           // saved nativities, on this device
     reading: store.get('reading', true),                       // the readout open by default
+    groundEl: params.get('ground') === 'element',              // prototype: the element of the hour as the ground
     state: null,
     lastCompute: 0
   };
@@ -108,7 +109,7 @@
     }
     S.lastCompute = performance.now();
     S.dirty = true;
-    document.documentElement.style.setProperty('--ground', CW.render.ground(S.state));
+    document.documentElement.style.setProperty('--ground', CW.render.ground(S.state, S.groundEl));
     document.body.classList.toggle('mrx', viewState().bodies.mercury.slow > 0.5);   // mercury retrograde: the print misregisters
     const c = CW.render.captionLines(viewState());
     $('caption').innerHTML = `<p class="l1">${c.l1}</p><p>${c.l2}</p><p>${c.l3}</p><p>${c.chord}</p><p>${c.decan}</p><p class="mono">${c.next}</p><p class="mono">${c.fig}</p><p class="mono">${c.moon}</p><p class="mono">${c.mansion}</p>`;
@@ -216,7 +217,7 @@
       pctx.setTransform(1, 0, 0, 1, 0, 0); pctx.clearRect(0, 0, plate.width, plate.height);
       pctx.setTransform(S.dpr * view.z, 0, 0, S.dpr * view.z, S.dpr * view.x, S.dpr * view.y);   // the view: zoom and pan
       const busy = S.playing || S.dragging || view.pinching;
-      info = CW.render.render(pctx, viewState(), S.side, t, { mode: S.mode === 'chart' || S.mode === 'natalchart' ? 'chart' : 'clock', fieldRes: busy ? 110 : 200, caption: S.side >= 560, plate: true, fast: busy, field: S.field, sigil: S.sigil, engrave: S.engrave, luminous: S.luminous, tight: S.side < 560 });
+      info = CW.render.render(pctx, viewState(), S.side, t, { mode: S.mode === 'chart' || S.mode === 'natalchart' ? 'chart' : 'clock', fieldRes: busy ? 110 : 200, caption: S.side >= 560, plate: true, fast: busy, field: S.field, sigil: S.sigil, engrave: S.engrave, luminous: S.luminous, tight: S.side < 560, groundEl: S.groundEl });
       S.dirty = false; lastPlate = ts;
     }
     ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -294,7 +295,7 @@
   function exportPNG(px) {
     const st = viewState(), cv = document.createElement('canvas');
     cv.width = cv.height = px;
-    CW.render.render(cv.getContext('2d'), st, px, (performance.now() - t0) / 1000, { mode: S.mode === 'chart' || S.mode === 'natalchart' ? 'chart' : 'clock', fieldRes: px >= 3000 ? 420 : 300, field: S.field, sigil: S.sigil, engrave: S.engrave, luminous: S.luminous });
+    CW.render.render(cv.getContext('2d'), st, px, (performance.now() - t0) / 1000, { mode: S.mode === 'chart' || S.mode === 'natalchart' ? 'chart' : 'clock', fieldRes: px >= 3000 ? 420 : 300, field: S.field, sigil: S.sigil, engrave: S.engrave, luminous: S.luminous, groundEl: S.groundEl });
     download(cv, `siderarium_${st.loc.name}_${stampOf(st)}_${px}.png`);
   }
   /* a wallpaper at this screen's size: the square render set in a portrait field of the same ground */

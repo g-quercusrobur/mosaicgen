@@ -238,8 +238,8 @@
   }
   function engrave(ctx, state, Lt, density) {
     const L = lights(state, Lt).map(l => ({ ...l, rgb: K.hexToRgb(l.color) }));
-    const E = lunarE(state), u = Lt.u, step = (GUILLOCHE ? Math.max(4.0 * u, 3.2) : 4.4 * u) / density, segLen = (GUILLOCHE ? 5 : 7) * u / density;
-    const lobes = 64, amp = Math.max(2.3 * u, 1.8);          // guilloché: grain d'orge, alternate rings half a period apart; never finer than the pixel grid can hold
+    const E = lunarE(state), u = Lt.u, step = (GUILLOCHE ? Math.max(4.4 * u, 3.0) : 4.4 * u) / density, segLen = (GUILLOCHE ? 5 : 7) * u / density;
+    const lobes = 96, amp = Math.max(1.25 * u, 1.0);         // guilloché: grain d'orge as fine as the older engraving, alternate rings half a period apart
     let ring = 0;
     ctx.save(); ctx.lineCap = 'butt';
     for (let r = step; r < Lt.R * (Lt.ext || 1); r += step, ring++) {

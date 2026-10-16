@@ -1044,6 +1044,44 @@
     ctx.restore();
   }
 
+  /* what the two skies make together: the transiting planet joined to both ends of the natal aspect it sets off.
+     the natal side in ink, the transits in the planet's colour, the triangle filled by its tone: harmony in the
+     planet's light, strife in mars's. */
+  function drawInteraction(ctx, state, Lt, inter, pos, npos, lw, E) {
+    const T = pos[inter.t], A = npos[inter.a], B = npos[inter.b];
+    if (!T || !A || !B) return;
+    const col = presence(state, inter.t), tone = inter.tone === 'strife' ? C.PLANETS.mars.tincture : col;
+    ctx.save();
+    ctx.globalCompositeOperation = 'screen';
+    ctx.fillStyle = K.rgba(tone, 0.10 + 0.12 * Math.min(1, inter.power * 2));
+    ctx.beginPath(); ctx.moveTo(T.x, T.y); ctx.lineTo(A.x, A.y); ctx.lineTo(B.x, B.y); ctx.closePath(); ctx.fill();
+    ctx.globalCompositeOperation = 'source-over'; ctx.lineCap = 'round';
+    ctx.strokeStyle = K.rgba(NATAL_INK, 0.85); ctx.lineWidth = lw * 0.9; ctx.setLineDash(inter.tone === 'strife' ? [lw * 1.2, lw * 1.2] : []);
+    ctx.beginPath(); ctx.moveTo(A.x, A.y); ctx.lineTo(B.x, B.y); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.strokeStyle = K.rgba(col, 0.9); ctx.lineWidth = lw;
+    ctx.beginPath(); ctx.moveTo(T.x, T.y); ctx.lineTo(A.x, A.y); ctx.moveTo(T.x, T.y); ctx.lineTo(B.x, B.y); ctx.stroke();
+    for (const q of [A, B]) { ctx.fillStyle = NATAL_INK; ctx.beginPath(); ctx.arc(q.x, q.y, lw * 1.6, 0, TAU); ctx.fill(); }
+    ctx.restore();
+  }
+
+  /* the element of the hour: an aura outside the sky, the dominant element mixed with the next by their shares.
+     earth, near black as a pigment, is lifted to umber as a light. */
+  const ELEMENT_LIGHT = { air: '#f2e8a0', water: '#4a7ef0', fire: '#ff5a2a', earth: '#9a6a3a' };
+  function drawAura(ctx, state, Lt) {
+    const el = state.elements; if (!el) return;
+    const [d0, d1] = el.order;
+    const col = K.mixLight(ELEMENT_LIGHT[d0], ELEMENT_LIGHT[d1], el.shares[d1] / (el.shares[d0] + el.shares[d1]), 0);
+    const a = 0.16 + 0.34 * el.shares[d0];
+    ctx.save();
+    ctx.beginPath(); ctx.rect(0, 0, Lt.S, TIGHT ? Lt.S : Lt.capY - 36 * Lt.u); ctx.arc(Lt.cx, Lt.cy, Lt.Rz, 0, TAU, true); ctx.clip('evenodd');   // outside the sky, above the caption
+    ctx.globalCompositeOperation = 'screen';
+    const g = ctx.createRadialGradient(Lt.cx, Lt.cy, Lt.Rz, Lt.cx, Lt.cy, Lt.Rb * 1.34);
+    g.addColorStop(0, K.rgba(col, a)); g.addColorStop(0.4, K.rgba(col, a * 0.42)); g.addColorStop(1, K.rgba(col, 0));
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(Lt.cx, Lt.cy, Lt.Rb * 1.34, 0, TAU); ctx.fill();
+    ctx.restore();
+  }
+
   /* ---------- the frame: dodecagon container, rete, houses ---------- */
   function dodecagon(Lt, r) {
     const p = new Path2D();
@@ -1158,7 +1196,11 @@
   function captionLines(state) {
     const i = I(), T = fmtTime(state.date, state.loc), B = state.bodies, H = state.hour;
     const fig = state.configs.primary, ev = fig && fig.event ? (i.event(fig.event) === fig.event && fig.event.includes(' ') ? fig.event.split(' ').map(w => i.event(w)).join(' ') : i.event(fig.event)) : '';
-    const figLine = !fig ? i.t('cap.quiet')
+    const inter = state.interaction && state.interaction.figures[0];
+    const figLine = inter ? (inter.name === 'setOff'
+        ? `${i.planet(inter.t)} ${i.t('ui.r.setsOff')} ${i.t('cap.natal')} ${i.planet(inter.a)} ${i.aspect(inter.natalAspect)} ${i.planet(inter.b)} · ${i.t('ui.r.' + inter.tone)}`
+        : `${i.planet(inter.t)} ${i.t('ui.r.closes')} ${i.t('ui.r.fig.' + inter.name)} ${i.t('ui.r.with')} ${i.t('cap.natal')} ${i.planet(inter.a)} ${i.aspect(inter.natalAspect)} ${i.planet(inter.b)} · ${i.t('ui.r.' + inter.tone)}`)
+      : !fig ? i.t('cap.quiet')
       : fig.natal ? `${i.t('cap.transit')} ${i.planet(fig.a)} ${i.aspect(fig.aspect)} ${i.t('cap.natal')} ${i.planet(fig.b)} · ${fig.orb.toFixed(1)}°`
       : `${i.planet(fig.a)} ${i.aspect(fig.aspect)} ${i.planet(fig.b)}${ev ? ' · ' + ev : ''}`;
     const d = B.sun.decan;
@@ -1304,6 +1346,7 @@
     drawStars(ctx, stars, Lt, E, t);
 
     drawBodies(ctx, state, Lt, pos, E, lw, t, involved, clusters);
+    if (state.interaction && state.interaction.figures[0]) drawInteraction(ctx, state, Lt, state.interaction.figures[0], pos, npos, lw, E);
 
     drawGuardians(ctx, state, Lt, E);
 
@@ -1367,6 +1410,7 @@
     if (!bare) {
       drawRete(ctx, state, Lt, lw);
       drawFrame(ctx, state, Lt, lw);
+      drawAura(ctx, state, Lt);
       if (opts.caption !== false) drawCaption(ctx, state, Lt);
     }
     return { mode: 'clock', sigil: !!opts.sigil, layout: Lt, positions: pos, stars, rippleCol, Rp, E, lw, weave, state };

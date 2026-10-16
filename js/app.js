@@ -61,6 +61,7 @@
     luminous: params.get('bodies') === 'luminous' || (!params.get('bodies') && store.get('bodies', 'lights') === 'lights'),   // planets as lights (default); bodies on request
     relocate: store.get('relocate', false),                   // the nativity seen from the current place
     charts: store.get('charts', []),                           // saved nativities, on this device
+    reading: store.get('reading', true),                       // the readout open by default
     state: null,
     lastCompute: 0
   };
@@ -102,6 +103,7 @@
     if (S.mode === 'synastry' && S.natal) {                 // the sky of now against the nativity: the figure is the strongest transit
       const ns = natalState(), tr = CW.engine.computeTransits(S.state, ns).filter(x => x.power > 0.04);
       S.state.natal = ns; S.state.transits = tr;
+      S.state.interaction = CW.engine.computeInteractions(S.state, ns, tr);   // what the two skies make together
       S.state.configs = { ...S.state.configs, primary: tr[0] || null, secondary: tr.slice(1, 3), scale: 1, cut: null };
     }
     S.lastCompute = performance.now();
@@ -127,6 +129,7 @@
     canvas.style.width = canvas.style.height = side + 'px';
     canvas.width = canvas.height = Math.round(side * dpr);
     S.side = side; S.dpr = dpr;
+    placeCorner(side);
     plate.width = plate.height = canvas.width;
     S.dirty = true;
     document.body.classList.toggle('small', side < 560);
@@ -270,7 +273,7 @@
     if (!audio.ctx) return;
     if (on) { audio.ctx.resume(); soundChord(S.state.chord); }
     else soundChord(null);
-    $('listen').classList.toggle('on', on);
+    $('listen').classList.toggle('on', on); $('listen-corner').classList.toggle('on', on);
     $('listen').textContent = CW.i18n.t(on ? 'ui.listening' : 'ui.listen');
   }
   function followChord() { if (audio.on && S.state && S.state.chord.name !== audio.key) soundChord(S.state.chord, 2.5); }
@@ -321,7 +324,14 @@
     const figName = a => a.natal ? `${P(a.a)} ${A(a.aspect)} ${i.t('cap.natal')} ${P(a.b)}` : `${P(a.a)} ${A(a.aspect)} ${P(a.b)}`;
     const evName = e => e.split(' ').map(w => i.event(w)).join(' ');
     const figs = [cf.primary, ...cf.secondary].filter(Boolean).map((a, n) =>
-      `<tr><td>${n ? R('ring') : R('figure')}</td><td>${figName(a)}</td><td>{${a.n}/${a.k}}</td><td>${R('orb')} ${a.orb.toFixed(2)}° ${a.applying ? R('applying') : R('separating')}${a.dissociate ? ' · ' + i.flag('outOfSign') : ''}</td><td>${a.power.toFixed(2)}${a.event ? ' · ' + evName(a.event) : ''}</td></tr>`).join('');
+      `<tr><td>${n ? R('ring') : R('figure')}</td><td colspan="2">${figName(a)} · {${a.n}/${a.k}}</td></tr><tr class="sub"><td></td><td colspan="2">${R('orb')} ${a.orb.toFixed(2)}° ${a.applying ? R('applying') : R('separating')}${a.dissociate ? ' · ' + i.flag('outOfSign') : ''} · ${a.power.toFixed(2)}${a.event ? ' · ' + evName(a.event) : ''}</td></tr>`).join('');
+    const cap = CW.render.captionLines(st);
+    const el = st.elements ? `${R('element')} ${i.t('ui.el.' + st.elements.dominant)} ${Math.round(st.elements.shares[st.elements.dominant] * 100)}% · ${i.t('ui.el.' + st.elements.order[1])} ${Math.round(st.elements.shares[st.elements.order[1]] * 100)}%` : '';
+    const lead = `<div class="lead"><p class="big">${cap.fig}</p><p>${cap.chord} · ${cap.moon}${el ? ' · ' + el : ''}</p><p class="when">${cap.l1} · ${cap.l2}</p></div>`;
+    const inter = st.interaction;
+    const interSentence = f => f.name === 'setOff' ? `${P(f.t)} ${R('setsOff')} ${P(f.a)} ${A(f.natalAspect)} ${P(f.b)}` : `${P(f.t)} ${R('closes')} ${R('fig.' + f.name)} ${R('with')} ${P(f.a)} ${A(f.natalAspect)} ${P(f.b)}`;
+    const interRows = inter ? (inter.figures.length ? inter.figures.slice(0, 6).map(f => `<tr><td>${R(f.tone)}</td><td colspan="2">${interSentence(f)}</td></tr><tr class="sub"><td></td><td colspan="2">${P(f.t)} ${A(f.x.aspect)} ${P(f.a)} ${f.x.orb.toFixed(1)}° · ${P(f.t)} ${A(f.y.aspect)} ${P(f.b)} ${f.y.orb.toFixed(1)}° · ${f.power.toFixed(2)}</td></tr>`).join('') : `<tr><td colspan="3">${R('noFigure')}</td></tr>`) : '';
+    const verdict = inter ? `<p class="verdict">${R('harmony')} ${inter.harmony.toFixed(2)} · ${R('strife')} ${inter.strife.toFixed(2)} · ${R(inter.verdict)}</p>` : '';
     const tz = st.loc.tz || 'UTC';
     const hm = d => new Intl.DateTimeFormat(i.locale(), { hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: tz }).format(d);
     const dec = b => `${i.decanOrd(b.decan.decan)} ${i.t('cap.decanOf')} ${i.sign(b.sign)} · ${P(b.decan.ruler)}`;
@@ -337,11 +347,12 @@
     const ev = st.events.map(e => i.event(e.type) + (e.planet ? ' ' + P(e.planet) : '') + (e.kind ? ' ' + evName(e.kind) : '') + (e.direction ? ' ' + i.event(e.direction) : '')).join(' · ') || '—';
     const W = k => `${i.window(k)} ${st.windows[k].toFixed(2)}`;
     $('readout').innerHTML = `
+      ${lead}
       <h3>${H('bodies')}</h3><table>${rows}</table>
       <h3>${H('figure')}</h3><table>${figs || `<tr><td>${i.t('ui.quietSky')}</td></tr>`}</table>
       <h3>${H('sound')}</h3><p>${st.chord.name}${st.chord.interval ? ' · ' + i.interval(st.chord.interval) : ''}${st.chord.notes.length ? ` · ${R('notes')} ` + st.chord.notes.join(' ') : ''}${st.chord.planets ? ` · ${R('from')} ` + st.chord.planets.map(P).join(', ') : ''}${st.nextChord ? ` · ${R('next')} ${st.nextChord.to} ${R('at')} ${hm(st.nextChord.at)}` : ''}</p>
       <h3>${H('tarot')}</h3>${tarot}
-      ${st.transits ? `<h3>${H('transits')}</h3><table>${st.transits.slice(0, 8).map(a => `<tr><td>${figName(a)}</td><td>${a.orb.toFixed(2)}°</td><td>${a.applying ? R('applying') : R('separating')}</td><td>${a.power.toFixed(2)}</td></tr>`).join('') || `<tr><td>${i.t('ui.noContact')}</td></tr>`}</table>` : ''}
+      ${st.transits ? `<h3>${H('transits')}</h3>${verdict}<table>${interRows}</table><table>${st.transits.slice(0, 8).map(a => `<tr><td>${figName(a)}</td><td>${a.orb.toFixed(2)}° ${a.applying ? R('applying') : R('separating')}</td><td>${a.power.toFixed(2)}</td></tr>`).join('') || `<tr><td>${i.t('ui.noContact')}</td></tr>`}</table>` : ''}
       <h3>${H('portal')}</h3><p>${R('scale')} ×${(cf.scale || 1).toFixed(2)} (${R('widens')})${cf.cut ? ` · ${R('cut')} ${P(cf.cut.by)} ${A(cf.cut.aspect)} ${P(cf.cut.target)}, ${Math.round(cf.cut.width)}°` : ' · ' + R('whole')}</p>
       <p>${R('guardians')} ${P(st.hour.dayRuler)}${st.hour.dayRuler === st.hour.hourRuler ? ' ' + R('alone') : ' ' + R('and') + ' ' + P(st.hour.hourRuler)}</p>
       <h3>${H('windows')}</h3><p>${W('ideation')} · ${W('incarnation')} · ${W('destruction')}</p>
@@ -368,6 +379,22 @@
     document.querySelectorAll('[data-mode]').forEach(b => b.classList.toggle('on', b.dataset.mode === S.mode || (S.mode === 'natalchart' && (b.dataset.mode === 'chart' || b.dataset.mode === 'natal'))));
     document.body.classList.toggle('natal', S.mode === 'natal' || S.mode === 'natalchart');
     $('sigil').classList.toggle('on', S.sigil);
+    slideSeg();
+  }
+  /* the segmented control: an indicator slides under the lit view (two of them in natal chart) */
+  function slideSeg() {
+    const seg = document.querySelector('.seg'), ind = seg && seg.querySelector('.seg-ind'); if (!ind) return;
+    const on = [...seg.querySelectorAll('button[data-mode].on')];
+    if (!on.length) { ind.style.width = '0px'; return; }
+    const l = Math.min(...on.map(b => b.offsetLeft)), r = Math.max(...on.map(b => b.offsetLeft + b.offsetWidth));
+    ind.style.left = l + 'px'; ind.style.width = (r - l) + 'px';
+  }
+  /* the speaker sits at the corner of the dial, outside the figure */
+  function placeCorner(side) {
+    const b = $('listen-corner'), st = $('stage').getBoundingClientRect(), cv = canvas.getBoundingClientRect();
+    const tight = side < 560, sz = tight ? 44 : 40;
+    b.style.left = (cv.left - st.left + side - sz - 4) + 'px';
+    b.style.top = (cv.top - st.top + (tight ? side - sz - 4 : side * 0.84 - sz - 10)) + 'px';
   }
 
   /* ---------- the menu: view, settings, nativity and saved charts ---------- */
@@ -471,7 +498,8 @@
     $('sigil').addEventListener('click', () => { S.sigil = !S.sigil; S.dirty = true; updateControls(); });
     $('preview').addEventListener('input', e => { S.playing = false; S.offsetMs = Number(e.target.value) * 60000; recompute(); });
     $('save-hd').addEventListener('click', () => exportPNG(4096));
-    $('info').addEventListener('click', () => document.body.classList.toggle('reading'));
+    $('info').addEventListener('click', () => { S.reading = !S.reading; store.set('reading', S.reading); document.body.classList.toggle('reading', S.reading); size(); });
+    $('listen-corner').addEventListener('click', () => listen(!audio.on));
     $('about-open').addEventListener('click', () => { $('about').hidden = !$('about').hidden; $('about-open').classList.toggle('on', !$('about').hidden); if (!$('about').hidden) openMenu(false); });
     $('about-close').addEventListener('click', () => { $('about').hidden = true; $('about-open').classList.remove('on'); });
     $('listen').addEventListener('click', () => listen(!audio.on));
@@ -491,7 +519,7 @@
       if (e.key === 'ArrowLeft') { S.offsetMs -= (e.shiftKey ? 24 : 1) * 3600e3; recompute(); }
       if (e.key === 'Escape') { document.body.classList.remove('bare', 'reading'); $('about').hidden = true; $('about-open').classList.remove('on'); $('birth').hidden = true; openMenu(false); }
     });
-    window.addEventListener('resize', size);
+    window.addEventListener('resize', () => { size(); slideSeg(); });
     if (params.get('hd') !== '1') $('save-hd').hidden = true;
   }
 
@@ -629,6 +657,7 @@
   function setLang(l) {
     S.lang = l; store.set('lang', l); CW.i18n.set(l); CW.i18n.apply();
     if ($('set-lang').value !== l) $('set-lang').value = l;
+    requestAnimationFrame(slideSeg);
     if (!$('menu').hidden) refreshMenu();
     document.querySelectorAll('[data-about]').forEach(el => { el.hidden = el.dataset.about !== l; });
     scan.key = null;                                        // the week's labels are rebuilt in the new language
@@ -642,7 +671,8 @@
       await Promise.all(['400 20px Geist', '500 20px Geist', '400 20px "Geist Mono"'].map(f => document.fonts.load(f)));
     } catch (e) { /* fonts are a nicety */ }
     if (natalModes.includes(S.mode) && !S.natal) S.mode = 'clock';
-    bind(); bindMenu(); bindGesture(); size(); recompute(); drawNexts();
+    document.body.classList.toggle('reading', S.reading);
+    bind(); bindMenu(); bindGesture(); size(); recompute(); drawNexts(); requestAnimationFrame(slideSeg);
     if (S.firstVisit || S.place.name === 'here') locate(false);
     requestAnimationFrame(frame);
     if ('serviceWorker' in navigator && /^https?:/.test(location.protocol) && !/claude\.ai$/.test(location.hostname)) navigator.serviceWorker.register('./sw.js').catch(() => {});

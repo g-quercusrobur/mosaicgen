@@ -444,6 +444,61 @@
     return out.sort((x, y) => y.power - x.power);
   }
 
+  /* ---------- what the two skies make together ----------
+     A transiting planet that aspects both ends of a natal aspect sets that aspect off: the native's own strife or
+     harmony brought to life. Three aspects close a figure: {trine, trine, trine} a grand trine, {opposition, square,
+     square} a t-square, {opposition, trine, sextile} a release. Each figure is scored by the two transits that make it,
+     and the whole is summed as harmony against strife. */
+  const SOFT = new Set(['trine', 'sextile']), HARD = new Set(['square', 'opposition']);
+  const malefic = k => k === 'mars' || k === 'saturn';
+  function computeInteractions(cur, natal, transits) {
+    const byT = {};
+    for (const t of transits) if (C.PLANETS[t.b]) (byT[t.a] = byT[t.a] || []).push(t);
+    const figures = [];
+    for (const tk in byT) {
+      const hits = byT[tk];
+      for (let i = 0; i < hits.length; i++) for (let j = i + 1; j < hits.length; j++) {
+        const x = hits[i], y = hits[j];
+        const na = natal.aspects.find(a => (a.a === x.b && a.b === y.b) || (a.a === y.b && a.b === x.b));
+        if (!na || !(SOFT.has(na.aspect) || HARD.has(na.aspect) || na.aspect === 'conjunction')) continue;
+        const set = [na.aspect, x.aspect, y.aspect].sort().join('+');
+        let name = 'setOff', tone;
+        if (set === 'trine+trine+trine') { name = 'grandTrine'; tone = 'harmony'; }
+        else if (set === 'sextile+sextile+trine') { name = 'minorGrandTrine'; tone = 'harmony'; }
+        else if (set === 'opposition+square+square') { name = 'tSquare'; tone = 'strife'; }
+        else if (set === 'opposition+sextile+trine') { name = 'release'; tone = 'harmony'; }
+        else if (HARD.has(na.aspect)) tone = (HARD.has(x.aspect) || HARD.has(y.aspect) || x.aspect === 'conjunction' || y.aspect === 'conjunction') ? 'strife' : 'harmony';
+        else if (SOFT.has(na.aspect)) tone = (HARD.has(x.aspect) && HARD.has(y.aspect)) ? 'strife' : 'harmony';
+        else tone = (malefic(tk) || malefic(x.b) || malefic(y.b)) && (HARD.has(x.aspect) || HARD.has(y.aspect) || x.aspect === 'conjunction') ? 'strife' : 'harmony';
+        const power = Math.sqrt(x.power * y.power) * (name === 'setOff' ? 1 : 1.3);
+        figures.push({ t: tk, a: x.b, b: y.b, natalAspect: na.aspect, x, y, name, tone, power });
+      }
+    }
+    figures.sort((u, v) => v.power - u.power);
+    let h = 0, st = 0;
+    for (const f of figures) if (f.tone === 'harmony') h += f.power; else st += f.power;
+    for (const t of transits) {
+      if (!C.PLANETS[t.b]) continue;
+      if (SOFT.has(t.aspect)) h += 0.4 * t.power;
+      else if (HARD.has(t.aspect) || (t.aspect === 'conjunction' && (malefic(t.a) || malefic(t.b)))) st += 0.4 * t.power;
+    }
+    const harmony = 1 - Math.exp(-h), strife = 1 - Math.exp(-st);
+    const verdict = harmony > strife * 1.25 ? 'harmonyPrevails' : strife > harmony * 1.25 ? 'strifePrevails' : 'balanced';
+    return { figures, harmony, strife, verdict };
+  }
+
+  /* the element of the sky: the four elements weighed by the bodies' signs, the luminaries and the ascendant heaviest */
+  function elements(st) {
+    const W = { sun: 3, moon: 3, mercury: 1.5, venus: 1.5, mars: 1.5, jupiter: 1, saturn: 1, uranus: 0.4, neptune: 0.4, pluto: 0.4 };
+    const s = { fire: 0, earth: 0, air: 0, water: 0 };
+    for (const k in W) s[C.SIGNS[st.bodies[k].sign].element] += W[k];
+    s[C.SIGNS[Math.floor(st.asc / 30)].element] += 2.5; s[C.SIGNS[Math.floor(st.mc / 30)].element] += 1;
+    const tot = Object.values(s).reduce((a, b) => a + b, 0);
+    const shares = {}; for (const k in s) shares[k] = s[k] / tot;
+    const order = Object.keys(s).sort((a, b) => s[b] - s[a]);
+    return { shares, order, dominant: order[0] };
+  }
+
   /* ---------- the whole state ---------- */
   function compute(date, loc, opts = {}) {
     const t = A.MakeTime(date);
@@ -514,9 +569,10 @@
     const lunar = moonCondition(B, eps);
     const st = { date, loc, eps, ...ang, bodies: B, sect: isDay ? 'day' : 'night', moon: { ...moon, ...lunar }, hour, aspects, events, configs, cusps, houses };
     st.chord = chordOf(st);
+    st.elements = elements(st);
     st.windows = windowsOf(st);
     return st;
   }
 
-  CW.engine = { compute, computeTransits, nextChordShift, norm360, norm180, sep, houseOf, houseIn, mundane, semiArc, dignity, placidus, regiomontanus, equalHouses, synodic, rarity };
+  CW.engine = { compute, computeTransits, computeInteractions, elements, nextChordShift, norm360, norm180, sep, houseOf, houseIn, mundane, semiArc, dignity, placidus, regiomontanus, equalHouses, synodic, rarity };
 })(window.CW = window.CW || {});

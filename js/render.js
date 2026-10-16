@@ -37,6 +37,9 @@
   }
   const clamp = (x, a = 0, b = 1) => Math.max(a, Math.min(b, x));
   const smooth = (e0, e1, x) => { const t = clamp((x - e0) / (e1 - e0)); return t * t * (3 - 2 * t); };
+  /* the moon's light sets the weight of every mark: a floor of 70% at new moon, and the full moon adds luminosity of its own */
+  const lunarE = state => { const i = state.moon.illum; return 0.70 + 0.30 * i + 0.22 * smooth(0.9, 1, i); };
+  const lunarLw = state => { const i = state.moon.illum; return 2.24 + 0.96 * i + 0.3 * smooth(0.9, 1, i); };
 
   /* ---------- colour of things ---------- */
   function signColorAt(lon) {
@@ -133,7 +136,7 @@
     const lin = c => K.hexToRgb(c).map(v => Math.pow(v, 2.2));
     const L = lights(state, Lt).map(l => ({ ...l, lin: lin(l.color) }));
     const base = lin(MIDNIGHT);
-    const E = 0.6 + 0.4 * state.moon.illum;
+    const E = lunarE(state);
     const ext = Lt.ext || 1.08;
     for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) {
       const x = (i / (N - 1) * 2 - 1) * ext, y = (j / (N - 1) * 2 - 1) * ext;
@@ -169,7 +172,7 @@
     // each light carries two neighbouring hues; the smoke drifts between them
     const L = lights(state, Lt).map(l => ({ ...l, lin: lin(l.color), linA: lin(K.hueShift(l.color, -28)), linB: lin(K.hueShift(K.shade(l.color, 0.06), 30)) }));
     const base = K.hexToRgb(MIDNIGHT).map(c => Math.pow(c, 2.2));
-    const E = 0.6 + 0.4 * state.moon.illum;
+    const E = lunarE(state);
     const seed = Math.floor(state.date.getTime() / 864e5);   // one weather per day, drifting with the hour
     const drift = (state.date.getTime() / 3600e3) % 1000 * 0.07;
     const ext = Lt.ext || 1.08;
@@ -234,7 +237,7 @@
   }
   function engrave(ctx, state, Lt, density) {
     const L = lights(state, Lt).map(l => ({ ...l, rgb: K.hexToRgb(l.color) }));
-    const E = 0.6 + 0.4 * state.moon.illum, u = Lt.u, step = 4.4 * u / density, segLen = 7 * u / density;
+    const E = lunarE(state), u = Lt.u, step = 4.4 * u / density, segLen = 7 * u / density;
     ctx.save(); ctx.lineCap = 'butt';
     for (let r = step; r < Lt.R * (Lt.ext || 1); r += step) {
       const segs = Math.max(24, Math.round(TAU * r / segLen));
@@ -1216,8 +1219,8 @@
       Lt.bleed = true;
       Lt.ext = Math.max(1.08, Math.hypot(W / 2, Math.max(Lt.cy, H - Lt.cy)) / Lt.R * 1.02);
     }
-    const E = 0.62 + 0.38 * state.moon.illum;
-    const lw = Lt.u * (1.9 + 1.3 * state.moon.illum);   // the full moon inflates the marks
+    const E = lunarE(state);
+    const lw = Lt.u * lunarLw(state);                    // never below 70% of the full moon's weight; the full moon adds luminosity
     const B = state.bodies;
 
     // ground
@@ -1248,7 +1251,7 @@
     // the portal
     const cf = state.configs;
     const quiet = cf.primary && cf.primary.power < 0.25;
-    const Rp = Lt.R * 0.56 * (cf.scale || 1) * (quiet ? 0.88 : 1);   // jupiter widens, saturn narrows
+    const Rp = Lt.R * 0.56 * Math.max(0.85, (cf.scale || 1) * (quiet ? 0.88 : 1));   // jupiter widens, saturn narrows; never below 0.85
     const geos = [];
     const involved = {};
     const all = [cf.primary, ...cf.secondary].filter(Boolean);

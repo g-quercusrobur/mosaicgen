@@ -5,27 +5,24 @@ on:
     paths: ['cosmo-weather/**', '.github/workflows/pages.yml']
   workflow_dispatch:
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write
 concurrency:
   group: pages
   cancel-in-progress: true
 jobs:
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+  publish:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: stage the app without the sample renders
         run: rsync -a --exclude samples cosmo-weather/ dist/
-      - uses: actions/configure-pages@v5
+      # the site is published as the gh-pages branch: no Pages API call, so no admin permission is needed.
+      # github serves a gh-pages branch at https://<owner>.github.io/<repo>/ once Pages is on
+      # (settings → pages → source: deploy from a branch → gh-pages).
+      - name: publish to the gh-pages branch
+        uses: peaceiris/actions-gh-pages@v4
         with:
-          enablement: true
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: dist
-      - id: deployment
-        uses: actions/deploy-pages@v4
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist
+          force_orphan: true
+          commit_message: 'publish cosmo weather'

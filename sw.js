@@ -1,5 +1,5 @@
 /* siderarium — service worker. network first, cache fallback: the clock works offline after one visit. */
-const VERSION = 'sd-2026-10-16h';
+const VERSION = 'sd-2026-10-16i';
 const SHELL = ['./', './index.html', './css/style.css', './js/vendor/astronomy.browser.min.js', './js/color.js', './js/correspondences.js', './js/i18n.js',
   './js/engine.js', './js/glyphs.js', './js/render.js', './js/app.js', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(VERSION).then(c => c.addAll(SHELL)).then(() => self.skipWaiting())); });

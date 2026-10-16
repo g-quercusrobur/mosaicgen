@@ -71,15 +71,16 @@
 
   /* ---------- layout ---------- */
   function layout(S, tight = TIGHT) {
-    const u = S / 2048, t = tight ? 1.19 : 1;
+    const u = S / 2048, t = tight ? 1.17 : 1;
     return {
-      S, u, cx: S / 2, cy: S * (tight ? 0.5 : 0.44),
-      Rb: S * 0.395 * t,              // dodecagon circumradius — the container; the houses are drawn across it
-      Rz: S * 0.35 * t,               // bezel inner edge / zodiac ring outer
-      Rzi: S * 0.33 * t,              // zodiac ring inner
-      R: S * 0.325 * t,               // sky
+      S, u, cx: S / 2, cy: S * (tight ? 0.5 : 0.435),
+      Rb: S * 0.405 * t,              // dodecagon circumradius — the container, a narrow band; the houses are drawn across it
+      Rz: S * 0.375 * t,              // bezel inner edge / zodiac ring outer
+      Rzi: S * (tight ? 0.343 : 0.35) * t,   // zodiac ring inner: the ring is wider on a phone, for the glyphs
+      R: S * (tight ? 0.338 : 0.345) * t,    // sky
       capY: S * 0.872,
-      ts: Math.min(1.55, Math.max(1, 1400 / S))   // text scale: small screens get larger type, exports keep the master size
+      ts: Math.min(2.6, Math.max(1, 2000 / S)),   // text scale of the frame marks: a phone's canvas is small, its marks must stay readable
+      tc: Math.min(1.55, Math.max(1, 1400 / S))   // text scale of the caption: exports keep the master size
     };
   }
   /* mundane placement: angle = Placidian time position, radius = altitude */
@@ -1072,13 +1073,15 @@
     const el = state.elements; if (!el) return;
     const [d0, d1] = el.order;
     const col = K.mixLight(ELEMENT_LIGHT[d0], ELEMENT_LIGHT[d1], el.shares[d1] / (el.shares[d0] + el.shares[d1]), 0);
-    const a = 0.16 + 0.34 * el.shares[d0];
+    const a = 0.09 + 0.17 * el.shares[d0];
     ctx.save();
-    ctx.beginPath(); ctx.rect(0, 0, Lt.S, TIGHT ? Lt.S : Lt.capY - 36 * Lt.u); ctx.arc(Lt.cx, Lt.cy, Lt.Rz, 0, TAU, true); ctx.clip('evenodd');   // outside the sky, above the caption
+    const clip = new Path2D(); clip.rect(0, 0, Lt.S, TIGHT ? Lt.S : Lt.capY - 36 * Lt.u); clip.addPath(dodecagon(Lt, Lt.Rb));
+    ctx.clip(clip, 'evenodd');                             // outside the container only, above the caption
     ctx.globalCompositeOperation = 'screen';
-    const g = ctx.createRadialGradient(Lt.cx, Lt.cy, Lt.Rz, Lt.cx, Lt.cy, Lt.Rb * 1.34);
-    g.addColorStop(0, K.rgba(col, a)); g.addColorStop(0.4, K.rgba(col, a * 0.42)); g.addColorStop(1, K.rgba(col, 0));
-    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(Lt.cx, Lt.cy, Lt.Rb * 1.34, 0, TAU); ctx.fill();
+    const inR = Lt.Rb * Math.cos(Math.PI / 12);
+    const g = ctx.createRadialGradient(Lt.cx, Lt.cy, inR, Lt.cx, Lt.cy, Lt.Rb * 1.4);
+    g.addColorStop(0, K.rgba(col, a)); g.addColorStop(0.35, K.rgba(col, a * 0.4)); g.addColorStop(1, K.rgba(col, 0));
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(Lt.cx, Lt.cy, Lt.Rb * 1.4, 0, TAU); ctx.fill();
     ctx.restore();
   }
 
@@ -1104,12 +1107,12 @@
     const g = ctx.createRadialGradient(Lt.cx, Lt.cy, Lt.Rz * (1 - 0.06 * (0.3 + sat)), Lt.cx, Lt.cy, Lt.Rz);
     g.addColorStop(0, 'rgba(2,3,10,0)'); g.addColorStop(1, `rgba(2,3,10,${0.55 + 0.35 * sat})`);
     ctx.fillStyle = g; ctx.beginPath(); ctx.arc(Lt.cx, Lt.cy, Lt.Rz, 0, TAU); ctx.fill();
-    ctx.strokeStyle = C.PLANETS.saturn.rim; ctx.lineWidth = 1.2 * u; ctx.stroke(outer);
-    ctx.strokeStyle = K.rgba(INK, 0.18); ctx.lineWidth = 1 * u;
+    ctx.strokeStyle = C.PLANETS.saturn.rim; ctx.lineWidth = 1.4 * u; ctx.stroke(outer);
+    ctx.strokeStyle = K.rgba(INK, 0.3); ctx.lineWidth = 1 * u;
     ctx.beginPath(); ctx.arc(Lt.cx, Lt.cy, Lt.Rz, 0, TAU); ctx.stroke();
 
     // houses: the cusps as spokes across the band (Regiomontanus unless set otherwise), the angles stronger, the number mid-house
-    ctx.font = `400 ${Math.round(17 * u * Lt.ts)}px ${MONO}`;
+    ctx.font = `400 ${Math.round(19 * u * Lt.ts)}px ${MONO}`;
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     const inR = Lt.Rb * Math.cos(Math.PI / 12);
     const edgeR = a => inR / Math.cos(((a % (Math.PI / 6)) + Math.PI / 6) % (Math.PI / 6) - Math.PI / 12);   // the dodecagon edge at this angle
@@ -1117,12 +1120,12 @@
       const a = eclAngle(state, state.cusps[h]);
       const angle = h % 3 === 1;
       const p0 = polar(Lt, a, Lt.Rz), p1 = polar(Lt, a, edgeR(a) * (angle ? 0.985 : 0.965));
-      ctx.strokeStyle = K.rgba(INK, angle ? 0.6 : 0.18); ctx.lineWidth = (angle ? 1.4 : 1) * u;
+      ctx.strokeStyle = K.rgba(INK, angle ? 0.7 : 0.3); ctx.lineWidth = (angle ? 1.6 : 1) * u;
       ctx.beginPath(); ctx.moveTo(p0.x, p0.y); ctx.lineTo(p1.x, p1.y); ctx.stroke();
       const span = E_.norm360(state.cusps[h % 12 + 1] - state.cusps[h]);
       const lp = polar(Lt, eclAngle(state, state.cusps[h] + span / 2), (Lt.Rz + inR) / 2);
       const sunHouse = state.bodies.sun.house === h;
-      ctx.fillStyle = K.rgba(sunHouse ? C.PLANETS.sun.tincture : INK, sunHouse ? 0.95 : 0.34);
+      ctx.fillStyle = K.rgba(sunHouse ? C.PLANETS.sun.tincture : INK, sunHouse ? 0.95 : 0.6);
       ctx.fillText(String(h).padStart(2, '0'), lp.x, lp.y);
     }
     // cardinal labels outside the container
@@ -1143,19 +1146,20 @@
     ctx.save();
     ctx.fillStyle = VOID;
     ctx.beginPath(); ctx.arc(Lt.cx, Lt.cy, Lt.Rz, 0, TAU); ctx.arc(Lt.cx, Lt.cy, Lt.Rzi, 0, TAU, true); ctx.fill('evenodd');
-    ctx.strokeStyle = K.rgba(INK, 0.4); ctx.lineWidth = 1 * u;
+    ctx.strokeStyle = K.rgba(INK, 0.55); ctx.lineWidth = 1.2 * u;
     ctx.beginPath(); ctx.arc(Lt.cx, Lt.cy, Lt.Rzi, 0, TAU); ctx.stroke();
     for (let d = 0; d < 360; d++) {
       const a = eclAngle(state, d), major = d % 30 === 0, five = d % 5 === 0;
       if (!five && !major) continue;
-      const l = major ? (Lt.Rz - Lt.Rzi) : five && d % 10 === 0 ? 9 * u : 5 * u;
+      const ts = Math.min(1.8, Lt.ts);
+      const l = major ? (Lt.Rz - Lt.Rzi) : five && d % 10 === 0 ? 11 * u * ts : 6 * u * ts;
       const p0 = polar(Lt, a, Lt.Rzi), p1 = polar(Lt, a, Lt.Rzi + l);
-      ctx.strokeStyle = K.rgba(INK, major ? 0.5 : 0.28); ctx.lineWidth = (major ? 1.2 : 0.8) * u;
+      ctx.strokeStyle = K.rgba(INK, major ? 0.78 : d % 10 === 0 ? 0.5 : 0.36); ctx.lineWidth = (major ? 1.6 : 1) * u * Math.min(1.5, ts);
       ctx.beginPath(); ctx.moveTo(p0.x, p0.y); ctx.lineTo(p1.x, p1.y); ctx.stroke();
     }
     for (let i = 0; i < 12; i++) {
       const p = polar(Lt, eclAngle(state, i * 30 + 15), rm + 2 * u);
-      G.sign(ctx, i, p.x, p.y, (Lt.Rz - Lt.Rzi) * 0.5, K.rgba(INK, 0.62), 0.11);
+      G.sign(ctx, i, p.x, p.y, (Lt.Rz - Lt.Rzi) * 0.58 * Math.min(1.45, Math.max(1, Lt.ts * 0.7)), K.rgba(INK, 0.9), 0.12);
     }
     // planet notches on the inner edge: true ecliptic longitude, in each planet's tincture
     for (const key of C.ORDER) {
@@ -1217,7 +1221,7 @@
     };
   }
   function drawCaption(ctx, state, Lt) {
-    const u = Lt.u, m = Lt.S * 0.0625, k = u * Lt.ts;     // type scales up on small screens; the 2048 export is unchanged
+    const u = Lt.u, m = Lt.S * 0.0625, k = u * Lt.tc;     // type scales up on small screens; the 2048 export is unchanged
     const c = captionLines(state);
     const row = i => Lt.capY + (8 + 34 * i) * k;
     const mrx = state.bodies.mercury.slow;                // mercury slow or retrograde: the print misregisters, a ghost beside each line
@@ -1293,7 +1297,7 @@
     // the portal
     const cf = state.configs;
     const quiet = cf.primary && cf.primary.power < 0.25;
-    const Rp = Lt.R * 0.56 * Math.max(0.85, (cf.scale || 1) * (quiet ? 0.88 : 1));   // jupiter widens, saturn narrows; never below 0.85
+    const Rp = Lt.R * 0.61 * Math.max(0.85, (cf.scale || 1) * (quiet ? 0.88 : 1));   // jupiter widens, saturn narrows; never below 0.85
     const geos = [];
     const involved = {};
     const all = [cf.primary, ...cf.secondary].filter(Boolean);

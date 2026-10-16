@@ -56,7 +56,7 @@
     engrave: params.get('field') ? params.get('field') !== 'glow' : (params.get('engrave') !== '0' && store.get('field', 'engraved') !== 'glow'),   // engraved at rest; glow on request
     natal: store.get('natal', null),                        // { date, place, unknownTime } — stays on this device
     lang: params.get('lang') || store.get('lang', null) || ((navigator.language || 'en').toLowerCase().startsWith('es') ? 'es' : 'en'),
-    field: params.get('field') || 'guilloche',
+    field: params.get('field') || (store.get('field', 'engraved') === 'guilloche' ? 'guilloche' : 'waves'),   // the engraving as it was; guilloché on request
     houses: params.get('houses') || store.get('houses', 'regiomontanus'),   // lilly's system; equal and placidus to compare
     luminous: params.get('bodies') === 'luminous' || (!params.get('bodies') && store.get('bodies', 'lights') === 'lights'),   // planets as lights (default); bodies on request
     relocate: store.get('relocate', false),                   // the nativity seen from the current place
@@ -421,7 +421,7 @@
   }
   function refreshMenu() {
     const i = CW.i18n;
-    $('set-lang').value = S.lang; $('set-houses').value = S.houses; $('set-field').value = S.engrave ? 'engraved' : 'glow'; $('set-bodies').value = S.luminous ? 'lights' : 'metal';
+    $('set-lang').value = S.lang; $('set-houses').value = S.houses; $('set-field').value = !S.engrave ? 'glow' : S.field === 'guilloche' ? 'guilloche' : 'engraved'; $('set-bodies').value = S.luminous ? 'lights' : 'metal';
     $('set-relocate').value = S.relocate ? '1' : '0';
     $('natal-summary').textContent = natalSummary();
     $('natal-saveas').disabled = !S.natal;
@@ -447,7 +447,7 @@
     document.addEventListener('pointerdown', e => { if (!$('menu').hidden && !e.target.closest('#menu, #menu-open')) openMenu(false); });
     $('set-lang').addEventListener('change', e => setLang(e.target.value));
     $('set-houses').addEventListener('change', e => { S.houses = e.target.value; store.set('houses', S.houses); natalCache.key = null; scan.key = null; recompute(); });
-    $('set-field').addEventListener('change', e => { S.engrave = e.target.value !== 'glow'; store.set('field', e.target.value); S.dirty = true; });
+    $('set-field').addEventListener('change', e => { S.engrave = e.target.value !== 'glow'; S.field = e.target.value === 'guilloche' ? 'guilloche' : 'waves'; store.set('field', e.target.value); S.dirty = true; });
     $('set-bodies').addEventListener('change', e => { S.luminous = e.target.value === 'lights'; store.set('bodies', e.target.value); S.dirty = true; });
     $('set-relocate').addEventListener('change', e => { S.relocate = e.target.value === '1'; store.set('relocate', S.relocate); natalCache.key = null; recompute(); });
     $('natal-edit').addEventListener('click', () => { openMenu(false); openBirth(); });

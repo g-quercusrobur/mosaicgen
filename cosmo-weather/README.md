@@ -7,7 +7,7 @@ The sky of the moment as an instrument. Open `index.html` in a browser: no build
 **Keys:** `space` run · `←/→` hour · `shift+←/→` day · `f` screen · `i` readout · `esc`
 **URL:** `?t=2027-01-15T21:00:00Z` fixes the moment · `?place=rome` · `?mode=chart` · `?lang=es` · `?field=glow` (the glow field instead of the engraving) · `?hd=1` shows the 4096 export
 
-**Install:** the folder is a PWA (manifest, service worker, icons). Served over https it can be added to the home screen; `wallpaper` saves a portrait image at the phone's pixel size. `.github/workflows/pages.yml` deploys it to GitHub Pages on push.
+**Install:** the folder is a PWA (manifest, service worker, icons). Served over https it can be added to the home screen; `wallpaper` saves a portrait image at the phone's pixel size. `.github/workflows/pages.yml` publishes the folder to the `gh-pages` branch on every push; GitHub serves that branch at `https://<owner>.github.io/mosaicgen/` once Pages is set to deploy from it (settings → pages → source: deploy from a branch → gh-pages).
 
 Samples in `samples/`: today at sunrise, the Venus cazimi of 24 Oct 2026, the exact Uranus–Neptune sextile of 15 Jan 2027, and the chart mode.
 

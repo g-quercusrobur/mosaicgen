@@ -1,5 +1,5 @@
 /* siderarium — service worker. network first, cache fallback: the clock works offline after one visit. */
-const VERSION = 'sd-2026-10-16w';
+const VERSION = 'sd-2026-10-16x';
 const SHELL = ['./', './index.html', './css/style.css', './js/vendor/astronomy.browser.min.js', './js/color.js', './js/correspondences.js', './js/i18n.js',
   './js/engine.js', './js/glyphs.js', './js/render.js', './js/app.js', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png',
   './fonts/Geist-Regular.woff2', './fonts/Geist-Medium.woff2', './fonts/GeistMono-Regular.woff2'];
@@ -12,7 +12,7 @@ self.addEventListener('fetch', e => {
   const font = url.hostname.endsWith('fonts.googleapis.com') || url.hostname.endsWith('fonts.gstatic.com');
   if (url.origin !== location.origin && !font) return;
   e.respondWith(
-    fetch(req).then(res => { const copy = res.clone(); caches.open(VERSION).then(c => c.put(req, copy)); return res; })
+    fetch(req, { cache: 'no-cache' }).then(res => { const copy = res.clone(); caches.open(VERSION).then(c => c.put(req, copy)); return res; })   // revalidate: a new deploy shows on the next open, not ten minutes later
       .catch(() => caches.match(req, { ignoreSearch: url.origin === location.origin }).then(r => r || (req.mode === 'navigate' ? caches.match('./index.html') : undefined)))
   );
 });

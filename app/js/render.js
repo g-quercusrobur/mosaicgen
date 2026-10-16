@@ -1083,9 +1083,9 @@
     const a = (d0 === 'earth' ? 0.34 : 0.3) + 0.36 * el.shares[d0];
     ctx.save(); auraClip(ctx, Lt);
     ctx.globalCompositeOperation = 'screen';
-    const inR = Lt.Rb * Math.cos(Math.PI / 12), outR = Lt.Rb * 1.65;
+    const inR = Lt.Rb * Math.cos(Math.PI / 12), outR = Lt.Rb * 1.32;   // compact: the light stays close to the ring
     const g = ctx.createRadialGradient(Lt.cx, Lt.cy, inR, Lt.cx, Lt.cy, outR);
-    g.addColorStop(0, K.rgba(col, a)); g.addColorStop(0.3, K.rgba(col, a * 0.5)); g.addColorStop(0.65, K.rgba(col, a * 0.16)); g.addColorStop(1, K.rgba(col, 0));
+    g.addColorStop(0, K.rgba(col, a * 1.1)); g.addColorStop(0.3, K.rgba(col, a * 0.55)); g.addColorStop(0.65, K.rgba(col, a * 0.14)); g.addColorStop(1, K.rgba(col, 0));
     ctx.fillStyle = g; ctx.beginPath(); ctx.arc(Lt.cx, Lt.cy, outR, 0, TAU); ctx.fill();
     if (d0 === 'earth') {                                 // earth is still: a firm dark ground with a stone's grain, specks and hairline cracks
       const span = outR - inR;
@@ -1111,7 +1111,7 @@
   function drawAuraLive(ctx, state, Lt, t) {
     const el = state.elements; if (!el) return;
     const d0 = el.order[0]; if (d0 === 'earth') return;
-    const col = ELEMENT_LIGHT[d0], u = Lt.u, inR = Lt.Rb * Math.cos(Math.PI / 12), outR = Lt.Rb * 1.62, span = outR - inR;
+    const col = ELEMENT_LIGHT[d0], u = Lt.u, inR = Lt.Rb * Math.cos(Math.PI / 12), outR = Lt.Rb * 1.3, span = outR - inR;
     const k = 0.5 + el.shares[d0];
     ctx.save(); auraClip(ctx, Lt); ctx.globalCompositeOperation = 'screen'; ctx.lineCap = 'round';
     if (d0 === 'water') {

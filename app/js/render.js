@@ -1508,6 +1508,22 @@
           clip.moveTo(Lt.cx, Lt.cy); clip.lineTo(p0.x, p0.y); clip.lineTo(p1.x, p1.y); clip.closePath();
           ctx.save(); ctx.clip(clip, 'evenodd'); drawFigure(ctx, state, Lt, cf.primary, Rp, 'primary', lw, E, 0); ctx.restore();
         } else drawFigure(ctx, state, Lt, cf.primary, Rp, 'primary', lw, E, 0);
+        // who: the two planets' glyphs at their own vertices, in the same line
+        const glyphAt = (key, q, extra) => { const dx = q.x - Lt.cx, dy = q.y - Lt.cy, L = Math.hypot(dx, dy) || 1, r = L + (34 + extra) * Lt.u; G.planet(ctx, key, Lt.cx + dx / L * r, Lt.cy + dy / L * r, PURE_LW / 0.12 * 1.25, '#fbf8f0', 0.12); };
+        const who = cfg => {
+          const n = cfg.n, rot = eclAngle(state, B[cfg.a].lon), v = starVerts(Lt.cx, Lt.cy, Rp, n, rot);
+          if (n === 1) { glyphAt(cfg.a, v[0], 0); glyphAt(cfg.b, v[0], 44); return; }
+          const aB = eclAngle(state, B[cfg.b].lon);
+          const near = v.reduce((best, q) => { const qa = Math.atan2(-(q.y - Lt.cy), q.x - Lt.cx), d = Math.abs(Math.atan2(Math.sin(qa - aB), Math.cos(qa - aB))); return d < best.d ? { q, d } : best; }, { q: v[0], d: 9 }).q;
+          glyphAt(cfg.a, v[0], 0); glyphAt(cfg.b, near, 0);
+        };
+        who(cf.primary);
+        // the hour: the Moon's own aspect as a small figure within, the guardians' stars at the pole
+        const same = (x, y) => x && y && x.a === y.a && x.b === y.b;
+        if (cf.ripple && !same(cf.ripple, cf.primary)) {
+          if (cf.ripple.n === 1) { ctx.strokeStyle = '#fbf8f0'; ctx.lineWidth = PURE_LW; ctx.beginPath(); ctx.arc(Lt.cx, Lt.cy, Rp * 0.3, 0, TAU); ctx.stroke(); }   // the Moon's conjunction: one ring
+          else drawFigure(ctx, state, Lt, cf.ripple, Rp * 0.46, 'secondary', lw, E, 0);
+        }
         drawGuardians(ctx, state, Lt, E);
       } finally { PURE = false; PURE_SIMPLE = false; }
       ctx.restore();

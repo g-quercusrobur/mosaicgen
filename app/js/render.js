@@ -26,7 +26,7 @@
     try { const c = document.createElement('canvas').getContext('2d'); c.filter = 'blur(2px)'; return c.filter === 'blur(2px)'; }
     catch (e) { return false; }
   })();
-  let FAST = false, PURE = false, ENGRAVE = false, LUMINOUS = false, TIGHT = false, GUILLOCHE = false, PURE_LW = 3, PURE_BASE = 1;   // PURE_LW: the sigil's line weight for a figure's edges; its bands and rays follow in proportion   // TIGHT: phones, caption outside the canvas: the dial fills the square   // LUMINOUS: prototype — planets as lights, flat, glowing by power   // ENGRAVE: prototype — light as engraved line weight, no glows, no gradients                    // PURE: the sigil layer — solid ink, no glow, no fill                       // scrubbing at speed: skip blurs and the neptune pass
+  let FAST = false, PURE = false, ENGRAVE = false, LUMINOUS = false, TIGHT = false, GUILLOCHE = false, PURE_LW = 3, PURE_BASE = 1, PURE_ALPHA = 1;   // PURE_LW: the sigil's line weight for a figure's edges; its bands and rays follow in proportion   // TIGHT: phones, caption outside the canvas: the dial fills the square   // LUMINOUS: prototype — planets as lights, flat, glowing by power   // ENGRAVE: prototype — light as engraved line weight, no glows, no gradients                    // PURE: the sigil layer — solid ink, no glow, no fill                       // scrubbing at speed: skip blurs and the neptune pass
   function withBlur(ctx, px, fn) {
     if (FAST || px < 0.35) return fn();
     if (supportsFilter) { ctx.save(); ctx.filter = `blur(${px.toFixed(2)}px)`; fn(); ctx.restore(); return; }
@@ -369,7 +369,7 @@
 
   /* A line holds its colour: core drawn over, glow screened. Black (saturn) is carved, edged by the other force. */
   function strokeGlow(ctx, path, color, lw, alpha, E, accent) {
-    if (PURE) { ctx.globalCompositeOperation = 'source-over'; ctx.strokeStyle = '#fbf8f0'; ctx.lineWidth = PURE_LW * Math.max(0.3, Math.min(1, lw / PURE_BASE)); ctx.lineJoin = 'round'; ctx.lineCap = 'round'; ctx.stroke(path); return; }   // the sigil: solid ink; the edges at the full weight, bands and rays finer in proportion (before the engraving's own rule)
+    if (PURE) { const ratio = Math.max(0.3, Math.min(1, lw / PURE_BASE)); ctx.globalCompositeOperation = 'source-over'; ctx.strokeStyle = `rgba(251,248,240,${(PURE_ALPHA * (ratio < 0.6 ? 0.6 : 1)).toFixed(2)})`; ctx.lineWidth = PURE_LW * ratio; ctx.lineJoin = 'round'; ctx.lineCap = 'round'; ctx.stroke(path); return; }   // the sigil: solid ink; the edges at the full weight, bands and rays finer in proportion (before the engraving's own rule)
     if (ENGRAVE && lightness(color) >= 0.22) { ctx.globalCompositeOperation = 'source-over'; ctx.strokeStyle = K.rgba(color, Math.min(1, alpha)); ctx.lineWidth = lw * 0.75; ctx.stroke(path); return; }
     const dark = lightness(color) < 0.22;
     if (dark) {
@@ -1503,10 +1503,11 @@
         // the whole configuration, so the sigil moves with the sky: the two rings lighter, the Moon's own aspect
         // innermost and lightest (it changes every few hours), the ruling figure heavy over them
         const same = (x, y) => x && y && x.a === y.a && x.b === y.b;
-        PURE_LW = sigilLw * 0.45; PURE_BASE = lw * 0.7;
+        // a scale of priority: the rings as faint echoes, the Moon's figure a little clearer, the ruling figure alone in full ink
+        PURE_LW = sigilLw * 0.32; PURE_BASE = lw * 0.7; PURE_ALPHA = 0.5;
         cf.secondary.slice().reverse().forEach(c => drawFigure(ctx, state, Lt, c, Rp, 'secondary', lw * 0.7, E, 0));
-        if (cf.ripple && !same(cf.ripple, cf.primary) && !cf.secondary.some(c => same(c, cf.ripple))) { PURE_LW = sigilLw * 0.6; drawFigure(ctx, state, Lt, cf.ripple, Rp * 0.55, 'secondary', lw * 0.7, E, 0); }
-        PURE_LW = sigilLw; PURE_BASE = lw;
+        if (cf.ripple && !same(cf.ripple, cf.primary) && !cf.secondary.some(c => same(c, cf.ripple))) { PURE_LW = sigilLw * 0.42; PURE_ALPHA = 0.7; drawFigure(ctx, state, Lt, cf.ripple, Rp * 0.55, 'secondary', lw * 0.7, E, 0); }
+        PURE_LW = sigilLw; PURE_BASE = lw; PURE_ALPHA = 1;
         if (cf.cut) {
           const th = eclAngle(state, B[cf.cut.by].lon), w = cf.cut.width * Math.PI / 360;
           const clip = new Path2D(); clip.rect(0, 0, S, S);

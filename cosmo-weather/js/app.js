@@ -114,7 +114,7 @@
     document.body.classList.toggle('mrx', viewState().bodies.mercury.slow > 0.5);   // mercury retrograde: the print misregisters
     const c = CW.render.captionLines(viewState());
     const low = s => s.replace(/^./, ch => ch.toLowerCase());
-    $('caption').innerHTML = `<p class="eyebrow">${c.label} · ${c.l1}</p><h2 class="h1">${c.fig}</h2><p class="deck">${c.verdict}</p><p class="detail">${c.l2}<br>${c.l3} · ${low(c.decan)}</p><p class="detail">${c.moon} · ${c.mansionShort}<br>${c.chord}${c.next ? ' · ' + low(c.next) : ''}</p>`;
+    $('caption').innerHTML = `<p class="eyebrow">${c.label}</p><h2 class="h1 state-${c.stateKey}">${c.state}</h2><p class="deck">${c.title}</p><p class="reason">${c.reason}</p><p class="moment">${c.l1}</p><p class="detail">${c.detail1}<br>${c.detail2} · ${c.detail3}</p><p class="detail">${c.detail4}</p>`;
     if (!busy) scanIfNeeded();
     drawStrip();
     if (!busy) updateReadout();                            // the heavy parts wait until the clock rests
@@ -163,7 +163,7 @@
       if (token !== scan.token) return;
       for (let k = 0; k < 24 && i <= N; k++, i++) {
         const st = CW.engine.compute(new Date(b + i * scan.step * 60000), S.place, { light: true, houses: S.houses });
-        out.push(st.windows);
+        out.push({ ...st.windows, house: st.bodies.moon.house });   // the Moon's house at each step names the window's stage
       }
       if (i <= N) return setTimeout(chunk, 0);
       scan.vals = out;
@@ -172,7 +172,7 @@
         const v = out.map(w => w[m]), sorted = v.slice().sort((x, y) => x - y);
         const T = Math.max(0.12, sorted[Math.floor(sorted.length * 0.85)]);
         let j = v.findIndex((x, n) => n > 0 && x >= T);
-        if (j > 0) { while (j + 1 < v.length && v[j + 1] >= v[j]) j++; scan.nexts[m] = { at: new Date(b + j * scan.step * 60000), v: v[j] }; }
+        if (j > 0) { while (j + 1 < v.length && v[j + 1] >= v[j]) j++; scan.nexts[m] = { at: new Date(b + j * scan.step * 60000), v: v[j], house: out[j].house }; }
       }
       drawStrip(); drawNexts();
     })();
@@ -210,7 +210,7 @@
     if (!scan.nexts) { el.innerHTML = `<span>${i.cap1(i.t('ui.reading'))}</span>`; return; }
     el.innerHTML = Object.entries(MOTHER_INK).map(([m, col]) => {
       const n = scan.nexts[m];
-      return n ? `<button data-jump="${n.at.toISOString()}" title="${i.t('ui.goTo')}"><i style="background:${col}"></i>${i.cap1(i.window(m))} · ${fmtAt(n.at)}</button>`
+      return n ? `<button data-jump="${n.at.toISOString()}" title="${i.t('ui.goTo')}"><i style="background:${col}"></i>${i.cap1(i.window(m))} · ${i.house12(n.house)} · ${fmtAt(n.at)}</button>`
                : `<span><i style="background:${col}"></i>${i.cap1(i.window(m))} · ${i.t('ui.notThisWeek')}</span>`;
     }).join('');
     el.querySelectorAll('[data-jump]').forEach(b => b.addEventListener('click', () => { S.playing = false; S.offsetMs = new Date(b.dataset.jump).getTime() - anchor(); recompute(); }));
@@ -350,7 +350,7 @@
     const cap = CW.render.captionLines(st);
     const el = st.elements ? `${R('element')} ${i.t('ui.el.' + st.elements.dominant)} ${Math.round(st.elements.shares[st.elements.dominant] * 100)}% · ${i.t('ui.el.' + st.elements.order[1])} ${Math.round(st.elements.shares[st.elements.order[1]] * 100)}%` : '';
     const guardians = `${R('guardians')} ${P(st.hour.dayRuler)}${st.hour.dayRuler === st.hour.hourRuler ? ' ' + R('alone') : ' ' + R('and') + ' ' + P(st.hour.hourRuler)}`;
-    const lead = `<div class="lead"><p class="big">${cap.fig}</p><p>${i.cap1(R('moonIs'))} ${i.verdict(st.moon.verdict)} · ${guardians} · ${cap.chord.replace(/^./, c => c.toLowerCase())}${el ? ' · ' + el : ''}</p><p class="moment">${cap.l1} · ${cap.l2}</p></div>`;
+    const lead = `<p class="verdict state-${st.title.state}">${i.state(st.title.state)} · ${i.house12(st.title.house)} · ${i.cap1(i.window(st.title.mode))} · ${i.t('cap.under')} ${i.name(st.hour.angel)}</p>`;
     const inter = st.interaction;
     const interSentence = f => f.name === 'setOff' ? `${P(f.t)} ${R('setsOff')} ${P(f.a)} ${A(f.natalAspect)} ${P(f.b)}` : `${P(f.t)} ${R('closes')} ${R('fig.' + f.name)} ${R('with')} ${P(f.a)} ${A(f.natalAspect)} ${P(f.b)}`;
     const interRows = inter ? (inter.figures.length ? inter.figures.slice(0, 6).map(f => `<tr><td>${i.cap1(R(f.tone))}</td><td colspan="2">${interSentence(f)}</td></tr><tr class="sub"><td></td><td colspan="2">${P(f.t)} ${A(f.x.aspect)} ${P(f.a)} ${f.x.orb.toFixed(1)}° · ${P(f.t)} ${A(f.y.aspect)} ${P(f.b)} ${f.y.orb.toFixed(1)}° · ${f.power.toFixed(2)}</td></tr>`).join('') : `<tr><td colspan="3">${i.cap1(R('noFigure'))}</td></tr>`) : '';
@@ -372,7 +372,7 @@
       ${lead}
       <h3>${H('bodies')}</h3><table>${rows}</table>
       <h3>${H('figure')}</h3><table>${figs || `<tr><td>${i.cap1(i.t('ui.quietSky'))}</td></tr>`}</table>
-      <h3>${H('sound')}</h3><p>${st.chord.name}${st.chord.interval ? ' · ' + i.interval(st.chord.interval) : ''}${st.chord.notes.length ? ` · ${R('notes')} ` + st.chord.notes.join(' ') : ''}${st.chord.planets ? ` · ${R('from')} ` + st.chord.planets.map(P).join(', ') : ''}${st.nextChord ? ` · ${R('next')} ${st.nextChord.to} ${R('at')} ${hm(st.nextChord.at)}` : ''}</p>
+      <h3>${H('sound')}</h3><p>${i.chordLong(st.chord)}${st.chord.interval ? ' · ' + i.interval(st.chord.interval) : ''}${st.chord.notes.length ? ` · ${R('notes')} ` + st.chord.notes.map(n => i.note(n)).join(' ') : ''}${st.chord.planets ? ` · ${R('from')} ` + st.chord.planets.map(P).join(', ') : ''}${st.nextChord ? ` · ${R('next')} ${i.chordName(st.nextChord.to)} ${R('at')} ${hm(st.nextChord.at)}` : ''}</p>
       <h3>${H('tarot')}</h3>${tarot}
       ${st.transits ? `<h3>${H('transits')}</h3>${verdict}<table>${interRows}</table><table>${st.transits.slice(0, 8).map(a => `<tr><td>${figName(a)}</td><td>${a.orb.toFixed(2)}° ${a.applying ? R('applying') : R('separating')}</td><td>${a.power.toFixed(2)}</td></tr>`).join('') || `<tr><td>${i.cap1(i.t('ui.noContact'))}</td></tr>`}</table>` : ''}
       <h3>${H('moon')}</h3>${st.moon.verdict === 'void' ? `<p class="dim">${i.cap1(R('voidNote'))}</p>` : ''}<p>${i.cap1(i.verdict(st.moon.verdict))} · ${st.moon.next ? `${R('nextMoon')} ${A(st.moon.next.aspect)} ${P(st.moon.next.planet)} ${R('in')} ${(st.moon.next.days * 24).toFixed(1)}h` : i.flag('void of course')}${st.moon.flags.filter(f => f !== 'void of course').map(f => ' · ' + i.flag(f === 'under the beams' ? 'beams' : f)).join('')}</p>
@@ -691,6 +691,6 @@
     requestAnimationFrame(frame);
     if ('serviceWorker' in navigator && /^https?:/.test(location.protocol) && !/claude\.ai$/.test(location.hostname)) navigator.serviceWorker.register('./sw.js').catch(() => {});
   }
-  CW.app = { start, exportPNG, exportWallpaper, setLang, S, viewState, view };
+  CW.app = { start, exportPNG, exportWallpaper, setLang, S, viewState, view, voicing, audio };
   start();
 })(window.CW = window.CW || {});

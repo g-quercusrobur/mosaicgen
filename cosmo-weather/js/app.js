@@ -639,6 +639,9 @@
     };
     canvas.addEventListener('pointerup', up); canvas.addEventListener('pointercancel', up);
     canvas.addEventListener('dblclick', () => { view.z = 1; clampView(); });
+    // some phone browsers start their own page zoom on two fingers despite touch-action; the dial keeps the gesture
+    canvas.addEventListener('touchmove', e => { if (e.touches.length >= 2) e.preventDefault(); }, { passive: false });
+    canvas.addEventListener('touchstart', e => { if (e.touches.length >= 2) e.preventDefault(); }, { passive: false });
     canvas.addEventListener('wheel', e => {
       e.preventDefault();
       if (e.ctrlKey || e.metaKey) { zoomAt(local(e), view.z * Math.exp(-e.deltaY * 0.005)); return; }   // trackpad pinch arrives as ctrl + wheel
@@ -688,6 +691,6 @@
     requestAnimationFrame(frame);
     if ('serviceWorker' in navigator && /^https?:/.test(location.protocol) && !/claude\.ai$/.test(location.hostname)) navigator.serviceWorker.register('./sw.js').catch(() => {});
   }
-  CW.app = { start, exportPNG, exportWallpaper, setLang, S, viewState };
+  CW.app = { start, exportPNG, exportWallpaper, setLang, S, viewState, view };
   start();
 })(window.CW = window.CW || {});

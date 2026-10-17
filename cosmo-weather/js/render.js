@@ -26,7 +26,7 @@
     try { const c = document.createElement('canvas').getContext('2d'); c.filter = 'blur(2px)'; return c.filter === 'blur(2px)'; }
     catch (e) { return false; }
   })();
-  let FAST = false, PURE = false, ENGRAVE = false, LUMINOUS = false, TIGHT = false, GUILLOCHE = false;   // TIGHT: phones, caption outside the canvas: the dial fills the square   // LUMINOUS: prototype — planets as lights, flat, glowing by power   // ENGRAVE: prototype — light as engraved line weight, no glows, no gradients                    // PURE: the sigil layer — solid ink, no glow, no fill                       // scrubbing at speed: skip blurs and the neptune pass
+  let FAST = false, PURE = false, ENGRAVE = false, LUMINOUS = false, TIGHT = false, GUILLOCHE = false, PURE_LW = 3;   // PURE_LW: the sigil's one line weight   // TIGHT: phones, caption outside the canvas: the dial fills the square   // LUMINOUS: prototype — planets as lights, flat, glowing by power   // ENGRAVE: prototype — light as engraved line weight, no glows, no gradients                    // PURE: the sigil layer — solid ink, no glow, no fill                       // scrubbing at speed: skip blurs and the neptune pass
   function withBlur(ctx, px, fn) {
     if (FAST || px < 0.35) return fn();
     if (supportsFilter) { ctx.save(); ctx.filter = `blur(${px.toFixed(2)}px)`; fn(); ctx.restore(); return; }
@@ -369,8 +369,8 @@
 
   /* A line holds its colour: core drawn over, glow screened. Black (saturn) is carved, edged by the other force. */
   function strokeGlow(ctx, path, color, lw, alpha, E, accent) {
+    if (PURE) { ctx.globalCompositeOperation = 'source-over'; ctx.strokeStyle = '#fbf8f0'; ctx.lineWidth = PURE_LW; ctx.lineJoin = 'round'; ctx.lineCap = 'round'; ctx.stroke(path); return; }   // the sigil: every line of the figure in one solid weight, heavy enough to copy (before the engraving's own rule)
     if (ENGRAVE && lightness(color) >= 0.22) { ctx.globalCompositeOperation = 'source-over'; ctx.strokeStyle = K.rgba(color, Math.min(1, alpha)); ctx.lineWidth = lw * 0.75; ctx.stroke(path); return; }
-    if (PURE) { ctx.globalCompositeOperation = 'source-over'; ctx.strokeStyle = '#fbf8f0'; ctx.lineWidth = Math.max(lw * 0.62, 1.1); ctx.lineJoin = 'round'; ctx.stroke(path); return; }
     const dark = lightness(color) < 0.22;
     if (dark) {
       ctx.globalCompositeOperation = 'source-over';
@@ -1498,7 +1498,7 @@
       ctx.fillStyle = 'rgba(0,0,0,0.82)';
       if (bare) ctx.fillRect(0, 0, W, H); else { ctx.beginPath(); ctx.arc(Lt.cx, Lt.cy, Lt.R + 1, 0, TAU); ctx.fill(); }
       if (!bare) { ctx.beginPath(); ctx.arc(Lt.cx, Lt.cy, Lt.R, 0, TAU); ctx.clip(); }
-      PURE = true;
+      PURE = true; PURE_LW = Math.max(lw * 2.2, 4.2 * Lt.u);
       try {
         if (cf.cut) {
           const th = eclAngle(state, B[cf.cut.by].lon), w = cf.cut.width * Math.PI / 360;
@@ -1508,7 +1508,7 @@
           ctx.save(); ctx.clip(clip, 'evenodd'); drawFigure(ctx, state, Lt, cf.primary, Rp, 'primary', lw, E, 0); ctx.restore();
         } else drawFigure(ctx, state, Lt, cf.primary, Rp, 'primary', lw, E, 0);
         drawGuardians(ctx, state, Lt, E);
-        ctx.strokeStyle = '#fbf8f0'; ctx.lineWidth = Math.max(lw * 0.45, 1); ctx.beginPath(); ctx.arc(Lt.cx, Lt.cy, Rp * 1.12, 0, TAU); ctx.stroke();
+        ctx.strokeStyle = 'rgba(251,248,240,0.5)'; ctx.lineWidth = Math.max(lw * 0.22, 0.8); ctx.beginPath(); ctx.arc(Lt.cx, Lt.cy, Rp * 1.12, 0, TAU); ctx.stroke();   // the portal's rim as a hairline: the figure is the sigil, the circle only holds it
       } finally { PURE = false; }
       ctx.restore();
     }

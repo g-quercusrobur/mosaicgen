@@ -1,26 +1,26 @@
 {
- "rendered": "2026-10-17 19:17 utc",
+ "rendered": "2026-10-17 22:13 utc",
  "targets": [
   {
    "name": "rome",
    "place": "rome",
-   "caption": "Saturday · 17 October 2026 · 21:17 CEST · Rome",
-   "figure": "Venus quintile Jupiter",
-   "chord": "Chord C major · C E G"
+   "caption": "Sunday · 18 October 2026 · 00:13 CEST · Rome",
+   "figure": "Mars trine Saturn",
+   "chord": "Chord C dominant seventh · C E G A#"
   },
   {
    "name": "new-york",
    "place": "new york",
-   "caption": "Saturday · 17 October 2026 · 15:17 GMT-4 · New York",
+   "caption": "Saturday · 17 October 2026 · 18:13 GMT-4 · New York",
    "figure": "Mars trine Saturn",
-   "chord": "Chord C major · C E G"
+   "chord": "Chord C dominant seventh · C E G A#"
   },
   {
    "name": "greenwich",
    "place": "greenwich",
-   "caption": "Saturday · 17 October 2026 · 19:17 GMT · Greenwich",
+   "caption": "Saturday · 17 October 2026 · 22:13 GMT · Greenwich",
    "figure": "Mars trine Saturn",
-   "chord": "Chord C major · C E G"
+   "chord": "Chord C dominant seventh · C E G A#"
   }
  ]
 }

@@ -1265,7 +1265,7 @@
   function fmtShort(date, loc) {
     const f = new Intl.DateTimeFormat(I().locale(), { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: loc.tz || 'UTC' });
     const p = Object.fromEntries(f.formatToParts(date).map(x => [x.type, x.value]));
-    return `${I().cap1(p.weekday)} ${p.day} ${I().cap1(p.month)} ${p.hour}:${p.minute}`.replace(/\.$/, '');
+    return `${I().cap1(p.weekday)} ${p.day} ${p.month.replace(/\.$/, '')} ${p.hour}:${p.minute}`;   // the month as the language writes it: Oct, oct
   }
   function captionLines(state) {
     const i = I(), T = fmtTime(state.date, state.loc), B = state.bodies, H = state.hour;
@@ -1277,61 +1277,77 @@
       : !fig ? i.t('cap.quiet')
       : fig.natal ? `${i.t('cap.transit')} ${i.planet(fig.a)} ${i.aspect(fig.aspect)} ${i.t('cap.natal')} ${i.planet(fig.b)} · ${fig.orb.toFixed(1)}°`
       : `${i.planet(fig.a)} ${i.aspect(fig.aspect)} ${i.planet(fig.b)}${ev ? ' · ' + ev : ''}`;
-    const d = B.sun.decan, c1 = i.cap1;
+    const d = B.sun.decan, c1 = i.cap1, cs = i.capSegs, to = i.t('cap.to');
+    const T2 = state.title || { house: B.moon.house, mode: 'ideation', state: 'watch' };
+    const mv = `${i.t('ui.r.moonIs')} ${i.verdict(state.moon.verdict)}`;
+    const mn = state.moon.next ? `, ${i.t('cap.applying')} ${i.aspect(state.moon.next.aspect)} ${to ? to + ' ' : ''}${i.planet(state.moon.next.planet)}` : (state.moon.tolerable ? ` · ${i.t('cap.tolerable')}` : '');
+    const ch = state.chord;
+    const chordTxt = ch.name === 'none' ? i.t('cap.quiet') : `${i.t('cap.chord')} ${i.chordLong(ch)}${ch.interval ? ' · ' + i.interval(ch.interval) : ch.notes.length > 1 ? ' · ' + ch.notes.map(n => i.note(n)).join(' ') : ''}`;
+    const nextTxt = state.nextChord ? `${i.t('cap.nextChord')} ${i.chordName(state.nextChord.to)} · ${fmtShort(state.nextChord.at, state.loc)}` : '';
     return {
+      // the tiers: the instrument, the state, the title, the reason, the moment, the day's colour, the sound
+      label: i.t('cap.clockLabel'),
+      stateKey: T2.state,
+      state: i.state(T2.state),
+      title: `${i.house12(T2.house)} · ${c1(i.window(T2.mode))} · ${i.t('cap.under')} ${i.name(H.angel)}`,
+      reason: `${c1(figLine)} · ${c1(mv)}${mn}`,
       l1: c1(`${state.natalView ? i.t('cap.nativity') + (state.relocated ? ' · ' + i.t('cap.relocated') + ' ' + i.placeName(state.relocated) : '') + ' · ' : ''}${T.day} · ${T.date} · ${T.time} ${T.zone} · ${i.placeName(state.loc.name)}`),
-      l2: c1(`${i.t('cap.dayOf')} ${i.planet(H.dayRuler)} · ${i.t('cap.hourOf')} ${i.planet(H.hourRuler)} · ${i.t('cap.angel')} ${i.name(H.angel)}`),
-      l3: c1(`${i.t('cap.sunIn')} ${i.t('cap.house')} ${i.roman(B.sun.house)} · ${dms(B.sun.deg)} ${i.sign(B.sun.sign)}`),
+      detail1: cs(`${i.t('cap.dayOf')} ${i.planet(H.dayRuler)} · ${i.t('cap.hourOf')} ${i.planet(H.hourRuler)} · ${i.t('cap.sunIn')} ${i.t('cap.house')} ${i.roman(B.sun.house)} · ${dms(B.sun.deg)} ${i.sign(B.sun.sign)}`),
+      detail2: cs(`${i.t('cap.decanOf')} ${i.planet(d.ruler)} · ${i.card(d)} · ${i.title(d)}`),
+      detail3: cs(`${i.ordinal(B.moon.mansion.index)} ${i.t('cap.mansion')} · ${i.name(B.moon.mansion.name)}`),
+      detail4: cs(`${chordTxt}${nextTxt ? ' · ' + nextTxt : ''}`),
+      // the older keys, for the readout and the sky renders
+      l2: cs(`${i.t('cap.dayOf')} ${i.planet(H.dayRuler)} · ${i.t('cap.hourOf')} ${i.planet(H.hourRuler)} · ${i.t('cap.angel')} ${i.name(H.angel)}`),
+      l3: cs(`${i.t('cap.sunIn')} ${i.t('cap.house')} ${i.roman(B.sun.house)} · ${dms(B.sun.deg)} ${i.sign(B.sun.sign)}`),
       fig: c1(figLine),
       moon: c1(moonLine(state)),
-      chord: c1(`${i.t('cap.chord')} ${state.chord.name}${state.chord.interval ? ' · ' + i.interval(state.chord.interval) : state.chord.notes.length > 1 ? ' · ' + state.chord.notes.join(' ') : ''}`),
-      decan: c1(`${i.t('cap.decanOf')} ${i.planet(d.ruler)} · ${i.card(d)} · ${i.title(d)}`),
-      mansion: c1(`${i.t('cap.moonIn')} ${i.ordinal(B.moon.mansion.index)} ${i.t('cap.mansion')} · ${i.name(B.moon.mansion.name)}`),
-      next: state.nextChord ? c1(`${i.t('cap.nextChord')} ${state.nextChord.to} · ${fmtShort(state.nextChord.at, state.loc)}`) : '',
-      label: i.t('cap.clockLabel'),
-      decanHead: c1(`${i.t('cap.decanOf')} ${i.planet(d.ruler)}`),
-      card: `${i.card(d)} · ${i.title(d)}`,
-      mansionShort: `${i.ordinal(B.moon.mansion.index)} ${i.t('cap.mansion')} · ${i.name(B.moon.mansion.name)}`,
-      verdict: c1(`${i.t('ui.r.moonIs')} ${i.verdict(state.moon.verdict)} · ${i.t('ui.r.guardians')} ${i.planet(H.dayRuler)}${H.dayRuler === H.hourRuler ? ' ' + i.t('ui.r.alone') : ' ' + i.t('ui.r.and') + ' ' + i.planet(H.hourRuler)}`)
+      chord: c1(chordTxt),
+      decan: cs(`${i.t('cap.decanOf')} ${i.planet(d.ruler)} · ${i.card(d)} · ${i.title(d)}`),
+      mansion: cs(`${i.t('cap.moonIn')} ${i.ordinal(B.moon.mansion.index)} ${i.t('cap.mansion')} · ${i.name(B.moon.mansion.name)}`),
+      next: nextTxt ? c1(nextTxt) : ''
     };
   }
+  const STATE_INK = { work: '#6fcf8e', watch: '#e3b341', rest: '#ff5a2a' };   // the one coloured text on the instrument
   function drawCaption(ctx, state, Lt) {
     const u = Lt.u, m = Lt.S * 0.0625, k = u * Lt.tc;     // type scales up on small screens; the 2048 export is unchanged
     const c = captionLines(state);
-    const pitch = Math.min(34 * k, (Lt.S - Lt.capY - 8 * k - 8 * u) / 5.6);   // five rows and the notice must fit the band
-    const row = i => Lt.capY + 8 * k + pitch * i;
+    const pitch = Math.min(34 * k, (Lt.S - Lt.capY - 14 * k - 8 * u) / 6.6);   // six rows and the notice must fit the band
+    const row = i => Lt.capY + 8 * k + pitch * i + (i >= 1 ? 6 * k : 0);        // the headline gets air under the eyebrow
     const mrx = state.bodies.mercury.slow;                // mercury slow or retrograde: the print misregisters, a ghost beside each line
     const put = (txt, x, y) => {
       if (mrx > 0.3 && !PURE) { const a = ctx.globalAlpha, f = ctx.fillStyle; ctx.globalAlpha = a * 0.32 * mrx; ctx.fillText(txt, x + 2.2 * u * mrx, y); ctx.globalAlpha = a; ctx.fillStyle = f; }
       ctx.fillText(txt, x, y);
     };
+    const fit = (txt, maxW) => { const f = ctx.font, w = ctx.measureText(txt).width; if (w > maxW) { const px = parseFloat(f.match(/(\d+)px/)[1]); ctx.font = f.replace(/\d+px/, `${Math.round(Math.max(px * 0.72, px * maxW / w))}px`); } return f; };
     ctx.save();
-    ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'left';
+    ctx.textBaseline = 'alphabetic';
     ctx.strokeStyle = K.rgba(INK, 0.22); ctx.lineWidth = 1 * u;
     ctx.beginPath(); ctx.moveTo(m, Lt.capY - 30 * u); ctx.lineTo(Lt.S - m, Lt.capY - 30 * u); ctx.stroke();
-    // eyebrow: the instrument's name and the moment, one tracked line in light ink
-    ctx.fillStyle = K.rgba(INK, 0.9); ctx.font = `500 ${Math.round(18 * k)}px ${SANS}`;
-    if ('letterSpacing' in ctx) ctx.letterSpacing = `${(1.6 * k).toFixed(1)}px`;
-    ctx.fillText(`${c.label} · ${c.l1}`, m, row(0));
+    const W = Lt.S - 2 * m, left = W * 0.54 - 20 * u, right = W * 0.46 - 20 * u;
+    let f;
+    // 1 · the instrument, alone on its line
+    ctx.textAlign = 'left'; ctx.fillStyle = K.rgba(INK, 0.9); ctx.font = `500 ${Math.round(17 * k)}px ${SANS}`;
+    if ('letterSpacing' in ctx) ctx.letterSpacing = `${(1.8 * k).toFixed(1)}px`;
+    ctx.fillText(c.label, m, row(0));
     if ('letterSpacing' in ctx) ctx.letterSpacing = '0px';
-    // headline: the figure of the moment
-    ctx.fillStyle = K.rgba(INK, 0.97); ctx.font = `500 ${Math.round(31 * k)}px ${SANS}`;
-    put(c.fig, m, row(1));
-    // deck: the verdict
-    ctx.fillStyle = K.rgba(INK, state.moon.verdict === 'void' || state.moon.verdict === 'unripe' ? 0.97 : 0.9); ctx.font = `400 ${Math.round(23 * k)}px ${SANS}`;
-    put(c.verdict, m, row(2));
-    // details, two columns; a row whose two halves would meet is set a little smaller
-    ctx.fillStyle = K.rgba(INK, 0.72); ctx.font = `400 ${Math.round(20 * k)}px ${SANS}`;
-    const low = s => s.replace(/^./, ch => ch.toLowerCase()), avail = Lt.S - 2 * m - 30 * u;
-    const pair = (l, r, y) => {
-      const f = ctx.font, w = ctx.measureText(l).width + ctx.measureText(r).width;
-      if (w > avail) { const px = parseFloat(f.match(/(\d+)px/)[1]); ctx.font = f.replace(/\d+px/, `${Math.round(Math.max(px * 0.78, px * avail / w))}px`); }
-      ctx.textAlign = 'left'; put(l, m, y); ctx.textAlign = 'right'; put(r, Lt.S - m, y); ctx.font = f;
-    };
-    pair('', `${c.moon} · ${Math.round(state.moon.illum * 100)}% · ${c.mansionShort}`, row(2));
-    pair(c.l2, c.next ? `${c.chord} · ${low(c.next)}` : c.chord, row(3));
-    pair(`${c.l3} · ${low(c.decanHead)}`, c.card, row(4));
-    // every print carries the notice, under the last line
+    // 2 · the state: do I work now. the one line in colour
+    ctx.fillStyle = STATE_INK[c.stateKey] || INK; ctx.font = `500 ${Math.round(31 * k)}px ${SANS}`;
+    f = fit(c.state, left); put(c.state, m, row(1)); ctx.font = f;
+    // 3 · the title of the moment: the stage of life, the mother letter, the angel of the hour
+    ctx.fillStyle = K.rgba(INK, 0.95); ctx.font = `500 ${Math.round(23 * k)}px ${SANS}`;
+    f = fit(c.title, left); put(c.title, m, row(2)); ctx.font = f;
+    // 4 · the reason: the sky and the Moon
+    ctx.fillStyle = K.rgba(INK, 0.8); ctx.font = `400 ${Math.round(20 * k)}px ${SANS}`;
+    f = fit(c.reason, left); put(c.reason, m, row(3)); ctx.font = f;
+    // 7 · the sound
+    ctx.fillStyle = K.rgba(INK, 0.72);
+    f = fit(c.detail4, left); put(c.detail4, m, row(4)); ctx.font = f;
+    // 5 · the moment, and 6 · the day's colour, on the right
+    ctx.textAlign = 'right'; ctx.fillStyle = K.rgba(INK, 0.8); ctx.font = `400 ${Math.round(20 * k)}px ${SANS}`;
+    f = fit(c.l1, right); put(c.l1, Lt.S - m, row(1)); ctx.font = f;
+    ctx.fillStyle = K.rgba(INK, 0.72);
+    for (const [txt, r] of [[c.detail1, 2], [c.detail2, 3], [c.detail3, 4]]) { f = fit(txt, right); put(txt, Lt.S - m, row(r)); ctx.font = f; }
+    // every print carries the notice
     ctx.textAlign = 'left'; ctx.fillStyle = K.rgba(INK, 0.45); ctx.font = `400 ${Math.round(14 * k)}px ${SANS}`;
     ctx.fillText(NOTICE(), m, Math.min(row(5) + 2 * k, Lt.S - 6 * u));
     ctx.restore();

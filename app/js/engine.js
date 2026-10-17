@@ -369,6 +369,31 @@
      The figure's planets and their signs must belong to the mother, the figure's nature must match it,
      and the moment must be beautiful for that work: whole, with harmonious guardians and a ripe moon
      (destruction takes the cut, the clash and the waning moon instead). */
+  /* The mode of the moment, one of the three mothers of the Sefer Yetzirah. Aleph, air, ideation while the ruling
+     aspect applies: what is coming. Mem, water, manifestation once it is exact and separating: what has landed.
+     Shin, fire, destruction when the aspect is hard, the portal is cut by a malefic, or the Moon is void and waning.
+     Lilly: an applying aspect shows what is to come, a separating one what is past. The reading of the mothers is [CW]. */
+  function modeOf(st) {
+    const p = st.configs.primary, cf = st.configs, m = st.moon;
+    const malefic = k => k === 'mars' || k === 'saturn' || k === 'pluto';
+    if (!p) return { key: m.waxing ? 'ideation' : 'destruction', w: { ideation: m.waxing ? 1 : 0.3, incarnation: 0.3, destruction: m.waxing ? 0.3 : 1 }, quiet: true };
+    const hard = p.nature === 'hard' || (p.nature === 'fusion' && (malefic(p.a) || malefic(p.b))) || (cf.cut && malefic(cf.cut.by)) || (m.verdict === 'void' && !m.waxing);
+    const signed = (p.applying ? -1 : 1) * (p.days || 0);                    // days to exactness, negative before it
+    const t = Math.max(0, Math.min(1, (signed + 0.3) / 0.6));                // the passage from idea to thing, smoothed over ±0.3 day
+    const w = hard ? { ideation: 0.3, incarnation: 0.3, destruction: 1 } : { ideation: 0.3 + 0.7 * (1 - t), incarnation: 0.3 + 0.7 * t, destruction: 0.3 };
+    const key = Object.entries(w).sort((a, b) => b[1] - a[1])[0][0];
+    return { key, w, quiet: false };
+  }
+  /* Time to work, to watch, to rest. Rest: the Moon unripe, or void without Lilly's tolerance. Work: the Moon ripe,
+     a figure of some strength, and no malefic cutting the portal against a building mode. Watch: everything between. */
+  function stateOf(st) {
+    const m = st.moon, p = st.configs.primary, cut = st.configs.cut, mode = st.mode.key;
+    const malefic = k => k === 'mars' || k === 'saturn' || k === 'pluto';
+    if (m.verdict === 'unripe' || (m.verdict === 'void' && !m.tolerable)) return 'rest';
+    const against = cut && malefic(cut.by) && mode !== 'destruction';
+    if (m.verdict === 'ripe' && p && p.power >= 0.12 && !against) return 'work';
+    return 'watch';
+  }
   function windowsOf(st) {
     const cf = st.configs, p = cf.primary, out = {};
     const figs = [p, ...cf.secondary].filter(Boolean);
@@ -396,6 +421,7 @@
       const strength = Math.min(1, Math.sqrt(p.power));
       out[key] = Math.min(1, strength * (0.25 + 0.75 * fam) * (0.4 + 0.6 * el) * nature * beauty * 1.6);
     }
+    if (st.mode) for (const k of Object.keys(out)) out[k] *= st.mode.w[k];   // the mode of the moment leads; the others fall back
     return out;
   }
 
@@ -570,7 +596,8 @@
     const st = { date, loc, eps, ...ang, bodies: B, sect: isDay ? 'day' : 'night', moon: { ...moon, ...lunar }, hour, aspects, events, configs, cusps, houses };
     st.chord = chordOf(st);
     st.elements = elements(st);
-    st.windows = windowsOf(st);
+    st.mode = modeOf(st); st.windows = windowsOf(st);
+    st.title = { house: st.bodies.moon.house, mode: st.mode.key, state: stateOf(st) };   // the title of the moment: stage of life, mother letter, time to work / watch / rest
     return st;
   }
 

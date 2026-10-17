@@ -14,7 +14,11 @@
       dignity: { domicile: 'domicile', detriment: 'detriment', exaltation: 'exaltation', fall: 'fall', triplicity: 'triplicity', term: 'term', face: 'face', peregrine: 'peregrine', reception: 'reception with' },
       flags: { retrograde: 'retrograde', stationary: 'stationary', cazimi: 'cazimi', combust: 'combust', beams: 'under the beams', 'via combusta': 'via combusta', 'void of course': 'void of course', noDignity: 'no essential dignity', outOfSign: 'out of sign', oob: 'out of bounds' },
       verdict: { ripe: 'ripe', open: 'open', unripe: 'unripe', void: 'void' },
-      windows: { ideation: 'ideation', incarnation: 'incarnation', destruction: 'destruction' },
+      windows: { ideation: 'ideation', incarnation: 'manifestation', destruction: 'destruction' },
+      houses12: ['Body', 'Wealth', 'Communication', 'Roots', 'Creation', 'Work', 'Union', 'Death', 'Vision', 'Honour', 'Society', 'Occult'],
+      state: { work: 'Time to work', watch: 'Time to watch', rest: 'Time to rest' },
+      chordSuffix: { '': 'major', '-': 'minor', dim: 'diminished', '+': 'augmented', sus4: 'suspended fourth', sus2: 'suspended second', maj7: 'major seventh', '7': 'dominant seventh', '-7': 'minor seventh', 'ø': 'half-diminished', dim7: 'diminished seventh' },
+      noteNames: null,
       intervals: { unison: 'unison', 'minor second': 'minor second', 'major second': 'major second', 'minor third': 'minor third', 'major third': 'major third', 'perfect fourth': 'perfect fourth', tritone: 'tritone' },
       suits: { wands: 'Wands', cups: 'Cups', swords: 'Swords', pentacles: 'Pentacles' },
       numbers: ['', '', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten'],
@@ -31,9 +35,9 @@
       ordinal: n => n + (n % 100 >= 11 && n % 100 <= 13 ? 'th' : ['th', 'st', 'nd', 'rd'][n % 10] || 'th'),
       decanOrd: ['first', 'second', 'third'],
       cap: {
-        nativity: 'nativity', dayOf: 'day of', hourOf: 'hour of', angel: 'angel of the hour', sunIn: 'Sun in', house: 'house', chord: 'chord', decanOf: 'decan of',
+        nativity: 'nativity', dayOf: 'day of', hourOf: 'hour of', angel: 'angel of the hour', sunIn: 'Sun in', house: 'House', chord: 'chord', decanOf: 'decan of',
         moonIn: 'moon in the', mansion: 'mansion', nextChord: 'next chord', quiet: 'quiet sky', transit: 'transit', natal: 'natal', exact: 'exact',
-        moonApplying: 'moon applying', moonVoid: 'moon void of course', to: '', relocated: 'relocated to', tolerable: 'tolerable', clockLabel: 'Macrocosmic Clock'
+        moonApplying: 'moon applying', moonVoid: 'moon void of course', to: '', relocated: 'relocated to', tolerable: 'tolerable', clockLabel: 'Macrocosmic Clock', under: 'under', applying: 'applying'
       },
       ui: {
         clock: 'clock', chart: 'chart', natal: 'natal', synastry: 'transits', sigil: 'sigil', listen: 'listen', listening: 'listening', readout: 'readout', screen: 'screen', about: 'About Siderarium',
@@ -67,7 +71,11 @@
       dignity: { domicile: 'domicilio', detriment: 'exilio', exaltation: 'exaltación', fall: 'caída', triplicity: 'triplicidad', term: 'término', face: 'faz', peregrine: 'peregrino', reception: 'recepción con' },
       flags: { retrograde: 'retrógrado', stationary: 'estacionario', cazimi: 'cazimi', combust: 'combusto', beams: 'bajo los rayos', 'via combusta': 'vía combusta', 'void of course': 'vacía de curso', noDignity: 'sin dignidad esencial', outOfSign: 'fuera de signo', oob: 'fuera de límites' },
       verdict: { ripe: 'madura', open: 'abierta', unripe: 'inmadura', void: 'vacía' },
-      windows: { ideation: 'ideación', incarnation: 'encarnación', destruction: 'destrucción' },
+      windows: { ideation: 'ideación', incarnation: 'manifestación', destruction: 'destrucción' },
+      houses12: ['Cuerpo', 'Riqueza', 'Comunicación', 'Raíces', 'Creación', 'Trabajo', 'Unión', 'Muerte', 'Visión', 'Honor', 'Sociedad', 'Oculto'],
+      state: { work: 'Tiempo de obrar', watch: 'Tiempo de observar', rest: 'Tiempo de descansar' },
+      chordSuffix: { '': 'mayor', '-': 'menor', dim: 'disminuido', '+': 'aumentado', sus4: 'suspendido de cuarta', sus2: 'suspendido de segunda', maj7: 'con séptima mayor', '7': 'de séptima', '-7': 'menor con séptima', 'ø': 'semidisminuido', dim7: 'disminuido con séptima' },
+      noteNames: { C: 'Do', 'C#': 'Do♯', D: 'Re', 'D#': 'Re♯', E: 'Mi', F: 'Fa', 'F#': 'Fa♯', G: 'Sol', 'G#': 'Sol♯', A: 'La', 'A#': 'La♯', B: 'Si' },
       intervals: { unison: 'unísono', 'minor second': 'segunda menor', 'major second': 'segunda mayor', 'minor third': 'tercera menor', 'major third': 'tercera mayor', 'perfect fourth': 'cuarta justa', tritone: 'tritono' },
       suits: { wands: 'Bastos', cups: 'Copas', swords: 'Espadas', pentacles: 'Oros' },
       numbers: ['', '', 'Dos', 'Tres', 'Cuatro', 'Cinco', 'Seis', 'Siete', 'Ocho', 'Nueve', 'Diez'],
@@ -84,9 +92,9 @@
       ordinal: n => n + 'ª',
       decanOrd: ['primer', 'segundo', 'tercer'],
       cap: {
-        nativity: 'natividad', dayOf: 'día de', hourOf: 'hora de', angel: 'ángel de la hora', sunIn: 'Sol en', house: 'casa', chord: 'acorde', decanOf: 'decanato de',
+        nativity: 'natividad', dayOf: 'día de', hourOf: 'hora de', angel: 'ángel de la hora', sunIn: 'Sol en', house: 'Casa', chord: 'acorde', decanOf: 'decanato de',
         moonIn: 'luna en la', mansion: 'mansión', nextChord: 'próximo acorde', quiet: 'cielo quieto', transit: 'tránsito', natal: 'natal', exact: 'exacto',
-        moonApplying: 'luna aplicando', moonVoid: 'luna vacía de curso', to: 'a', relocated: 'reubicada a', tolerable: 'tolerable', clockLabel: 'Reloj Macrocósmico'
+        moonApplying: 'luna aplicando', moonVoid: 'luna vacía de curso', to: 'a', relocated: 'reubicada a', tolerable: 'tolerable', clockLabel: 'Reloj Macrocósmico', under: 'bajo', applying: 'aplicando'
       },
       ui: {
         clock: 'reloj', chart: 'carta', natal: 'natal', synastry: 'tránsitos', sigil: 'sigilo', listen: 'escuchar', listening: 'escuchando', readout: 'lectura', screen: 'pantalla', about: 'Acerca de Siderarium',
@@ -139,6 +147,13 @@
     cap1: s => (s ? String(s).charAt(0).toUpperCase() + String(s).slice(1) : s),
     titleCase: s => lang === 'en' ? String(s).split(' ').map((w, n) => (n && /^(of|from|and|in|the)$/.test(w)) ? w : I.cap1(w)).join(' ') : I.cap1(s),
     name: s => I.cap1(s),
+    house12: n => d().houses12[n - 1] || String(n),
+    state: k => d().state[k] || k,
+    /* notes: letters in English, solfège in Spanish; a chord name as the engine writes it keeps its suffix */
+    note: n => (d().noteNames ? d().noteNames[n] || n : n),
+    chordName: s => String(s).replace(/[A-G]#?/g, m => I.note(m)),
+    chordLong: ch => { if (!ch || !ch.name || ch.name === 'none') return ''; if (ch.dyad) return I.chordName(ch.name); const m = ch.name.match(/^[A-G]#?(.*)$/); const suf = m ? m[1] : ''; const w = d().chordSuffix[suf]; return I.note(ch.name.slice(0, ch.name.length - suf.length)) + (w ? ' ' + w : suf); },
+    capSegs: s => String(s).split(' · ').map(x => I.cap1(x)).join(' · '),
     roman: n => ['', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'][n] || String(n),
     placeName: n => (n === 'here' ? I.t('ui.here') : String(n || '').replace(/(^|[\s-])(\p{L})/gu, (m, sp, c) => sp + c.toUpperCase())),
     trumpSign: i => d().trumpSign[i],

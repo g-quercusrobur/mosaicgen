@@ -185,8 +185,8 @@
     c.beginPath(); c.moveTo(0, H - 0.5 * d); c.lineTo(W, H - 0.5 * d); c.stroke();
     for (let h = 0; h <= 24; h += 6) { const x = Math.min(W - d, h / 24 * W); c.beginPath(); c.moveTo(x, H); c.lineTo(x, H - 5 * d); c.stroke(); }
     if (scan.vals) {
-      const n = 72, vals = scan.vals.slice(0, n + 1);
-      const peak = Math.max(0.2, ...vals.flatMap(w => Object.values(w)));
+      const n = 72, vals = scan.vals.slice(0, n + 1), keys = Object.keys(MOTHER_INK);
+      const peak = Math.max(0.08, ...scan.vals.flatMap(w => keys.map(k => w[k])));   // the week's strongest window sets the scale; the rows also carry the Moon's house, which is not a value
       const top = 14 * d;                                     // room for the hour labels
       for (const [m, col] of Object.entries(MOTHER_INK)) {
         c.strokeStyle = col; c.lineWidth = 1.6 * d; c.globalAlpha = 0.9;

@@ -26,7 +26,7 @@
     try { const c = document.createElement('canvas').getContext('2d'); c.filter = 'blur(2px)'; return c.filter === 'blur(2px)'; }
     catch (e) { return false; }
   })();
-  let FAST = false, PURE = false, ENGRAVE = false, LUMINOUS = false, TIGHT = false, GUILLOCHE = false, PURE_LW = 3, PURE_BASE = 1, PURE_ALPHA = 1;   // PURE_LW: the sigil's line weight for a figure's edges; its bands and rays follow in proportion   // TIGHT: phones, caption outside the canvas: the dial fills the square   // LUMINOUS: prototype — planets as lights, flat, glowing by power   // ENGRAVE: prototype — light as engraved line weight, no glows, no gradients                    // PURE: the sigil layer — solid ink, no glow, no fill                       // scrubbing at speed: skip blurs and the neptune pass
+  let FAST = false, PURE = false, ENGRAVE = false, LUMINOUS = false, TIGHT = false, GUILLOCHE = false, PURE_LW = 3, PURE_BASE = 1, PURE_ALPHA = 1, PURE_SIMPLE = false;   // PURE_SIMPLE: the sigil as lines only, one weight   // PURE_LW: the sigil's line weight for a figure's edges; its bands and rays follow in proportion   // TIGHT: phones, caption outside the canvas: the dial fills the square   // LUMINOUS: prototype — planets as lights, flat, glowing by power   // ENGRAVE: prototype — light as engraved line weight, no glows, no gradients                    // PURE: the sigil layer — solid ink, no glow, no fill                       // scrubbing at speed: skip blurs and the neptune pass
   function withBlur(ctx, px, fn) {
     if (FAST || px < 0.35) return fn();
     if (supportsFilter) { ctx.save(); ctx.filter = `blur(${px.toFixed(2)}px)`; fn(); ctx.restore(); return; }
@@ -369,7 +369,7 @@
 
   /* A line holds its colour: core drawn over, glow screened. Black (saturn) is carved, edged by the other force. */
   function strokeGlow(ctx, path, color, lw, alpha, E, accent) {
-    if (PURE) { const ratio = Math.max(0.3, Math.min(1, lw / PURE_BASE)); ctx.globalCompositeOperation = 'source-over'; ctx.strokeStyle = `rgba(251,248,240,${(PURE_ALPHA * (ratio < 0.6 ? 0.6 : 1)).toFixed(2)})`; ctx.lineWidth = PURE_LW * ratio; ctx.lineJoin = 'round'; ctx.lineCap = 'round'; ctx.stroke(path); return; }   // the sigil: solid ink; the edges at the full weight, bands and rays finer in proportion (before the engraving's own rule)
+    if (PURE) { const ratio = PURE_SIMPLE ? 1 : Math.max(0.3, Math.min(1, lw / PURE_BASE)); ctx.globalCompositeOperation = 'source-over'; ctx.strokeStyle = PURE_SIMPLE ? '#fbf8f0' : `rgba(251,248,240,${(PURE_ALPHA * (ratio < 0.6 ? 0.6 : 1)).toFixed(2)})`; ctx.lineWidth = PURE_LW * ratio; ctx.lineJoin = 'round'; ctx.lineCap = 'round'; ctx.stroke(path); return; }   // the sigil: solid ink; the edges at the full weight, bands and rays finer in proportion (before the engraving's own rule)
     if (ENGRAVE && lightness(color) >= 0.22) { ctx.globalCompositeOperation = 'source-over'; ctx.strokeStyle = K.rgba(color, Math.min(1, alpha)); ctx.lineWidth = lw * 0.75; ctx.stroke(path); return; }
     const dark = lightness(color) < 0.22;
     if (dark) {
@@ -460,7 +460,7 @@
     const geo = { verts: [], edges: [], power: cfg.power, role };
 
     // rose-engine band: planet A's passes twist clockwise, planet B's counter-clockwise
-    if (primary) {
+    if (primary && !PURE_SIMPLE) {
       const passes = clamp(Math.round(4 + 3 * Math.min(1, cfg.power)), 4, 7);
       const nP = n === 1 ? ((C.PLANETS[cfg.a].number || 0) + (C.PLANETS[cfg.b].number || 0) || 12) : n;
       const bandA = roseBand(nP, passes, h, R, rot, cx, cy, 1);
@@ -534,14 +534,14 @@
         else { const poly = new Path2D(); v.forEach((q, i) => (i ? poly.lineTo(q.x, q.y) : poly.moveTo(q.x, q.y))); poly.closePath(); facet(poly); }
       }
       // soft: circle chain through the pole (n = 6 is the seed of life), circles alternating between the two planets
-      if (h < 0.6) withBlur(ctx, blur.curves, () => circles.forEach((c, i) => sg(c, AB(i), lw * (0.9 - 0.5 * h), alpha * (1 - 0.6 * h))));
+      if (h < 0.6 && !PURE_SIMPLE) withBlur(ctx, blur.curves, () => circles.forEach((c, i) => sg(c, AB(i), lw * (0.9 - 0.5 * h), alpha * (1 - 0.6 * h))));
       // star polygon: each edge passes from one planet's colour to the other's
       withBlur(ctx, blur.points, () => {
         edges.forEach(([a, b], i) => strokeEdge(ctx, a, b, edgePath(a, b), i % 2 ? cB : cA, i % 2 ? cA : cB, hard, lw * (0.8 + 0.5 * h), alpha, E));
-        if (h > 0.6) v.forEach((q, i) => { const d = new Path2D(); d.arc(q.x, q.y, lw * 1.6, 0, TAU); sg(d, AB(i), lw, alpha); });
+        if (h > 0.6 && !PURE_SIMPLE) v.forEach((q, i) => { const d = new Path2D(); d.arc(q.x, q.y, lw * 1.6, 0, TAU); sg(d, AB(i), lw, alpha); });
       });
       // spokes — rays (mercury)
-      withBlur(ctx, blur.rays, () => v.forEach((q, i) => { const p = new Path2D(); p.moveTo(cx, cy); p.lineTo(q.x, q.y); sg(p, AB(i), lw * 0.4, alpha * 0.45); }));
+      if (!PURE_SIMPLE) withBlur(ctx, blur.rays, () => v.forEach((q, i) => { const p = new Path2D(); p.moveTo(cx, cy); p.lineTo(q.x, q.y); sg(p, AB(i), lw * 0.4, alpha * 0.45); }));
     }
     ctx.restore();
     return geo;
@@ -1498,16 +1498,9 @@
       ctx.fillStyle = 'rgba(0,0,0,0.82)';
       if (bare) ctx.fillRect(0, 0, W, H); else { ctx.beginPath(); ctx.arc(Lt.cx, Lt.cy, Lt.R + 1, 0, TAU); ctx.fill(); }
       if (!bare) { ctx.beginPath(); ctx.arc(Lt.cx, Lt.cy, Lt.R, 0, TAU); ctx.clip(); }
-      PURE = true; const sigilLw = Math.max(lw * 2.2, 4.2 * Lt.u);
+      PURE = true; PURE_SIMPLE = true; PURE_LW = Math.max(lw * 2.2, 4.2 * Lt.u); PURE_BASE = lw; PURE_ALPHA = 1;
       try {
-        // the whole configuration, so the sigil moves with the sky: the two rings lighter, the Moon's own aspect
-        // innermost and lightest (it changes every few hours), the ruling figure heavy over them
-        const same = (x, y) => x && y && x.a === y.a && x.b === y.b;
-        // a scale of priority: the rings as faint echoes, the Moon's figure a little clearer, the ruling figure alone in full ink
-        PURE_LW = sigilLw * 0.32; PURE_BASE = lw * 0.7; PURE_ALPHA = 0.5;
-        cf.secondary.slice().reverse().forEach(c => drawFigure(ctx, state, Lt, c, Rp, 'secondary', lw * 0.7, E, 0));
-        if (cf.ripple && !same(cf.ripple, cf.primary) && !cf.secondary.some(c => same(c, cf.ripple))) { PURE_LW = sigilLw * 0.42; PURE_ALPHA = 0.7; drawFigure(ctx, state, Lt, cf.ripple, Rp * 0.55, 'secondary', lw * 0.7, E, 0); }
-        PURE_LW = sigilLw; PURE_BASE = lw; PURE_ALPHA = 1;
+        // the sigil: the ruling figure's lines and the guardians' stars, one weight, nothing else. a key, not a drawing
         if (cf.cut) {
           const th = eclAngle(state, B[cf.cut.by].lon), w = cf.cut.width * Math.PI / 360;
           const clip = new Path2D(); clip.rect(0, 0, S, S);
@@ -1516,8 +1509,7 @@
           ctx.save(); ctx.clip(clip, 'evenodd'); drawFigure(ctx, state, Lt, cf.primary, Rp, 'primary', lw, E, 0); ctx.restore();
         } else drawFigure(ctx, state, Lt, cf.primary, Rp, 'primary', lw, E, 0);
         drawGuardians(ctx, state, Lt, E);
-        ctx.strokeStyle = 'rgba(251,248,240,0.5)'; ctx.lineWidth = Math.max(lw * 0.22, 0.8); ctx.beginPath(); ctx.arc(Lt.cx, Lt.cy, Rp * 1.12, 0, TAU); ctx.stroke();   // the portal's rim as a hairline: the figure is the sigil, the circle only holds it
-      } finally { PURE = false; }
+      } finally { PURE = false; PURE_SIMPLE = false; }
       ctx.restore();
     }
 

@@ -1244,7 +1244,7 @@
       const a = eclAngle(state, d), major = d % 30 === 0, five = d % 5 === 0;
       if (!five && !major) continue;
       const ts = Math.min(1.8, Lt.ts);
-      const l = major ? (Lt.Rz - Lt.Rzi) : five && d % 10 === 0 ? 11 * u * ts : 6 * u * ts;
+      const l = major ? (Lt.Rz - Lt.Rzi) * 0.8 : five && d % 10 === 0 ? 11 * u * ts : 6 * u * ts;   // the sign divider stops a little short of the ring's outer edge
       const p0 = polar(Lt, a, Lt.Rzi), p1 = polar(Lt, a, Lt.Rzi + l);
       ctx.strokeStyle = K.rgba(INK, major ? 0.95 : d % 10 === 0 ? 0.6 : 0.44); ctx.lineWidth = (major ? 2 : 1) * u * Math.min(1.5, ts);
       ctx.beginPath(); ctx.moveTo(p0.x, p0.y); ctx.lineTo(p1.x, p1.y); ctx.stroke();

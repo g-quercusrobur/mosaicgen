@@ -210,7 +210,7 @@
     if (!scan.nexts) { el.innerHTML = `<span>${i.cap1(i.t('ui.reading'))}</span>`; return; }
     el.innerHTML = Object.entries(MOTHER_INK).map(([m, col]) => {
       const n = scan.nexts[m];
-      return n ? `<button data-jump="${n.at.toISOString()}" title="${i.t('ui.goTo')}"><i style="background:${col}"></i>${i.cap1(i.window(m))} · ${i.house12(n.house)} · ${fmtAt(n.at)}</button>`
+      return n ? `<button data-jump="${n.at.toISOString()}" title="${i.t('ui.goTo')}"><i style="background:${col}"></i>${i.cap1(i.window(m))} · ${fmtAt(n.at)} · ${i.t('ui.r.in')} ${i.house12(n.house)}</button>`
                : `<span><i style="background:${col}"></i>${i.cap1(i.window(m))} · ${i.t('ui.notThisWeek')}</span>`;
     }).join('');
     el.querySelectorAll('[data-jump]').forEach(b => b.addEventListener('click', () => { S.playing = false; S.offsetMs = new Date(b.dataset.jump).getTime() - anchor(); recompute(); }));

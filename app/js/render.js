@@ -1073,7 +1073,7 @@
   const ELEMENT_LIGHT = { air: '#f2e8a0', water: '#4a7ef0', fire: '#ff5a2a', earth: '#c9a070' };
   function auraClip(ctx, Lt) {
     const b = Lt.bounds || { x: 0, y: 0, w: Lt.S, h: Lt.S };   // the canvas may be wider than the square: the aura runs into that room
-    const clip = new Path2D(); clip.rect(b.x, b.y, b.w, Lt.tight ? b.h : (Lt.capY - 36 * Lt.u) - b.y); clip.addPath(dodecagon(Lt, Lt.Rb));
+    const clip = new Path2D(); clip.rect(b.x, b.y, b.w, Lt.tight ? b.h : (Lt.capY - 36 * Lt.u) - b.y); clip.addPath(dodecagon(Lt));
     ctx.clip(clip, 'evenodd');                             // outside the container only, above the caption
   }
   function drawAura(ctx, state, Lt) {
@@ -1083,7 +1083,7 @@
     const a = (d0 === 'earth' ? 0.34 : 0.3) + 0.36 * el.shares[d0];
     ctx.save(); auraClip(ctx, Lt);
     ctx.globalCompositeOperation = 'screen';
-    const inR = Lt.Rb * Math.cos(Math.PI / 12), outR = Lt.Rb * 1.32;   // compact: the light stays close to the ring
+    const Rb = Lt.poly ? Lt.poly.Rv : Lt.Rb, inR = Lt.poly ? Lt.poly.apothem : Lt.Rb * Math.cos(Math.PI / 12), outR = Rb * 1.32;   // compact: the light stays close to the ring
     const g = ctx.createRadialGradient(Lt.cx, Lt.cy, inR, Lt.cx, Lt.cy, outR);
     g.addColorStop(0, K.rgba(col, a * 1.1)); g.addColorStop(0.3, K.rgba(col, a * 0.55)); g.addColorStop(0.65, K.rgba(col, a * 0.14)); g.addColorStop(1, K.rgba(col, 0));
     ctx.fillStyle = g; ctx.beginPath(); ctx.arc(Lt.cx, Lt.cy, outR, 0, TAU); ctx.fill();
@@ -1111,7 +1111,7 @@
   function drawAuraLive(ctx, state, Lt, t) {
     const el = state.elements; if (!el) return;
     const d0 = el.order[0]; if (d0 === 'earth') return;
-    const col = ELEMENT_LIGHT[d0], u = Lt.u, inR = Lt.Rb * Math.cos(Math.PI / 12), outR = Lt.Rb * 1.3, span = outR - inR;
+    const Rb = Lt.poly ? Lt.poly.Rv : Lt.Rb, col = ELEMENT_LIGHT[d0], u = Lt.u, inR = Lt.poly ? Lt.poly.apothem : Lt.Rb * Math.cos(Math.PI / 12), outR = Rb * 1.3, span = outR - inR;
     const k = 0.5 + el.shares[d0];
     ctx.save(); auraClip(ctx, Lt); ctx.globalCompositeOperation = 'screen'; ctx.lineCap = 'round';
     if (d0 === 'water') {
@@ -1148,19 +1148,37 @@
   }
 
   /* ---------- the frame: dodecagon container, rete, houses ---------- */
-  function dodecagon(Lt, r) {
-    const p = new Path2D();
-    for (let i = 0; i < 12; i++) {
-      const a = Math.PI - i * Math.PI / 6;              // a vertex on the eastern horizon, one at the meridian
-      const x = Lt.cx + r * Math.cos(a), y = Lt.cy - r * Math.sin(a);
-      i ? p.lineTo(x, y) : p.moveTo(x, y);
-    }
-    p.closePath(); return p;
+  /* the container is the house wheel itself: a twelve-sided polygon with a vertex on every cusp. houses are unequal, so
+     the polygon is irregular; its vertices sit at one radius chosen so that no edge cuts into the chapter ring, and when
+     the widest house would push that radius off the canvas the sky inside shrinks a little instead. */
+  function housePoly(state, Lt) {
+    const key = state.date.getTime() + '|' + state.asc + '|' + Lt.S;
+    if (Lt.poly && Lt.poly.key === key) return Lt.poly;
+    const norm = a => ((a % TAU) + TAU) % TAU;
+    const angles = []; for (let h = 1; h <= 12; h++) angles.push(eclAngle(state, state.cusps[h]));
+    const dir = norm(angles[1] - angles[0]) < Math.PI ? 1 : -1;
+    const spans = angles.map((a, h) => norm(dir * (angles[(h + 1) % 12] - a)));
+    const maxSpan = Math.max(...spans);
+    const cap = (Lt.tight ? 0.485 : 0.49) * Lt.S;
+    const Rv = Math.min(cap, Math.max(Lt.Rb, Lt.Rz * 1.04 / Math.cos(maxSpan / 2)));
+    const apothem = Rv * Math.cos(maxSpan / 2);
+    const verts = angles.map(a => ({ a, x: Lt.cx + Rv * Math.cos(a), y: Lt.cy - Rv * Math.sin(a) }));
+    const path = new Path2D(); verts.forEach((v, i) => i ? path.lineTo(v.x, v.y) : path.moveTo(v.x, v.y)); path.closePath();
+    const edgeR = a => {                                   // the outline's distance from the centre along direction a
+      for (let h = 0; h < 12; h++) {
+        const a1 = angles[h], span = spans[h], off = norm(dir * (a - a1));
+        if (off <= span) { const mid = a1 + dir * span / 2; return Rv * Math.cos(span / 2) / Math.max(0.25, Math.cos(a - mid)); }
+      }
+      return Rv;
+    };
+    Lt.poly = { key, angles, spans, dir, Rv, apothem, verts, path, edgeR };
+    return Lt.poly;
   }
+  function dodecagon(Lt) { return Lt.poly ? Lt.poly.path : new Path2D(); }
   function drawFrame(ctx, state, Lt, lw) {
     const u = Lt.u;
     // container — saturn's black, lead edges
-    const outer = dodecagon(Lt, Lt.Rb);
+    const poly = housePoly(state, Lt), outer = poly.path;
     const ring = new Path2D(outer); ring.arc(Lt.cx, Lt.cy, Lt.Rz, 0, TAU, true);
     ctx.save();
     ctx.fillStyle = VOID; ctx.fill(ring, 'evenodd');
@@ -1169,8 +1187,7 @@
     // houses: the cusps as spokes across the band (Regiomontanus unless set otherwise), the angles stronger, the number mid-house
     ctx.font = `400 ${Math.round(18 * u * Lt.ts)}px ${SANS}`;    // Roman numerals, in the text face
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    const inR = Lt.Rb * Math.cos(Math.PI / 12);
-    const edgeR = a => inR / Math.cos(((a % (Math.PI / 6)) + Math.PI / 6) % (Math.PI / 6) - Math.PI / 12);   // the dodecagon edge at this angle
+    const inR = poly.apothem, edgeR = poly.edgeR;
     for (let h = 1; h <= 12; h++) {
       const a = eclAngle(state, state.cusps[h]);
       const angle = h % 3 === 1;
@@ -1179,12 +1196,12 @@
       const q0 = polar(Lt, a, Lt.R * 0.5), q1 = polar(Lt, a, Lt.Rzi);
       ctx.strokeStyle = K.rgba(INK, angle ? 0.36 : 0.26); ctx.lineWidth = 1 * u;
       ctx.beginPath(); ctx.moveTo(q0.x, q0.y); ctx.lineTo(q1.x, q1.y); ctx.stroke();
-      const p0 = polar(Lt, a, Lt.Rzi), p1 = polar(Lt, a, edgeR(a));           // to the container's outline
+      const p0 = polar(Lt, a, Lt.Rzi), p1 = polar(Lt, a, poly.Rv);             // to the vertex: the cusp is a corner of the container
       ctx.strokeStyle = K.rgba(INK, angle ? 0.95 : 0.7); ctx.lineWidth = (angle ? 2.2 : 1.5) * u;
       ctx.beginPath(); ctx.moveTo(p0.x, p0.y); ctx.lineTo(p1.x, p1.y); ctx.stroke();
       const span = E_.norm360(state.cusps[h % 12 + 1] - state.cusps[h]);
       // the numeral: on one circle midway across the band, mid-house, set radially as on a chapter ring
-      const ma = eclAngle(state, state.cusps[h] + span / 2), lp = polar(Lt, ma, (Lt.Rz + inR) / 2);
+      const ma = eclAngle(state, state.cusps[h] + span / 2), lp = polar(Lt, ma, Lt.Rz + (edgeR(ma) - Lt.Rz) * 0.42);   // in the band, nearer the ring than the edge
       const sunHouse = state.bodies.sun.house === h;
       ctx.fillStyle = K.rgba(sunHouse ? C.PLANETS.sun.tincture : INK, sunHouse ? 0.95 : 0.72);
       ctx.save(); ctx.translate(lp.x, lp.y); ctx.rotate(Math.sin(ma) < 0 ? -Math.PI / 2 - ma : Math.PI / 2 - ma); ctx.fillText(I().roman(h), 0, 0); ctx.restore();   // radial; the lower half turned to read upright at the foot
@@ -1192,7 +1209,7 @@
     // the cardinal ring: a hairline concentric with the dial beyond the container, the four cardinal points set
     // into it like the indices of a bezel, each joined to the container by a radial index. upright text, the ring
     // cleared behind it; on narrow layouts a label is kept inside the canvas.
-    const Rc = Lt.Rb + (Lt.tight ? 13 : 28) * u, fs = Math.round(16 * u * Lt.ts);
+    const Rc = poly.Rv + (Lt.tight ? 13 : 28) * u, fs = Math.round(16 * u * Lt.ts);
     ctx.font = `500 ${fs}px ${SANS}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     if ('letterSpacing' in ctx) ctx.letterSpacing = `${(0.08 * fs).toFixed(1)}px`;
     const am = eclAngle(state, state.mc);
@@ -1381,6 +1398,10 @@
   function renderClock(ctx, state, S, t, opts) {
     const bare = opts.bare;                               // wallpaper: no wheel, the field runs to the edges of a W × H canvas
     const Lt = layout(S); Lt.asc = state.asc; Lt.bounds = !bare && opts.bounds ? opts.bounds : null;
+    if (!bare) {                                          // the container follows the cusps; the chapter ring must stay inside its edges
+      const poly = housePoly(state, Lt), fitS = Math.min(1, poly.apothem * 0.97 / Lt.Rz);
+      if (fitS < 1) { Lt.R *= fitS; Lt.Rz *= fitS; Lt.Rzi *= fitS; }
+    }
     const W = bare ? bare.W : S, H = bare ? bare.H : S;
     if (bare) {
       Lt.cx = W / 2; Lt.cy = H * (H > W * 1.4 ? 0.56 : 0.5);   // on a phone the clock sits at the top: the sky below it

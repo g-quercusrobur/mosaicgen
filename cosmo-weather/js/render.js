@@ -1174,8 +1174,13 @@
     for (let h = 1; h <= 12; h++) {
       const a = eclAngle(state, state.cusps[h]);
       const angle = h % 3 === 1;
-      const p0 = polar(Lt, a, Lt.Rz), p1 = polar(Lt, a, edgeR(a) * (angle ? 0.985 : 0.965));
-      ctx.strokeStyle = K.rgba(INK, angle ? 0.7 : 0.3); ctx.lineWidth = (angle ? 1.6 : 1) * u;
+      // the cusp traced as one radial line: a hairline across the sky from the portal's reach to the rim, then through
+      // the chapter ring and the band to the container's edge, the four angles heavier
+      const q0 = polar(Lt, a, Lt.R * 0.5), q1 = polar(Lt, a, Lt.Rzi);
+      ctx.strokeStyle = K.rgba(INK, angle ? 0.3 : 0.2); ctx.lineWidth = 1 * u;
+      ctx.beginPath(); ctx.moveTo(q0.x, q0.y); ctx.lineTo(q1.x, q1.y); ctx.stroke();
+      const p0 = polar(Lt, a, Lt.Rzi), p1 = polar(Lt, a, edgeR(a) * (angle ? 0.985 : 0.965));
+      ctx.strokeStyle = K.rgba(INK, angle ? 0.85 : 0.55); ctx.lineWidth = (angle ? 2 : 1.3) * u;
       ctx.beginPath(); ctx.moveTo(p0.x, p0.y); ctx.lineTo(p1.x, p1.y); ctx.stroke();
       const span = E_.norm360(state.cusps[h % 12 + 1] - state.cusps[h]);
       // the numeral: on one circle midway across the band, mid-house, set radially as on a chapter ring

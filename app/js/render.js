@@ -1177,10 +1177,10 @@
       // the cusp traced as one radial line: a hairline across the sky from the portal's reach to the rim, then through
       // the chapter ring and the band to the container's edge, the four angles heavier
       const q0 = polar(Lt, a, Lt.R * 0.5), q1 = polar(Lt, a, Lt.Rzi);
-      ctx.strokeStyle = K.rgba(INK, angle ? 0.3 : 0.2); ctx.lineWidth = 1 * u;
+      ctx.strokeStyle = K.rgba(INK, angle ? 0.36 : 0.26); ctx.lineWidth = 1 * u;
       ctx.beginPath(); ctx.moveTo(q0.x, q0.y); ctx.lineTo(q1.x, q1.y); ctx.stroke();
-      const p0 = polar(Lt, a, Lt.Rzi), p1 = polar(Lt, a, edgeR(a) * (angle ? 0.985 : 0.965));
-      ctx.strokeStyle = K.rgba(INK, angle ? 0.85 : 0.55); ctx.lineWidth = (angle ? 2 : 1.3) * u;
+      const p0 = polar(Lt, a, Lt.Rzi), p1 = polar(Lt, a, edgeR(a));           // to the container's outline
+      ctx.strokeStyle = K.rgba(INK, angle ? 0.95 : 0.7); ctx.lineWidth = (angle ? 2.2 : 1.5) * u;
       ctx.beginPath(); ctx.moveTo(p0.x, p0.y); ctx.lineTo(p1.x, p1.y); ctx.stroke();
       const span = E_.norm360(state.cusps[h % 12 + 1] - state.cusps[h]);
       // the numeral: on one circle midway across the band, mid-house, set radially as on a chapter ring
@@ -1229,7 +1229,7 @@
       const ts = Math.min(1.8, Lt.ts);
       const l = major ? (Lt.Rz - Lt.Rzi) : five && d % 10 === 0 ? 11 * u * ts : 6 * u * ts;
       const p0 = polar(Lt, a, Lt.Rzi), p1 = polar(Lt, a, Lt.Rzi + l);
-      ctx.strokeStyle = K.rgba(INK, major ? 0.78 : d % 10 === 0 ? 0.5 : 0.36); ctx.lineWidth = (major ? 1.6 : 1) * u * Math.min(1.5, ts);
+      ctx.strokeStyle = K.rgba(INK, major ? 0.95 : d % 10 === 0 ? 0.6 : 0.44); ctx.lineWidth = (major ? 2 : 1) * u * Math.min(1.5, ts);
       ctx.beginPath(); ctx.moveTo(p0.x, p0.y); ctx.lineTo(p1.x, p1.y); ctx.stroke();
     }
     for (let i = 0; i < 12; i++) {

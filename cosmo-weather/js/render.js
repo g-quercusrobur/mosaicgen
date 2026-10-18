@@ -1534,11 +1534,14 @@
           glyphAt(cfg.a, v[0], 0); glyphAt(cfg.b, near, 0);
         };
         who(cf.primary);
-        // the hour: the Moon's own aspect as a small figure within, the guardians' stars at the pole
+        // the hour: the Moon's aspect the caption names, her next application, as a small figure within; the guardians' stars at the pole.
+        // when that application is not yet in orb, the Moon's strongest aspect (the ripple's) stands in
         const same = (x, y) => x && y && x.a === y.a && x.b === y.b;
-        if (cf.ripple && !same(cf.ripple, cf.primary)) {
-          if (cf.ripple.n === 1) { ctx.strokeStyle = '#fbf8f0'; ctx.lineWidth = PURE_LW; ctx.beginPath(); ctx.arc(Lt.cx, Lt.cy, Rp * 0.3, 0, TAU); ctx.stroke(); }   // the Moon's conjunction: one ring
-          else drawFigure(ctx, state, Lt, cf.ripple, Rp * 0.46, 'secondary', lw, E, 0);
+        const mn = state.moon.next;
+        const moonFig = (mn && (state.aspects || []).find(a => a.moon && a.aspect === mn.aspect && (a.a === mn.planet || a.b === mn.planet))) || cf.ripple;
+        if (moonFig && !same(moonFig, cf.primary)) {
+          if (moonFig.n === 1) { ctx.strokeStyle = '#fbf8f0'; ctx.lineWidth = PURE_LW; ctx.beginPath(); ctx.arc(Lt.cx, Lt.cy, Rp * 0.3, 0, TAU); ctx.stroke(); }   // the Moon's conjunction: one ring
+          else drawFigure(ctx, state, Lt, moonFig, Rp * 0.46, 'secondary', lw, E, 0);
         }
         drawGuardians(ctx, state, Lt, E);
       } finally { PURE = false; PURE_SIMPLE = false; }

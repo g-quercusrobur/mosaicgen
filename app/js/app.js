@@ -295,11 +295,11 @@
     }
     audio.on = on;
     if (!audio.ctx) return;
-    if (on) { audio.ctx.resume(); soundChord(S.state.chord); }
+    if (on) { audio.ctx.resume(); soundChord(viewState().chord); }   // the chord of the view: the birth chart's in the natal tab, the sky's elsewhere
     else soundChord(null);
     $('listen-corner').classList.toggle('on', on); $('listen-corner').title = SD.i18n.t(on ? 'ui.listening' : 'ui.listen');
   }
-  function followChord() { if (audio.on && S.state && S.state.chord.name !== audio.key) soundChord(S.state.chord, 2.5); }
+  function followChord() { if (!audio.on || !S.state) return; const ch = viewState().chord; if (ch && ch.name !== audio.key) soundChord(ch, 2.5); }
 
   /* ---------- export: square art ---------- */
   function download(cv, name) {

@@ -496,8 +496,11 @@
         return rose;
       };
       const rA = roseAt(Math.PI / P * 0.12), rB = roseAt(-Math.PI / P * 0.12);
-      if (primary) facet(rA);
-      withBlur(ctx, blur.curves, () => { sg(rA, cA, lw * 0.9, alpha); sg(rB, cB, lw * 0.9, alpha); });
+      if (PURE_SIMPLE) { const one = new Path2D(); one.arc(cx, cy, R * 0.86, 0, TAU); sg(one, cA, lw, alpha); }   // the sigil: a conjunction is one ring, one weight, no rose
+      else {
+        if (primary) facet(rA);
+        withBlur(ctx, blur.curves, () => { sg(rA, cA, lw * 0.9, alpha); sg(rB, cB, lw * 0.9, alpha); });
+      }
       const ring = starVerts(cx, cy, R * 0.86, P, rot);
       geo.verts = ring; for (let i = 0; i < P; i++) geo.edges.push([ring[i], ring[(i + 1) % P]]);
     } else if (n === 2) {                                 // opposition: vesica piscis on the axis, one circle each

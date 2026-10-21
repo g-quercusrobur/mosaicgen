@@ -2,10 +2,10 @@
     sky → state. Pure computation, no drawing. This file is the part that
     survives every port (desktop, android, wallpaper, the daily export).
 */
-(function (CW) {
+(function (SD) {
   'use strict';
   const A = window.Astronomy;
-  const C = CW.corr;
+  const C = SD.corr;
   const D2R = Math.PI / 180, R2D = 180 / Math.PI;
   const norm360 = x => ((x % 360) + 360) % 360;
   const norm180 = x => { const y = norm360(x); return y > 180 ? y - 360 : y; };
@@ -372,7 +372,7 @@
   /* The mode of the moment, one of the three mothers of the Sefer Yetzirah. Aleph, air, ideation while the ruling
      aspect applies: what is coming. Mem, water, manifestation once it is exact and separating: what has landed.
      Shin, fire, destruction when the aspect is hard, the portal is cut by a malefic, or the Moon is void and waning.
-     Lilly: an applying aspect shows what is to come, a separating one what is past. The reading of the mothers is [CW]. */
+     Lilly: an applying aspect shows what is to come, a separating one what is past. The reading of the mothers is [SD]. */
   function modeOf(st) {
     const p = st.configs.primary, cf = st.configs, m = st.moon;
     const malefic = k => k === 'mars' || k === 'saturn' || k === 'pluto';
@@ -566,7 +566,7 @@
     const isDay = B.sun.alt > -0.833;
     for (const key of C.ORDER) B[key].dignity = dignity(key, B[key].sign, B[key].deg, isDay);
     // mutual reception by domicile or by exaltation (Lilly): each planet stands in the other's dignity.
-    // Lilly counts it as strengthening; here it lifts the peregrine penalty [CW scoring].
+    // Lilly counts it as strengthening; here it lifts the peregrine penalty [SD scoring].
     const seven = C.CHALDEAN;
     for (let i = 0; i < 7; i++) for (let j = i + 1; j < 7; j++) {
       const a = seven[i], b = seven[j], sa = C.SIGNS[B[a].sign].key, sb = C.SIGNS[B[b].sign].key;
@@ -601,5 +601,5 @@
     return st;
   }
 
-  CW.engine = { compute, computeTransits, computeInteractions, elements, nextChordShift, norm360, norm180, sep, houseOf, houseIn, mundane, semiArc, dignity, placidus, regiomontanus, equalHouses, synodic, rarity };
-})(window.CW = window.CW || {});
+  SD.engine = { compute, computeTransits, computeInteractions, elements, nextChordShift, norm360, norm180, sep, houseOf, houseIn, mundane, semiArc, dignity, placidus, regiomontanus, equalHouses, synodic, rarity };
+})(window.SD = window.SD || {});

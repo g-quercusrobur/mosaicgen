@@ -10,7 +10,7 @@
       window 2 tarot         decans as Chaldean faces with their minor cards and Book T titles (GD); trumps on signs and planets
       letters  Golden Dawn order. No Crowley swaps.
 */
-(function (CW) {
+(function (SD) {
   'use strict';
 
   const SIGNS = [
@@ -142,9 +142,9 @@
   const BENEFIC = { venus: 1, jupiter: 1, sun: 0.3, moon: 0.4 };
   const MALEFIC = { mars: 1, saturn: 1, pluto: 0.6, uranus: 0.4 };
 
-  CW.corr = {
+  SD.corr = {
     SIGNS, PLANETS, ORDER, CHALDEAN, WEEKDAY_RULER, SYNODIC_OVERRIDE,
     DOMICILE, EXALTATION, TRIPLICITY, TERMS, faceRuler, ASPECTS, ASPECT_GLYPH, BENEFIC, MALEFIC, NOTES, INTERVALS, MOTHERS,
     DECANS, decanOf, TRUMP_SIGN, TRUMP_PLANET, TRUMP_ELEMENT, MANSIONS, mansionOf, ELEMENTS
   };
-})(window.CW = window.CW || {});
+})(window.SD = window.SD || {});

@@ -1,7 +1,7 @@
 /*  siderarium — app shell
     Live clock, time scrubber, places, modes, export.
 */
-(function (CW) {
+(function (SD) {
   'use strict';
   /* one city for each time zone, west to east */
   const ZONES = [
@@ -89,7 +89,7 @@
     const place = S.relocate ? S.place : S.natal.place;     // relocated: the same instant, the houses of another horizon
     const key = JSON.stringify([S.natal.date, place, S.houses]);
     if (natalCache.key !== key) {
-      const st = CW.engine.compute(new Date(S.natal.date), place, { houses: S.houses });
+      const st = SD.engine.compute(new Date(S.natal.date), place, { houses: S.houses });
       st.natalView = true; st.nextChord = null; st.relocated = S.relocate ? place.name : null;
       natalCache.key = key; natalCache.state = st;
     }
@@ -100,19 +100,19 @@
 
   function recompute() {
     const busy = S.playing || S.dragging;
-    S.state = CW.engine.compute(now(), S.place, { light: busy, houses: S.houses });
-    if (!busy) S.state.nextChord = CW.engine.nextChordShift(S.state.date, S.place);
+    S.state = SD.engine.compute(now(), S.place, { light: busy, houses: S.houses });
+    if (!busy) S.state.nextChord = SD.engine.nextChordShift(S.state.date, S.place);
     if (S.mode === 'synastry' && S.natal) {                 // the sky of now against the nativity: the figure is the strongest transit
-      const ns = natalState(), tr = CW.engine.computeTransits(S.state, ns).filter(x => x.power > 0.04);
+      const ns = natalState(), tr = SD.engine.computeTransits(S.state, ns).filter(x => x.power > 0.04);
       S.state.natal = ns; S.state.transits = tr;
-      S.state.interaction = CW.engine.computeInteractions(S.state, ns, tr);   // what the two skies make together
+      S.state.interaction = SD.engine.computeInteractions(S.state, ns, tr);   // what the two skies make together
       S.state.configs = { ...S.state.configs, primary: tr[0] || null, secondary: tr.slice(1, 3), scale: 1, cut: null };
     }
     S.lastCompute = performance.now();
     S.dirty = true;
-    document.documentElement.style.setProperty('--ground', S.groundEl ? CW.render.ground(S.state, true) : '#000000');
+    document.documentElement.style.setProperty('--ground', S.groundEl ? SD.render.ground(S.state, true) : '#000000');
     document.body.classList.toggle('mrx', viewState().bodies.mercury.slow > 0.5);   // mercury retrograde: the print misregisters
-    const c = CW.render.captionLines(viewState());
+    const c = SD.render.captionLines(viewState());
     const low = s => s.replace(/^./, ch => ch.toLowerCase());
     for (const k in c) if (typeof c[k] === 'string') c[k] = esc(c[k]);
     $('caption').innerHTML = `<p class="eyebrow">${c.label}</p><h2 class="h1 state-${c.stateKey}">${c.state}</h2><p class="deck">${c.title}</p><p class="reason">${c.reason}</p><p class="moment">${c.l1}</p><p class="detail">${c.detail1}<br>${c.detail2} · ${c.detail3}</p><p class="detail">${c.detail4}</p>`;
@@ -163,7 +163,7 @@
     (function chunk() {
       if (token !== scan.token) return;
       for (let k = 0; k < 24 && i <= N; k++, i++) {
-        const st = CW.engine.compute(new Date(b + i * scan.step * 60000), S.place, { light: true, houses: S.houses });
+        const st = SD.engine.compute(new Date(b + i * scan.step * 60000), S.place, { light: true, houses: S.houses });
         out.push({ ...st.windows, house: st.bodies.moon.house });   // the Moon's house at each step names the window's stage
       }
       if (i <= N) return setTimeout(chunk, 0);
@@ -198,16 +198,16 @@
       c.globalAlpha = 1;
     }
     c.font = `${10 * d}px "Geist Mono", monospace`; c.fillStyle = 'rgba(235,231,220,0.5)'; c.textBaseline = 'top';
-    CW.i18n.t('ui.strip').map((l, n) => [CW.i18n.cap1(l), n * 6]).forEach(([l, h]) => { c.textAlign = h === 0 ? 'left' : h === 24 ? 'right' : 'center'; c.fillText(l, h / 24 * W, 2 * d); });
+    SD.i18n.t('ui.strip').map((l, n) => [SD.i18n.cap1(l), n * 6]).forEach(([l, h]) => { c.textAlign = h === 0 ? 'left' : h === 24 ? 'right' : 'center'; c.fillText(l, h / 24 * W, 2 * d); });
     const x = Math.max(0, Math.min(1, S.offsetMs / 864e5)) * W;
     c.fillStyle = 'rgba(235,231,220,0.9)'; c.fillRect(Math.min(W - 2 * d, x), 0, 2 * d, H);
   }
   function fmtAt(d) {
-    return new Intl.DateTimeFormat(CW.i18n.locale(), { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: S.place.tz || 'UTC' }).format(d).replace(/^./, c => c.toUpperCase());
+    return new Intl.DateTimeFormat(SD.i18n.locale(), { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: S.place.tz || 'UTC' }).format(d).replace(/^./, c => c.toUpperCase());
   }
   function drawNexts() {
     const el = $('nexts');
-    const i = CW.i18n;
+    const i = SD.i18n;
     if (!scan.nexts) { el.innerHTML = `<span>${i.cap1(i.t('ui.reading'))}</span>`; return; }
     el.innerHTML = Object.entries(MOTHER_INK).map(([m, col]) => {
       const n = scan.nexts[m];
@@ -229,11 +229,11 @@
     if (S.wall) {
       if (S.dirty) {
         pctx.setTransform(1, 0, 0, 1, 0, 0); pctx.clearRect(0, 0, plate.width, plate.height);
-        info = CW.render.renderWallpaper(pctx, viewState(), plate.width, plate.height, t, { fieldRes: 300, plate: true, fast: S.playing, field: S.field, sigil: S.sigil, engrave: S.engrave, luminous: S.luminous });
+        info = SD.render.renderWallpaper(pctx, viewState(), plate.width, plate.height, t, { fieldRes: 300, plate: true, fast: S.playing, field: S.field, sigil: S.sigil, engrave: S.engrave, luminous: S.luminous });
         S.dirty = false; lastPlate = ts;
       }
       ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.drawImage(plate, 0, 0);
-      CW.render.overlay(ctx, info, t);
+      SD.render.overlay(ctx, info, t);
       return;
     }
     if (S.dirty) {
@@ -241,13 +241,13 @@
       pctx.setTransform(S.dpr * view.z, 0, 0, S.dpr * view.z, S.dpr * (view.x + S.ox), S.dpr * view.y);   // the view: zoom and pan, the square centred in the canvas
       const busy = S.playing || S.dragging || view.pinching;
       const bounds = { x: -(view.x + S.ox) / view.z, y: -view.y / view.z, w: (S.side + 2 * S.ox) / view.z, h: S.side / view.z };   // the canvas, in dial coordinates
-      info = CW.render.render(pctx, viewState(), S.side, t, { mode: S.mode === 'chart' || S.mode === 'natalchart' ? 'chart' : 'clock', fieldRes: busy ? 110 : 200, caption: S.side >= 560, plate: true, fast: busy, field: S.field, sigil: S.sigil, engrave: S.engrave, luminous: S.luminous, tight: S.side < 560, groundEl: S.groundEl, bounds });
+      info = SD.render.render(pctx, viewState(), S.side, t, { mode: S.mode === 'chart' || S.mode === 'natalchart' ? 'chart' : 'clock', fieldRes: busy ? 110 : 200, caption: S.side >= 560, plate: true, fast: busy, field: S.field, sigil: S.sigil, engrave: S.engrave, luminous: S.luminous, tight: S.side < 560, groundEl: S.groundEl, bounds });
       S.dirty = false; lastPlate = ts;
     }
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.drawImage(plate, 0, 0);
     ctx.setTransform(S.dpr * view.z, 0, 0, S.dpr * view.z, S.dpr * (view.x + S.ox), S.dpr * view.y);
-    CW.render.overlay(ctx, info, t);
+    SD.render.overlay(ctx, info, t);
   }
 
   /* ---------- sound: the chord as a slow organ drone ----------
@@ -297,7 +297,7 @@
     if (!audio.ctx) return;
     if (on) { audio.ctx.resume(); soundChord(S.state.chord); }
     else soundChord(null);
-    $('listen-corner').classList.toggle('on', on); $('listen-corner').title = CW.i18n.t(on ? 'ui.listening' : 'ui.listen');
+    $('listen-corner').classList.toggle('on', on); $('listen-corner').title = SD.i18n.t(on ? 'ui.listening' : 'ui.listen');
   }
   function followChord() { if (audio.on && S.state && S.state.chord.name !== audio.key) soundChord(S.state.chord, 2.5); }
 
@@ -318,7 +318,7 @@
   function exportPNG(px) {
     const st = viewState(), cv = document.createElement('canvas');
     cv.width = cv.height = px;
-    CW.render.render(cv.getContext('2d'), st, px, (performance.now() - t0) / 1000, { mode: S.mode === 'chart' || S.mode === 'natalchart' ? 'chart' : 'clock', fieldRes: px >= 3000 ? 420 : 300, field: S.field, sigil: S.sigil, engrave: S.engrave, luminous: S.luminous, groundEl: S.groundEl });
+    SD.render.render(cv.getContext('2d'), st, px, (performance.now() - t0) / 1000, { mode: S.mode === 'chart' || S.mode === 'natalchart' ? 'chart' : 'clock', fieldRes: px >= 3000 ? 420 : 300, field: S.field, sigil: S.sigil, engrave: S.engrave, luminous: S.luminous, groundEl: S.groundEl });
     download(cv, `siderarium_${st.loc.name}_${stampOf(st)}_${px}.png`);
   }
   /* a wallpaper at this screen's size: the square render set in a portrait field of the same ground */
@@ -327,7 +327,7 @@
     const W = Math.round((screen.width || 1080) * dpr), H = Math.round((screen.height || 2340) * dpr);
     const cv = document.createElement('canvas');
     cv.width = W; cv.height = H;
-    CW.render.renderWallpaper(cv.getContext('2d'), st, W, H, 3, { fieldRes: 300, field: S.field, sigil: S.sigil, engrave: S.engrave, luminous: S.luminous });
+    SD.render.renderWallpaper(cv.getContext('2d'), st, W, H, 3, { fieldRes: 300, field: S.field, sigil: S.sigil, engrave: S.engrave, luminous: S.luminous });
     download(cv, `siderarium_wallpaper_${st.loc.name}_${stampOf(st)}.png`);
   }
 
@@ -335,7 +335,7 @@
 
   /* ---------- readout: every mark traceable ---------- */
   function updateReadout() {
-    const st = viewState(), C = CW.corr, i = CW.i18n, R = k => i.t('ui.r.' + k), H = k => i.cap1(i.t('ui.h.' + k));
+    const st = viewState(), C = SD.corr, i = SD.i18n, R = k => i.t('ui.r.' + k), H = k => i.cap1(i.t('ui.h.' + k));
     const P = k => i.planet(k), A = k => i.aspect(k);
     const rows = C.ORDER.map(k => {
       const b = st.bodies[k];
@@ -348,7 +348,7 @@
     const evName = e => e.split(' ').map(w => i.event(w)).join(' ');
     const figs = [cf.primary, ...cf.secondary].filter(Boolean).map((a, n) =>
       `<tr><td>${i.cap1(n ? R('ring') : R('figure'))}</td><td colspan="2">${figName(a)} · {${a.n}/${a.k}}</td></tr><tr class="sub"><td></td><td colspan="2">${i.cap1(R('orb'))} ${a.orb.toFixed(2)}° ${a.applying ? R('applying') : R('separating')}${a.dissociate ? ' · ' + i.flag('outOfSign') : ''} · ${a.power.toFixed(2)}${a.event ? ' · ' + evName(a.event) : ''}</td></tr>`).join('');
-    const cap = CW.render.captionLines(st);
+    const cap = SD.render.captionLines(st);
     const el = st.elements ? `${R('element')} ${i.t('ui.el.' + st.elements.dominant)} ${Math.round(st.elements.shares[st.elements.dominant] * 100)}% · ${i.t('ui.el.' + st.elements.order[1])} ${Math.round(st.elements.shares[st.elements.order[1]] * 100)}%` : '';
     const guardians = `${R('guardians')} ${P(st.hour.dayRuler)}${st.hour.dayRuler === st.hour.hourRuler ? ' ' + R('alone') : ' ' + R('and') + ' ' + P(st.hour.hourRuler)}`;
     const lead = `<p class="verdict state-${st.title.state}">${i.state(st.title.state)} · ${i.house12(st.title.house)} · ${i.cap1(i.window(st.title.mode))} · ${i.t('cap.under')} ${i.name(st.hour.angel)}</p>`;
@@ -393,7 +393,7 @@
     $('now-float').hidden = live;                           // the way back, in sight whenever the clock has been moved
     if (document.activeElement !== $('preview')) $('preview').value = Math.max(0, Math.min(1440, Math.round(S.offsetMs / 60000)));
     $('play').classList.toggle('on', S.playing);
-    $('play').textContent = CW.i18n.cap1(CW.i18n.t(S.playing ? 'ui.pause' : 'ui.run'));
+    $('play').textContent = SD.i18n.cap1(SD.i18n.t(S.playing ? 'ui.pause' : 'ui.run'));
     $('speed').textContent = S.speed < 1 ? `${S.speed * 60}m/s` : `${S.speed}h/s`;
     $('here').classList.toggle('on', S.place.name === 'here');
     if (PLACES[S.place.name] && $('city').value !== S.place.name) $('city').value = S.place.name;
@@ -414,13 +414,13 @@
   /* ---------- the menu: view, settings, nativity and saved charts ---------- */
   const uid = () => Math.random().toString(36).slice(2, 10);
   function natalSummary() {
-    const i = CW.i18n;
+    const i = SD.i18n;
     if (!S.natal) return i.cap1(i.t('ui.noneSet'));
     const p = placeParts(new Date(S.natal.date), S.natal.place.tz);
     return `${S.natal.name ? S.natal.name + ' · ' : ''}${p.year}-${p.month}-${p.day} ${S.natal.unknownTime ? '' : p.hour + ':' + p.minute + ' '}· ${i.placeName(S.natal.place.name)}`;
   }
   function refreshMenu() {
-    const i = CW.i18n;
+    const i = SD.i18n;
     $('set-lang').value = S.lang; $('set-houses').value = S.houses; $('set-field').value = !S.engrave ? 'glow' : S.field === 'guilloche' ? 'guilloche' : 'engraved'; $('set-bodies').value = S.luminous ? 'lights' : 'metal';
     $('set-relocate').value = S.relocate ? '1' : '0';
     $('natal-summary').textContent = natalSummary();
@@ -469,7 +469,7 @@
         input.addEventListener('blur', done);
       } else if (b.dataset.act === 'delete') {
         if (b.dataset.armed) { S.charts = S.charts.filter(c => c.id !== id); store.set('charts', S.charts); refreshMenu(); }
-        else { b.dataset.armed = '1'; b.textContent = CW.i18n.cap1(CW.i18n.t('ui.confirm')); setTimeout(() => { if (b.isConnected) { delete b.dataset.armed; b.textContent = CW.i18n.cap1(CW.i18n.t('ui.del')); } }, 3000); }
+        else { b.dataset.armed = '1'; b.textContent = SD.i18n.cap1(SD.i18n.t('ui.confirm')); setTimeout(() => { if (b.isConnected) { delete b.dataset.armed; b.textContent = SD.i18n.cap1(SD.i18n.t('ui.del')); } }, 3000); }
       }
     });
   }
@@ -484,7 +484,7 @@
     });
     const SPEEDS = [0.25, 1, 4, 24];
     $('speed').addEventListener('click', () => { S.speed = SPEEDS[(SPEEDS.indexOf(S.speed) + 1) % SPEEDS.length]; updateControls(); });
-    const fill = () => { const pn = CW.i18n.placeName; $('city').innerHTML = ZONES.map(z => `<option value="${z.name}">${offsetOf(z.tz)} · ${pn(z.name)}</option>`).join('') + (PLACES[S.place.name] ? '' : `<option value="" selected>${esc(pn(S.place.name))}</option>`); };
+    const fill = () => { const pn = SD.i18n.placeName; $('city').innerHTML = ZONES.map(z => `<option value="${z.name}">${offsetOf(z.tz)} · ${pn(z.name)}</option>`).join('') + (PLACES[S.place.name] ? '' : `<option value="" selected>${esc(pn(S.place.name))}</option>`); };
     fill();
     $('city').addEventListener('change', e => { if (!PLACES[e.target.value]) return; S.place = PLACES[e.target.value]; store.set('place', S.place); recompute(); });
     const commit = e => {
@@ -509,7 +509,7 @@
     $('birth-clear').addEventListener('click', () => { S.natal = null; store.set('natal', null); if (natalModes.includes(S.mode)) S.mode = 'clock'; $('birth').hidden = true; recompute(); });
     $('wallpaper').addEventListener('click', exportWallpaper);
     $('save').addEventListener('click', () => exportPNG(2048));
-    const bc = $('birth-city'); bc.innerHTML = ZONES.map(z => `<option value="${z.name}">${offsetOf(z.tz)} · ${CW.i18n.placeName(z.name)}</option>`).join('');
+    const bc = $('birth-city'); bc.innerHTML = ZONES.map(z => `<option value="${z.name}">${offsetOf(z.tz)} · ${SD.i18n.placeName(z.name)}</option>`).join('');
     $('sigil').addEventListener('click', () => { S.sigil = !S.sigil; S.dirty = true; updateControls(); });
     $('preview').addEventListener('input', e => { S.playing = false; S.offsetMs = Number(e.target.value) * 60000; recompute(); });
     $('save-hd').addEventListener('click', () => exportPNG(4096));
@@ -557,7 +557,7 @@
     const lat = parseFloat($('birth-lat').value), lon = parseFloat($('birth-lon').value);
     const place = Number.isFinite(lat) && Number.isFinite(lon) ? { name: $('birth-place').value.trim() || city.name, lat, lon, tz: city.tz } : { ...city };
     const d = fromStamp(`${dateTxt} ${timeTxt}`, place.tz);
-    if (!d) { $('birth-note').textContent = CW.i18n.cap1(CW.i18n.t('ui.badDate')); return; }
+    if (!d) { $('birth-note').textContent = SD.i18n.cap1(SD.i18n.t('ui.badDate')); return; }
     const name = $('birth-name').value.trim();
     S.natal = { date: d.toISOString(), place, unknownTime: unknown, name: name || undefined, id: name ? (S.natal && S.natal.id) || uid() : undefined };
     if (name) upsertChart(S.natal);                         // a named nativity is kept in the saved charts
@@ -637,7 +637,7 @@
       S.dirty = true;
     };
     const zoomAt = (p, z) => { const w = toDial(p); view.z = z; view.x = p.x - w.x * view.z; view.y = p.y - w.y * view.z; clampView(); };
-    const angleAt = p => { const Lt = CW.render.layout(S.side, S.side < 560), q = toDial(p); return { a: Math.atan2(q.y - Lt.cy, q.x - Lt.cx), d: Math.hypot(q.y - Lt.cy, q.x - Lt.cx), R: Lt.Rb }; };
+    const angleAt = p => { const Lt = SD.render.layout(S.side, S.side < 560), q = toDial(p); return { a: Math.atan2(q.y - Lt.cy, q.x - Lt.cx), d: Math.hypot(q.y - Lt.cy, q.x - Lt.cx), R: Lt.Rb }; };
     const endTurn = () => { if (!drag) return; drag = null; S.dragging = false; canvas.classList.remove('turning'); recompute(); };
     canvas.addEventListener('pointerdown', e => {
       canvas.setPointerCapture(e.pointerId);
@@ -708,7 +708,7 @@
   }
 
   function setLang(l) {
-    S.lang = l; store.set('lang', l); CW.i18n.set(l); CW.i18n.apply();
+    S.lang = l; store.set('lang', l); SD.i18n.set(l); SD.i18n.apply();
     if ($('set-lang').value !== l) $('set-lang').value = l;
     requestAnimationFrame(slideSeg);
     if (!$('menu').hidden) refreshMenu();
@@ -718,7 +718,7 @@
   }
 
   async function start() {
-    CW.i18n.set(S.lang); CW.i18n.apply();
+    SD.i18n.set(S.lang); SD.i18n.apply();
     document.querySelectorAll('[data-about]').forEach(el => { el.hidden = el.dataset.about !== S.lang; });
     try {
       await Promise.all(['400 20px Geist', '500 20px Geist', '400 20px "Geist Mono"'].map(f => document.fonts.load(f)));
@@ -730,6 +730,6 @@
     requestAnimationFrame(frame);
     if ('serviceWorker' in navigator && /^https?:/.test(location.protocol) && !/claude\.ai$/.test(location.hostname)) navigator.serviceWorker.register('./sw.js').catch(() => {});
   }
-  CW.app = { start, exportPNG, exportWallpaper, setLang, S, viewState, view, voicing, audio };
+  SD.app = { start, exportPNG, exportWallpaper, setLang, S, viewState, view, voicing, audio };
   start();
-})(window.CW = window.CW || {});
+})(window.SD = window.SD || {});

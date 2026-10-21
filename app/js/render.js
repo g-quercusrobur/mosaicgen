@@ -10,9 +10,9 @@
       retrograde/slow   blur of the primitive the planet owns
       outer planets     optics: iridescence, brilliance, lensing
 */
-(function (CW) {
+(function (SD) {
   'use strict';
-  const C = CW.corr, K = CW.color, G = CW.glyphs, E_ = CW.engine, I = () => CW.i18n;
+  const C = SD.corr, K = SD.color, G = SD.glyphs, E_ = SD.engine, I = () => SD.i18n;
   const TAU = Math.PI * 2;
   const INK = '#ebe7dc';            // off-white, the only colour the frame owns
   const MIDNIGHT = '#050a20';
@@ -1731,5 +1731,5 @@
     return render(ctx, state, S, t, { ...opts, mode: 'clock', bare: { W, H }, caption: false });
   }
 
-  CW.render = { render, renderWallpaper, overlay, ground, captionLines, layout, signColorAt, coreColor, presence, hardness, figureColor, supportsFilter };
-})(window.CW = window.CW || {});
+  SD.render = { render, renderWallpaper, overlay, ground, captionLines, layout, signColorAt, coreColor, presence, hardness, figureColor, supportsFilter };
+})(window.SD = window.SD || {});

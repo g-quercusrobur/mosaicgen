@@ -1,4 +1,4 @@
-# cosmo weather — system book
+# siderarium — system book
 
 A cosmic clock. It renders the sky of the moment as an instrument: the frame has the discipline of a watch dial, the content is the trip.
 Every mark on the dial is computed from the sky by a stated rule. Nothing is ornament.
@@ -179,7 +179,7 @@ Rejected and why: a noise nebula (encodes nothing) and a planetary interference 
 ## 10 · Caption (almanac)
 
 ```
-thursday · 15 october 2026 · 07:00 gmt · greenwich          cosmo weather
+thursday · 15 october 2026 · 07:00 gmt · greenwich          siderarium
 day of jupiter · hour of jupiter · angel of the hour sachiel      mars trine saturn
 sun in the 12th house · 21°56′ libra                              moon 20% waxing
 ```
@@ -269,9 +269,9 @@ Angels of the days and hours from the Heptameron: michael, gabriel, samael, raph
 
 One line under the dial, in tiers: the instrument's name alone; the state, the one coloured text (work green `#6fcf8e`, watch amber `#e3b341`, rest red `#ff5a2a`); the title; the reason; the moment; the day's colour; the sound.
 
-- **State.** Rest: the Moon unripe, or void without Lilly's tolerance. Work: the Moon ripe, a ruling figure of power ≥ 0.12, no malefic cutting the portal against a building mode. Watch: everything between. `[CW]`
+- **State.** Rest: the Moon unripe, or void without Lilly's tolerance. Work: the Moon ripe, a ruling figure of power ≥ 0.12, no malefic cutting the portal against a building mode. Watch: everything between. `[SD]`
 - **Stage of life.** The house the Moon stands in, as one word: Body, Wealth, Communication, Roots, Creation, Work, Union, Death, Vision, Honour, Society, Occult (Castilian: Cuerpo, Riqueza, Comunicación, Raíces, Creación, Trabajo, Unión, Muerte, Visión, Honor, Sociedad, Oculto). Houses as stages of life: Manilius, Lilly. The Moon's house as the matter of the election: Agrippa.
-- **Mode, the three mothers.** Aleph air ideation while the ruling aspect applies; Mem water manifestation once exact and separating (the passage smoothed over ±0.3 day); Shin fire destruction when the aspect is hard, a conjunction with a malefic, the portal cut by a malefic, or the Moon void and waning. The three windows take the mode's weight (1 for the mode, 0.3 for the others), so ideation and manifestation no longer peak together. The reading of the mothers is `[CW]`.
+- **Mode, the three mothers.** Aleph air ideation while the ruling aspect applies; Mem water manifestation once exact and separating (the passage smoothed over ±0.3 day); Shin fire destruction when the aspect is hard, a conjunction with a malefic, the portal cut by a malefic, or the Moon void and waning. The three windows take the mode's weight (1 for the mode, 0.3 for the others), so ideation and manifestation no longer peak together. The reading of the mothers is `[SD]`.
 - **Sound.** Notes as letters in English and as solfège in Spanish (Do, Re, Mi…); chord names spelled out: C major, Do mayor.
 
 ## The container is the house wheel

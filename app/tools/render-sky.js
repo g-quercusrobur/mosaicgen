@@ -1,5 +1,5 @@
 /* renders the sky of now for each target in wallpapers.json: a phone wallpaper and a 2048 square.
-   usage: node tools/render-sky.js <out dir> [chromium path]   (run from the cosmo-weather folder) */
+   usage: node tools/render-sky.js <out dir> [chromium path]   (run from the siderarium folder) */
 const fs = require('fs'), path = require('path');
 const { chromium } = require('playwright');
 (async () => {
@@ -14,21 +14,21 @@ const { chromium } = require('playwright');
   const meta = { rendered: stamp, targets: [] };
   for (const t of targets) {
     await p.goto(`${index}?place=${encodeURIComponent(t.place)}&lang=en&mode=clock`);
-    await p.waitForFunction(() => window.CW && CW.app && CW.app.S.state, null, { timeout: 30000 });
+    await p.waitForFunction(() => window.SD && SD.app && SD.app.S.state, null, { timeout: 30000 });
     await p.waitForTimeout(1500);
     const png = await p.evaluate(([w, h]) => {
       const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
-      CW.render.renderWallpaper(cv.getContext('2d'), CW.app.S.state, w, h, 3, { fieldRes: 300, engrave: CW.app.S.engrave, luminous: CW.app.S.luminous });
+      SD.render.renderWallpaper(cv.getContext('2d'), SD.app.S.state, w, h, 3, { fieldRes: 300, engrave: SD.app.S.engrave, luminous: SD.app.S.luminous });
       return cv.toDataURL('image/png');
     }, [t.w, t.h]);
     fs.writeFileSync(path.join(out, `${t.name}.png`), Buffer.from(png.split(',')[1], 'base64'));
     const sq = await p.evaluate(() => {
       const cv = document.createElement('canvas'); cv.width = cv.height = 2048;
-      CW.render.render(cv.getContext('2d'), CW.app.S.state, 2048, 3, { mode: 'clock', fieldRes: 300, engrave: CW.app.S.engrave, luminous: CW.app.S.luminous });
+      SD.render.render(cv.getContext('2d'), SD.app.S.state, 2048, 3, { mode: 'clock', fieldRes: 300, engrave: SD.app.S.engrave, luminous: SD.app.S.luminous });
       return cv.toDataURL('image/png');
     });
     fs.writeFileSync(path.join(out, `${t.name}-square.png`), Buffer.from(sq.split(',')[1], 'base64'));
-    const cap = await p.evaluate(() => CW.render.captionLines(CW.app.S.state));
+    const cap = await p.evaluate(() => SD.render.captionLines(SD.app.S.state));
     meta.targets.push({ name: t.name, place: t.place, caption: cap.l1, figure: cap.fig, chord: cap.chord });
     console.log(t.name, '·', cap.l1, '·', cap.fig);
   }

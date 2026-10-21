@@ -489,7 +489,7 @@
     $('city').addEventListener('change', e => { if (!PLACES[e.target.value]) return; S.place = PLACES[e.target.value]; store.set('place', S.place); recompute(); });
     const commit = e => {
       const txt = normStamp(e.target.value), v = fromPlaceStamp(txt);
-      if (v) { e.target.value = txt; S.playing = false; S.fixed = v; S.offsetMs = 0; recompute(); e.target.classList.remove('bad'); }
+      if (v) { e.target.value = placeStamp(v); S.playing = false; S.fixed = v; S.offsetMs = 0; recompute(); e.target.classList.remove('bad'); }   // the stamp as the place reads it: a skipped spring time shows an hour later
       else e.target.classList.add('bad');
     };
     liveFormat($('when'), 'stamp'); liveFormat($('birth-date'), 'date'); liveFormat($('birth-time'), 'time');
@@ -611,8 +611,10 @@
     const m = txt.match(/^(\d{4})-(\d{1,2})-(\d{1,2})[ t](\d{1,2}):(\d{2})$/i);
     if (!m) return null;
     const want = Date.UTC(+m[1], m[2] - 1, +m[3], +m[4], +m[5]);
+    const wall = x => { const p = placeParts(new Date(x), tz); return Date.UTC(+p.year, p.month - 1, +p.day, +p.hour, +p.minute); };
     let t = want;                                           // the zone's offset at that moment, found by two corrections
-    for (let i = 0; i < 2; i++) { const p = placeParts(new Date(t), tz); t += want - Date.UTC(+p.year, p.month - 1, +p.day, +p.hour, +p.minute); }
+    for (let i = 0; i < 2; i++) t += want - wall(t);
+    if (wall(t) !== want) t = want - (wall(t - 864e5) - (t - 864e5));   // a time the clocks skipped (spring): read it with the offset in force before the change, so 02:30 becomes 03:30
     return new Date(t);
   }
   const fromPlaceStamp = txt => fromStamp(txt, S.place.tz);

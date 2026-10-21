@@ -260,13 +260,25 @@
     for (let ch = 0; ch < 2; ch++) { const d = buf.getChannelData(ch); for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 3.2); }
     const c = ac.createConvolver(); c.buffer = buf; return c;
   }
+  /* the voicing: the sign gives the pitch, the sky gives the register. a planet high in the sky sounds high, one
+     below the horizon low; the Moon sings softer in her own place; the guardians of the day and the hour hold the
+     ground in the lowest octave. the root of the figure's chord is doubled an octave below for weight. */
   function voicing(ch) {
-    if (!ch || !ch.pcs || !ch.pcs.length) return [];
+    if (!ch || !ch.voices || !ch.voices.length) return [];
     const freq = (pc, oct) => 440 * Math.pow(2, (pc - 9) / 12 + (oct - 4));
-    const root = ch.root, out = [{ f: freq(root, 2), g: 0.5 }, { f: freq(root, 3), g: 1 }];
-    for (const pc of ch.pcs) if (pc !== root) out.push({ f: freq(pc, pc > root ? 3 : 4), g: 0.8 });
-    return out;
+    const octOf = alt => 2 + Math.round((Math.max(-90, Math.min(90, alt || 0)) + 90) / 180 * 2.6);   // octave 2 deep below the horizon, 3 near it, 4 high, 5 at the zenith
+    const out = [];
+    for (const v of ch.voices) {
+      if (v.role === 'day' || v.role === 'hour') { out.push({ f: freq(v.pc, 2), g: v.role === 'day' ? 0.7 : 0.55, role: v.role }); continue; }
+      const o = octOf(v.alt), isRoot = v.role === 'figure' && v.pc === ch.root;
+      out.push({ f: freq(v.pc, o), g: v.role === 'moon' ? 0.45 : isRoot ? 1 : 0.8, role: v.role });
+      if (isRoot && o > 2) out.push({ f: freq(v.pc, o - 1), g: 0.5, role: 'root' });
+    }
+    const one = new Map();                                  // one voice per pitch: the louder stays
+    for (const v of out) { const k = v.f.toFixed(2); if (!one.has(k) || one.get(k).g < v.g) one.set(k, v); }
+    return [...one.values()].sort((a, b) => a.f - b.f);
   }
+  const voiceKey = ch => voicing(ch).map(v => v.f.toFixed(1)).join(',');
   function soundChord(ch, fadeIn = 3) {
     const ac = audio.ctx, now = ac.currentTime;
     for (const v of audio.voices) { v.gain.gain.cancelScheduledValues(now); v.gain.gain.setValueAtTime(v.gain.gain.value, now); v.gain.gain.linearRampToValueAtTime(0, now + 3); v.oscs.forEach(o => o.stop(now + 3.1)); }
@@ -282,7 +294,7 @@
       }
       audio.voices.push({ gain, oscs });
     }
-    audio.key = ch ? ch.name : null;
+    audio.key = ch ? voiceKey(ch) : null;
   }
   function listen(on) {
     if (on && !audio.ctx) {
@@ -299,7 +311,7 @@
     else soundChord(null);
     $('listen-corner').classList.toggle('on', on); $('listen-corner').title = SD.i18n.t(on ? 'ui.listening' : 'ui.listen');
   }
-  function followChord() { if (!audio.on || !S.state) return; const ch = viewState().chord; if (ch && ch.name !== audio.key) soundChord(ch, 2.5); }
+  function followChord() { if (!audio.on || !S.state) return; const ch = viewState().chord; if (ch && voiceKey(ch) !== audio.key) soundChord(ch, 2.5); }   // a new note, or a voice changing register as the sky turns
 
   /* ---------- export: square art ---------- */
   function download(cv, name) {
@@ -373,7 +385,7 @@
       ${lead}
       <h3>${H('bodies')}</h3><table>${rows}</table>
       <h3>${H('figure')}</h3><table>${figs || `<tr><td>${i.cap1(i.t('ui.quietSky'))}</td></tr>`}</table>
-      <h3>${H('sound')}</h3><p>${i.chordLong(st.chord)}${st.chord.interval ? ' · ' + i.interval(st.chord.interval) : ''}${st.chord.notes.length ? ` · ${R('notes')} ` + st.chord.notes.map(n => i.note(n)).join(' ') : ''}${st.chord.planets ? ` · ${R('from')} ` + st.chord.planets.map(P).join(', ') : ''}${st.nextChord ? ` · ${R('next')} ${i.chordName(st.nextChord.to)} ${R('at')} ${hm(st.nextChord.at)}` : ''}</p>
+      <h3>${H('sound')}</h3><p>${i.chordLong(st.chord)}${st.chord.interval ? ' · ' + i.interval(st.chord.interval) : ''}${st.chord.notes.length ? ` · ${R('notes')} ` + st.chord.notes.map(n => i.note(n)).join(' ') : ''}${st.chord.planets ? ` · ${R('from')} ` + st.chord.planets.map(P).join(', ') : ''}${st.chord.moonNote ? ` · ${R('moonNote')} ${i.note(st.chord.moonNote)}` : ''}${st.chord.ground && st.chord.ground.length ? ` · ${R('ground')} ` + st.chord.ground.map(v => `${i.note(v.note)} (${P(v.planet)})`).join(' ') : ''}${st.nextChord ? ` · ${R('next')} ${i.chordName(st.nextChord.to)} ${R('at')} ${hm(st.nextChord.at)}` : ''}</p>
       <h3>${H('tarot')}</h3>${tarot}
       ${st.transits ? `<h3>${H('transits')}</h3>${verdict}<table>${interRows}</table><table>${st.transits.slice(0, 8).map(a => `<tr><td>${figName(a)}</td><td>${a.orb.toFixed(2)}° ${a.applying ? R('applying') : R('separating')}</td><td>${a.power.toFixed(2)}</td></tr>`).join('') || `<tr><td>${i.cap1(i.t('ui.noContact'))}</td></tr>`}</table>` : ''}
       <h3>${H('moon')}</h3>${st.moon.verdict === 'void' ? `<p class="dim">${i.cap1(R('voidNote'))}</p>` : ''}<p>${i.cap1(i.verdict(st.moon.verdict))} · ${st.moon.next ? `${R('nextMoon')} ${A(st.moon.next.aspect)} ${P(st.moon.next.planet)} ${R('in')} ${(st.moon.next.days * 24).toFixed(1)}h` : i.flag('void of course')}${st.moon.flags.filter(f => f !== 'void of course').map(f => ' · ' + i.flag(f === 'under the beams' ? 'beams' : f)).join('')}</p>

@@ -351,18 +351,25 @@
     const planets = [...new Set(figs.flatMap(f => [f.a, f.b]))];
     const pcs = [...new Set(planets.map(k => st.bodies[k].sign))].sort((a, b) => a - b);
     const N = C.NOTES;
+    /* the voices: the figure's planets, then the Moon always (she alone moves at the clock's pace), then the
+       guardians of the day and the hour as the ground. each voice carries its altitude: the register follows the sky. */
+    const voiceOf = (k, role) => ({ planet: k, role, pc: st.bodies[k].sign, note: N[st.bodies[k].sign], alt: st.bodies[k].alt });
+    const voices = planets.map(k => voiceOf(k, 'figure'));
+    if (!planets.includes('moon')) voices.push(voiceOf('moon', 'moon'));
+    if (st.hour) { voices.push(voiceOf(st.hour.dayRuler, 'day')); if (st.hour.hourRuler !== st.hour.dayRuler) voices.push(voiceOf(st.hour.hourRuler, 'hour')); }
+    const extra = { voices, moonNote: planets.includes('moon') ? null : N[st.bodies.moon.sign], ground: voices.filter(v => v.role === 'day' || v.role === 'hour') };
     for (const [tmpl, suffix] of CHORDS) {
       if (tmpl.length !== pcs.length) continue;
       for (const root of pcs) {
         const set = tmpl.map(i => (root + i) % 12).sort((a, b) => a - b);
-        if (set.join() === pcs.join()) return { name: N[root] + suffix, notes: pcs.map(i => N[i]), planets, root, pcs };
+        if (set.join() === pcs.join()) return { name: N[root] + suffix, notes: pcs.map(i => N[i]), planets, root, pcs, ...extra };
       }
     }
     const ra = st.bodies[figs[0].a].sign, rb = st.bodies[figs[0].b].sign;
     let lo = ra, hi = rb, d = (rb - ra + 12) % 12;
     if (d > 6) { lo = rb; hi = ra; d = 12 - d; }
     const interval = C.INTERVALS[d];
-    return { name: d === 0 ? N[lo] : `${N[lo]}–${N[hi]}`, interval, notes: pcs.map(i => N[i]), planets, dyad: true, root: lo, pcs: d === 0 ? [lo] : [lo, hi] };
+    return { name: d === 0 ? N[lo] : `${N[lo]}–${N[hi]}`, interval, notes: pcs.map(i => N[i]), planets, dyad: true, root: lo, pcs: d === 0 ? [lo] : [lo, hi], ...extra };
   }
 
   /* The three windows: how far the moment serves ideation, incarnation, destruction (0..1).

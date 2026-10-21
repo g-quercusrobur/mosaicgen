@@ -114,6 +114,7 @@
     document.body.classList.toggle('mrx', viewState().bodies.mercury.slow > 0.5);   // mercury retrograde: the print misregisters
     const c = CW.render.captionLines(viewState());
     const low = s => s.replace(/^./, ch => ch.toLowerCase());
+    for (const k in c) if (typeof c[k] === 'string') c[k] = esc(c[k]);
     $('caption').innerHTML = `<p class="eyebrow">${c.label}</p><h2 class="h1 state-${c.stateKey}">${c.state}</h2><p class="deck">${c.title}</p><p class="reason">${c.reason}</p><p class="moment">${c.l1}</p><p class="detail">${c.detail1}<br>${c.detail2} · ${c.detail3}</p><p class="detail">${c.detail4}</p>`;
     if (!busy) scanIfNeeded();
     drawStrip();
@@ -483,14 +484,15 @@
     });
     const SPEEDS = [0.25, 1, 4, 24];
     $('speed').addEventListener('click', () => { S.speed = SPEEDS[(SPEEDS.indexOf(S.speed) + 1) % SPEEDS.length]; updateControls(); });
-    const fill = () => { const pn = CW.i18n.placeName; $('city').innerHTML = ZONES.map(z => `<option value="${z.name}">${offsetOf(z.tz)} · ${pn(z.name)}</option>`).join('') + (PLACES[S.place.name] ? '' : `<option value="" selected>${pn(S.place.name)}</option>`); };
+    const fill = () => { const pn = CW.i18n.placeName; $('city').innerHTML = ZONES.map(z => `<option value="${z.name}">${offsetOf(z.tz)} · ${pn(z.name)}</option>`).join('') + (PLACES[S.place.name] ? '' : `<option value="" selected>${esc(pn(S.place.name))}</option>`); };
     fill();
     $('city').addEventListener('change', e => { if (!PLACES[e.target.value]) return; S.place = PLACES[e.target.value]; store.set('place', S.place); recompute(); });
     const commit = e => {
-      const v = fromPlaceStamp(e.target.value.trim());
-      if (v) { S.playing = false; S.fixed = v; S.offsetMs = 0; recompute(); e.target.classList.remove('bad'); }
+      const txt = normStamp(e.target.value), v = fromPlaceStamp(txt);
+      if (v) { e.target.value = txt; S.playing = false; S.fixed = v; S.offsetMs = 0; recompute(); e.target.classList.remove('bad'); }
       else e.target.classList.add('bad');
     };
+    liveFormat($('when'), 'stamp'); liveFormat($('birth-date'), 'date'); liveFormat($('birth-time'), 'time');
     $('when').addEventListener('change', commit);
     $('when').addEventListener('keydown', e => { if (e.key === 'Enter') { commit(e); e.target.blur(); } });
     $('here').addEventListener('click', () => locate(true));
@@ -549,7 +551,8 @@
     $('birth').hidden = false;
   }
   function saveBirth() {
-    const dateTxt = $('birth-date').value.trim(), unknown = $('birth-unknown').checked, timeTxt = unknown ? '12:00' : $('birth-time').value.trim();
+    const dateTxt = normDate($('birth-date').value), unknown = $('birth-unknown').checked, timeTxt = unknown ? '12:00' : normTime($('birth-time').value);
+    $('birth-date').value = dateTxt; if (!unknown) $('birth-time').value = timeTxt;
     const city = PLACES[$('birth-city').value];
     const lat = parseFloat($('birth-lat').value), lon = parseFloat($('birth-lon').value);
     const place = Number.isFinite(lat) && Number.isFinite(lon) ? { name: $('birth-place').value.trim() || city.name, lat, lon, tz: city.tz } : { ...city };
@@ -570,6 +573,40 @@
     return Object.fromEntries(f.formatToParts(d).map(p => [p.type, p.value]));
   }
   function placeStamp(d) { const p = placeParts(d, S.place.tz); return `${p.year}-${p.month}-${p.day} ${p.hour}:${p.minute}`; }
+  /* typed dates and times: digits alone are enough, the app sets the separators. a date of eight digits is read as
+     yyyymmdd, or as ddmmyyyy when the first four cannot be a year; a time of three or four digits as h:mm or hh:mm. */
+  const digitsOf = t => String(t).replace(/\D/g, '');
+  function normDate(txt) {
+    const d = digitsOf(txt);
+    if (d.length !== 8) return txt.trim();
+    let y = d.slice(0, 4), m = d.slice(4, 6), dd = d.slice(6, 8);
+    if (+y < 1800 || +m > 12) { y = d.slice(4, 8); dd = d.slice(0, 2); m = d.slice(2, 4); }   // ddmmyyyy, as Europe writes it
+    return `${y}-${m}-${dd}`;
+  }
+  function normTime(txt) {
+    const d = digitsOf(txt);
+    if (!d.length) return txt.trim();
+    if (d.length <= 2) return `${d.padStart(2, '0')}:00`;
+    const hh = d.slice(0, d.length - 2), mm = d.slice(-2);
+    return `${hh.padStart(2, '0')}:${mm}`;
+  }
+  const normStamp = txt => { const d = digitsOf(txt); return d.length >= 9 ? `${normDate(d.slice(0, 8))} ${normTime(d.slice(8, 12))}` : txt.trim(); };
+  /* while typing, the separators appear on their own: 1990-11-27, 27-11-1990, 11:05, 9:05. the date is read as
+     yyyy… when it opens with 19 or 20, as dd-mm-yyyy otherwise; the time as h:mm when its first two digits exceed 23.
+     the saved value is always yyyy-mm-dd and hh:mm (normDate, normTime). */
+  const datePat = d => {
+    if (d.length >= 6) return (+d.slice(0, 4) < 1800 || +d.slice(4, 6) > 12) ? 'dd-dd-dddd' : 'dddd-dd-dd';   // the same test as normDate
+    return (/^(19|20)/.test(d) || d.length < 2) ? 'dddd-dd-dd' : 'dd-dd-dddd';
+  };
+  const timePat = d => (d.length >= 2 && +d.slice(0, 2) > 23) ? 'd:dd' : 'dd:dd';
+  const PATTERNS = { date: datePat, time: timePat, stamp: d => datePat(d.slice(0, 8)) + ' ' + timePat(d.slice(8)) };
+  function liveFormat(el, kind) {
+    el.addEventListener('input', () => {
+      const digits = digitsOf(el.value), pattern = PATTERNS[kind](digits); let out = '', k = 0;
+      for (const ch of pattern) { if (k >= digits.length) break; if (ch === 'd') out += digits[k++]; else out += ch; }
+      if (out !== el.value) { el.value = out; try { el.setSelectionRange(out.length, out.length); } catch (e) { /* number keyboards */ } }
+    });
+  }
   function fromStamp(txt, tz) {
     const m = txt.match(/^(\d{4})-(\d{1,2})-(\d{1,2})[ t](\d{1,2}):(\d{2})$/i);
     if (!m) return null;

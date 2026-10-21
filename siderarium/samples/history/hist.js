@@ -11,12 +11,12 @@ function metrics(s){
 let seed=7; const rnd=()=>{seed=(seed*1103515245+12345)%2147483648; return seed/2147483648;};
 const base={primary:[],intensity:[],rarity:[]};
 const t0=Date.parse('1900-01-01'), t1=Date.parse('2030-01-01');
-for(let i=0;i<1500;i++){const e=EV[i%EV.length]; const s=CW.engine.compute(new Date(t0+rnd()*(t1-t0)),{name:'x',lat:e.lat,lon:e.lon,tz:'UTC'}); const m=metrics(s); for(const k in base) base[k].push(m[k]);}
+for(let i=0;i<1500;i++){const e=EV[i%EV.length]; const s=SD.engine.compute(new Date(t0+rnd()*(t1-t0)),{name:'x',lat:e.lat,lon:e.lon,tz:'UTC'}); const m=metrics(s); for(const k in base) base[k].push(m[k]);}
 for(const k in base) base[k].sort((a,b)=>a-b);
 const pct=(k,v)=>Math.round(100*base[k].filter(x=>x<v).length/base[k].length);
 const rows=[];
 for(const e of EV){
-  const s=CW.engine.compute(new Date(e.iso),{name:e.name,lat:e.lat,lon:e.lon,tz:e.tz,zoneLabel:e.zoneLabel});
+  const s=SD.engine.compute(new Date(e.iso),{name:e.name,lat:e.lat,lon:e.lon,tz:e.tz,zoneLabel:e.zoneLabel});
   const m=metrics(s), p=s.configs.primary;
   rows.push({id:e.id,label:e.label,fig:p?`${p.a} ${p.aspect} ${p.b}`+(p.event?` (${p.event})`:''):'quiet',orb:p?p.orb.toFixed(2):'',
     primary:m.primary.toFixed(2),pPrimary:pct('primary',m.primary),pIntensity:pct('intensity',m.intensity),pRarity:pct('rarity',m.rarity),

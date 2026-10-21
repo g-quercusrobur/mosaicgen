@@ -3,7 +3,7 @@
       light   (soft aspects)  additive, interpolated in OKLab, lifted
       pigment (hard aspects)  multiplicative in linear RGB, muddied
 */
-(function (CW) {
+(function (SD) {
   'use strict';
 
   function hexToRgb(hex) {
@@ -84,5 +84,5 @@
     return `rgba(${r},${g},${b},${Math.max(0, Math.min(1, a)).toFixed(4)})`;
   }
 
-  CW.color = { hexToRgb, rgbToHex, lab, hex, mixLight, mixPigment, clarify, shade, hueShift, rgba };
-})(window.CW = window.CW || {});
+  SD.color = { hexToRgb, rgbToHex, lab, hex, mixLight, mixPigment, clarify, shade, hueShift, rgba };
+})(window.SD = window.SD || {});

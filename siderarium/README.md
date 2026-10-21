@@ -1,6 +1,6 @@
 # siderarium
 
-Macrocosmic clock visually tracking the astrological energy of the moment. Formerly cosmo weather; the folder keeps the old name.
+Macrocosmic clock visually tracking the astrological energy of the moment. Formerly cosmo weather.
 
 Siderarium draws the sky of the present moment as a living mandala. Through synesthesia it conveys, in a multi-sensory experience, the astrological energy of the hour: its colour, its geometry, its chord. It captures the moment and its vibration, to be seen, heard and kept as an image; for practitioners of the Arts it is also a timing tool. Classical aspects are divisions of the circle, so each is drawn as its star polygon: the pattern that results is the key to the present moment.
 

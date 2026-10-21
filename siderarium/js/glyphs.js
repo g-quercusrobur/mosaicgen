@@ -2,7 +2,7 @@
     Every symbol is built from circle, line and arc on a unit grid [-1, 1],
     one stroke weight, round caps. No font glyphs: they drift between platforms.
 */
-(function (CW) {
+(function (SD) {
   'use strict';
   const TAU = Math.PI * 2;
 
@@ -121,5 +121,5 @@
   const planet = (ctx, key, x, y, size, color, weight) => draw(ctx, PLANET[key], x, y, size, color, weight);
   const sign = (ctx, idx, x, y, size, color, weight) => draw(ctx, SIGN[idx], x, y, size, color, weight);
 
-  CW.glyphs = { planet, sign, PLANET, SIGN };
-})(window.CW = window.CW || {});
+  SD.glyphs = { planet, sign, PLANET, SIGN };
+})(window.SD = window.SD || {});

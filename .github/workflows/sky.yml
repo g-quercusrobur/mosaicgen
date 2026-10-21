@@ -19,13 +19,13 @@ jobs:
         with:
           node-version: 20
       - name: playwright
-        working-directory: cosmo-weather/tools
+        working-directory: siderarium/tools
         run: |
           npm init -y >/dev/null
           npm install --no-audit --no-fund playwright@1.47.2
           npx playwright install --with-deps chromium
       - name: render
-        working-directory: cosmo-weather
+        working-directory: siderarium
         run: node tools/render-sky.js ../sky-out
       - name: publish to gh-pages/sky
         uses: peaceiris/actions-gh-pages@v4

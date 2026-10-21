@@ -2,7 +2,7 @@ name: pages
 on:
   push:
     branches: [claude/cosmo-weather-app-lrigzv, main, master]
-    paths: ['cosmo-weather/**', 'site/**', '.github/workflows/pages.yml']
+    paths: ['siderarium/**', 'site/**', '.github/workflows/pages.yml']
   workflow_dispatch:
 permissions:
   contents: write
@@ -17,7 +17,7 @@ jobs:
       - name: stage the website at the root and the app under /app (the hourly renders stay at /sky)
         run: |
           rsync -a site/ dist/
-          rsync -a --exclude samples cosmo-weather/ dist/app/
+          rsync -a --exclude samples siderarium/ dist/app/
       # the site is published as the gh-pages branch: no Pages API call, so no admin permission is needed.
       # github serves a gh-pages branch at https://<owner>.github.io/<repo>/ once Pages is on
       # (settings → pages → source: deploy from a branch → gh-pages).
@@ -27,4 +27,4 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./dist
           keep_files: true          # the hourly sky renders live beside the app in gh-pages/sky
-          commit_message: 'publish cosmo weather'
+          commit_message: 'publish siderarium'

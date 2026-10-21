@@ -2,7 +2,7 @@
     English and Spanish. Ordinary capitals: names and sentence starts; only the wordmark stays lowercase.
     Mid-sentence words stay lowercase in the tables and are capitalised where a line begins (cap1). The Book T titles are translated plainly; the originals are in the about page.
 */
-(function (CW) {
+(function (SD) {
   'use strict';
   const D = {
     en: {
@@ -35,7 +35,7 @@
       ordinal: n => n + (n % 100 >= 11 && n % 100 <= 13 ? 'th' : ['th', 'st', 'nd', 'rd'][n % 10] || 'th'),
       decanOrd: ['first', 'second', 'third'],
       cap: {
-        nativity: 'nativity', dayOf: 'day of', hourOf: 'hour of', angel: 'angel of the hour', sunIn: 'Sun in', house: 'House', chord: 'chord', decanOf: 'decan of',
+        nativity: 'birth chart', dayOf: 'day of', hourOf: 'hour of', angel: 'angel of the hour', sunIn: 'Sun in', house: 'House', chord: 'chord', decanOf: 'decan of',
         moonIn: 'moon in the', mansion: 'mansion', nextChord: 'next chord', quiet: 'quiet sky', transit: 'transit', natal: 'natal', exact: 'exact',
         moonApplying: 'moon applying', moonVoid: 'moon void of course', to: '', relocated: 'relocated to', tolerable: 'tolerable', clockLabel: 'Macrocosmic Clock', under: 'under', applying: 'applying'
       },
@@ -43,18 +43,18 @@
         clock: 'clock', chart: 'chart', natal: 'natal', synastry: 'transits', sigil: 'sigil', listen: 'listen', listening: 'listening', readout: 'readout', screen: 'screen', about: 'About Siderarium',
         tagline: 'The macrocosmic clock', menu: 'menu', view: 'view', settings: 'settings', houses: 'houses', housesOpt: { regiomontanus: 'regiomontanus', equal: 'equal', placidus: 'placidus' },
         field: 'field', fieldOpt: { engraved: 'engraved', guilloche: 'guilloché', glow: 'glow' }, bodiesLabel: 'planets', bodiesOpt: { metal: 'bodies', lights: 'lights' }, language: 'language',
-        nativity: 'nativity', noneSet: 'none set', edit: 'edit', seenFrom: 'seen from', birthplace: 'birthplace', currentPlace: 'current place',
+        nativity: 'birth date', noneSet: 'none set', edit: 'edit', seenFrom: 'seen from', birthplace: 'birthplace', currentPlace: 'current place',
         charts: 'saved charts', saveAs: 'save as', rename: 'rename', del: 'delete', confirm: 'confirm', load: 'load', name: 'name', namePrompt: 'a name for this chart', ok: 'OK', noCharts: 'no saved charts yet',
         keys: 'keys', keysNote: 'space run · ← → hour · shift ← → day · f full screen · s sigil · l listen · esc close',
         now: 'now', run: 'run', pause: 'pause', here: 'here', birth: 'birth', save: 'Print HD art', saveHd: 'Print HD art 4096', wallpaper: 'Wallpaper', close: 'close', lang: 'es',
-        yourNativity: 'your nativity', kept: 'kept on this device only · never sent anywhere', date: 'date', time: 'time',
+        yourNativity: 'your birth date', kept: 'kept on this device only · never sent anywhere', date: 'date', time: 'time',
         unknown: 'time unknown (noon is used; the houses and the Moon’s degree are then uncertain)', city: 'city of the time zone', placeName: 'place name', placeHint: 'optional, e.g. Rome',
         lat: 'latitude', lon: 'longitude', optional: 'optional', saveBtn: 'save', clear: 'clear',
         birthNote: 'The time zone and offset are taken from the city for that date, so the clock keeps the civil time you were given. Latitude and longitude refine the horizon; without them the city’s are used.',
         badDate: 'the date needs eight digits, year month day; the time hour and minutes', reading: 'reading the next seven days…', notThisWeek: 'not this week', goTo: 'go to this moment',
         strip: ['now', '+6h', '+12h', '+18h', '+24h'],
         polar: 'polar day or night: equal hours assumed', quietSky: 'quiet sky', noContact: 'no contact within orb',
-        h: { bodies: 'bodies', figure: 'the figure', sound: 'sound', tarot: 'tarot', transits: 'transits to the nativity', windows: 'windows', moon: 'moon', hours: 'hours of the day', events: 'events', hierarchy: 'hierarchy', portal: 'portal' },
+        h: { bodies: 'bodies', figure: 'the figure', sound: 'sound', tarot: 'tarot', transits: 'transits to the birth chart', windows: 'windows', moon: 'moon', hours: 'hours of the day', events: 'events', hierarchy: 'hierarchy', portal: 'portal' },
         el: { air: 'air', water: 'water', fire: 'fire', earth: 'earth' },
         r: { element: 'element', harmony: 'harmony', strife: 'strife', balanced: 'balanced', harmonyPrevails: 'harmony prevails', strifePrevails: 'strife prevails', closes: 'closes', with: 'with', setsOff: 'sets off', noFigure: 'no figure across the two charts within orb', fig: { grandTrine: 'a grand trine', minorGrandTrine: 'a minor grand trine', tSquare: 'a t-square', release: 'a release' },
           voidNote: 'void of course: nothing begun now takes in the world; the guardians still hold the room. inner work, undoing, divination.', figure: 'figure', ring: 'ring', orb: 'orb', applying: 'applying', separating: 'separating', house: 'house', notes: 'notes', from: 'from', next: 'next', at: 'at',
@@ -92,7 +92,7 @@
       ordinal: n => n + 'ª',
       decanOrd: ['primer', 'segundo', 'tercer'],
       cap: {
-        nativity: 'natividad', dayOf: 'día de', hourOf: 'hora de', angel: 'ángel de la hora', sunIn: 'Sol en', house: 'Casa', chord: 'acorde', decanOf: 'decanato de',
+        nativity: 'carta natal', dayOf: 'día de', hourOf: 'hora de', angel: 'ángel de la hora', sunIn: 'Sol en', house: 'Casa', chord: 'acorde', decanOf: 'decanato de',
         moonIn: 'luna en la', mansion: 'mansión', nextChord: 'próximo acorde', quiet: 'cielo quieto', transit: 'tránsito', natal: 'natal', exact: 'exacto',
         moonApplying: 'luna aplicando', moonVoid: 'luna vacía de curso', to: 'a', relocated: 'reubicada a', tolerable: 'tolerable', clockLabel: 'Reloj Macrocósmico', under: 'bajo', applying: 'aplicando'
       },
@@ -100,18 +100,18 @@
         clock: 'reloj', chart: 'carta', natal: 'natal', synastry: 'tránsitos', sigil: 'sigilo', listen: 'escuchar', listening: 'escuchando', readout: 'lectura', screen: 'pantalla', about: 'Acerca de Siderarium',
         tagline: 'El reloj macrocósmico', menu: 'menú', view: 'vista', settings: 'ajustes', houses: 'casas', housesOpt: { regiomontanus: 'regiomontanus', equal: 'iguales', placidus: 'placidus' },
         field: 'campo', fieldOpt: { engraved: 'grabado', guilloche: 'guilloché', glow: 'luz' }, bodiesLabel: 'planetas', bodiesOpt: { metal: 'cuerpos', lights: 'luces' }, language: 'idioma',
-        nativity: 'natividad', noneSet: 'sin definir', edit: 'editar', seenFrom: 'vista desde', birthplace: 'lugar de nacimiento', currentPlace: 'lugar actual',
+        nativity: 'fecha de nacimiento', noneSet: 'sin definir', edit: 'editar', seenFrom: 'vista desde', birthplace: 'lugar de nacimiento', currentPlace: 'lugar actual',
         charts: 'cartas guardadas', saveAs: 'guardar como', rename: 'renombrar', del: 'borrar', confirm: 'confirmar', load: 'cargar', name: 'nombre', namePrompt: 'un nombre para esta carta', ok: 'OK', noCharts: 'aún no hay cartas guardadas',
         keys: 'teclas', keysNote: 'espacio correr · ← → hora · mayús ← → día · f pantalla completa · s sigilo · l escuchar · esc cerrar',
         now: 'ahora', run: 'correr', pause: 'pausa', here: 'aquí', birth: 'nacimiento', save: 'Imprimir arte HD', saveHd: 'Imprimir arte HD 4096', wallpaper: 'Fondo de pantalla', close: 'cerrar', lang: 'en',
-        yourNativity: 'tu natividad', kept: 'guardada solo en este dispositivo · nunca se envía', date: 'fecha', time: 'hora',
+        yourNativity: 'tu fecha de nacimiento', kept: 'guardada solo en este dispositivo · nunca se envía', date: 'fecha', time: 'hora',
         unknown: 'hora desconocida (se usa el mediodía; las casas y el grado de la luna quedan inciertos)', city: 'ciudad del huso horario', placeName: 'nombre del lugar', placeHint: 'opcional, p. ej. Roma',
         lat: 'latitud', lon: 'longitud', optional: 'opcional', saveBtn: 'guardar', clear: 'borrar',
         birthNote: 'El huso y el desfase se toman de la ciudad para esa fecha, así el reloj conserva la hora civil que te dieron. La latitud y la longitud afinan el horizonte; sin ellas se usan las de la ciudad.',
         badDate: 'la fecha necesita ocho cifras, año mes día; la hora, horas y minutos', reading: 'leyendo los próximos siete días…', notThisWeek: 'no esta semana', goTo: 'ir a este momento',
         strip: ['ahora', '+6h', '+12h', '+18h', '+24h'],
         polar: 'día o noche polar: se asumen horas iguales', quietSky: 'cielo quieto', noContact: 'ningún contacto dentro del orbe',
-        h: { bodies: 'cuerpos', figure: 'la figura', sound: 'sonido', tarot: 'tarot', transits: 'tránsitos a la natividad', windows: 'ventanas', moon: 'luna', hours: 'horas del día', events: 'eventos', hierarchy: 'jerarquía', portal: 'portal' },
+        h: { bodies: 'cuerpos', figure: 'la figura', sound: 'sonido', tarot: 'tarot', transits: 'tránsitos a la carta natal', windows: 'ventanas', moon: 'luna', hours: 'horas del día', events: 'eventos', hierarchy: 'jerarquía', portal: 'portal' },
         el: { air: 'aire', water: 'agua', fire: 'fuego', earth: 'tierra' },
         r: { element: 'elemento', harmony: 'armonía', strife: 'conflicto', balanced: 'equilibrio', harmonyPrevails: 'prevalece la armonía', strifePrevails: 'prevalece el conflicto', closes: 'cierra', with: 'con', setsOff: 'activa', noFigure: 'ninguna figura entre las dos cartas dentro del orbe', fig: { grandTrine: 'un gran trígono', minorGrandTrine: 'un gran trígono menor', tSquare: 'una cuadratura en T', release: 'una liberación' },
           voidNote: 'vacía de curso: nada que empiece ahora cuaja en el mundo; los guardianes siguen rigiendo la sala. trabajo interior, deshacer, adivinación.', figure: 'figura', ring: 'anillo', orb: 'orbe', applying: 'aplicativo', separating: 'separativo', house: 'casa', notes: 'notas', from: 'de', next: 'siguiente', at: 'a las',
@@ -170,5 +170,5 @@
       });
     }
   };
-  CW.i18n = I;
-})(window.CW = window.CW || {});
+  SD.i18n = I;
+})(window.SD = window.SD || {});

@@ -1381,6 +1381,20 @@
   }
   const NOTICE = () => `© ${new Date().getFullYear()} Siderarium · proprietary design and method · all rights reserved`;
   /* the bare wallpaper carries the notice in its lower right corner, small */
+  /* the wallpaper's four corners glow in the colour of the element that rules the sky now, stronger as its share grows.
+     earth's own tincture is sable, invisible as a light, so its glow is an umber. */
+  function drawCornerGlows(ctx, W, H, state) {
+    const el = state.elements && state.elements.dominant; if (!el) return;
+    const col = el === 'earth' ? '#7a5a2e' : C.ELEMENTS[el];
+    const share = state.elements.shares[el] || 0.3, a = Math.min(0.6, 0.18 + 0.9 * (share - 0.25)), r = Math.min(W, H) * 0.42;
+    ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalCompositeOperation = 'screen';
+    for (const [x, y] of [[0, 0], [W, 0], [0, H], [W, H]]) {
+      const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+      g.addColorStop(0, K.rgba(col, a)); g.addColorStop(0.45, K.rgba(col, a * 0.28)); g.addColorStop(1, K.rgba(col, 0));
+      ctx.fillStyle = g; ctx.fillRect(Math.min(x, x - r), Math.min(y, y - r), r, r);
+    }
+    ctx.restore();
+  }
   function drawNotice(ctx, W, H) {
     const s = Math.min(W, H), px = Math.max(10, Math.round(0.011 * s));
     ctx.save(); ctx.textAlign = 'right'; ctx.textBaseline = 'alphabetic'; ctx.fillStyle = K.rgba(INK, 0.28); ctx.font = `400 ${px}px ${SANS}`;
@@ -1587,7 +1601,7 @@
       if (!GROUND_EL) { drawAura(ctx, state, Lt); if (!opts.plate) drawAuraLive(ctx, state, Lt, t); }
       if (opts.caption !== false) drawCaption(ctx, state, Lt);
     }
-    if (bare) drawNotice(ctx, W, H);
+    if (bare) { drawCornerGlows(ctx, W, H, state); drawNotice(ctx, W, H); }
     return { mode: 'clock', sigil: !!opts.sigil, bare: !!bare, groundEl: GROUND_EL, layout: Lt, positions: pos, stars, rippleCol, Rp, E, lw, weave, state };
   }
 

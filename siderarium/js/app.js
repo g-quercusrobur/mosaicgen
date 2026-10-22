@@ -68,6 +68,8 @@
     lastCompute: 0
   };
   if (params.get('place') && PLACES[params.get('place')]) S.place = PLACES[params.get('place')];
+  if (params.get('lat') && params.get('lon') && Number.isFinite(+params.get('lat')) && Number.isFinite(+params.get('lon')))   // any horizon, for a wallpaper: ?lat=45.05&lon=9.69&tz=Europe/Rome&name=Piacenza
+    S.place = { name: params.get('name') || 'here', lat: +params.get('lat'), lon: +params.get('lon'), tz: params.get('tz') || Intl.DateTimeFormat().resolvedOptions().timeZone };
 
   const $ = id => document.getElementById(id);
   const canvas = $('dial');

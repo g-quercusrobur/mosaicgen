@@ -210,7 +210,7 @@
       c.globalAlpha = 1;
     }
     c.font = `${10 * d}px "Geist Mono", monospace`; c.fillStyle = 'rgba(235,231,220,0.5)'; c.textBaseline = 'top';
-    SD.i18n.t('ui.strip').map((l, n) => [SD.i18n.cap1(l), n * 24]).forEach(([l, h]) => { c.textAlign = h === 0 ? 'left' : h === STRIP_H ? 'right' : 'center'; c.fillText(l, h / 24 * W, 2 * d); });
+    SD.i18n.t('ui.strip').map((l, n) => [SD.i18n.cap1(l), n * 24]).forEach(([l, h]) => { c.textAlign = h === 0 ? 'left' : h === STRIP_H ? 'right' : 'center'; c.fillText(l, h / STRIP_H * W, 2 * d); });
     const x = Math.max(0, Math.min(1, S.offsetMs / (STRIP_H * 3600e3))) * W;
     c.fillStyle = 'rgba(235,231,220,0.9)'; c.fillRect(Math.min(W - 2 * d, x), 0, 2 * d, H);
   }

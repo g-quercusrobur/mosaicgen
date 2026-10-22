@@ -152,6 +152,7 @@
 
   /* ---------- the next 24 hours: ideation (aleph), incarnation (mem), destruction (shin) ---------- */
   const MOTHER_INK = { ideation: '#f2e8a0', incarnation: '#4a7ef0', destruction: '#ff5a2a' };   // king scale of the mother letters
+  const STRIP_H = 72;                                       // the strip under the dial spans three days
   const VEIL_INK = '#c9b8f5';                                // the veil: a silver violet, on its own scale, dashed
   const scan = { key: null, t0: 0, step: 20, vals: null, nexts: null, token: 0 };
   function scanIfNeeded() {
@@ -191,9 +192,9 @@
     c.clearRect(0, 0, W, H);
     c.strokeStyle = 'rgba(235,231,220,0.18)'; c.lineWidth = d;
     c.beginPath(); c.moveTo(0, H - 0.5 * d); c.lineTo(W, H - 0.5 * d); c.stroke();
-    for (let h = 0; h <= 24; h += 6) { const x = Math.min(W - d, h / 24 * W); c.beginPath(); c.moveTo(x, H); c.lineTo(x, H - 5 * d); c.stroke(); }
+    for (let h = 0; h <= STRIP_H; h += 6) { const x = Math.min(W - d, h / STRIP_H * W); c.beginPath(); c.moveTo(x, H); c.lineTo(x, H - (h % 24 ? 3 : 6) * d); c.stroke(); }   // a tick every six hours, taller at the days
     if (scan.vals) {
-      const n = 72, vals = scan.vals.slice(0, n + 1), keys = Object.keys(MOTHER_INK);
+      const n = STRIP_H * 3, vals = scan.vals.slice(0, n + 1), keys = Object.keys(MOTHER_INK);   // three steps an hour
       const peak = Math.max(0.08, ...scan.vals.flatMap(w => keys.map(k => w[k])));   // the week's strongest window sets the scale; the rows also carry the Moon's house, which is not a value
       const top = 14 * d;                                     // room for the hour labels
       for (const [m, col] of Object.entries(MOTHER_INK)) {
@@ -209,8 +210,8 @@
       c.globalAlpha = 1;
     }
     c.font = `${10 * d}px "Geist Mono", monospace`; c.fillStyle = 'rgba(235,231,220,0.5)'; c.textBaseline = 'top';
-    SD.i18n.t('ui.strip').map((l, n) => [SD.i18n.cap1(l), n * 6]).forEach(([l, h]) => { c.textAlign = h === 0 ? 'left' : h === 24 ? 'right' : 'center'; c.fillText(l, h / 24 * W, 2 * d); });
-    const x = Math.max(0, Math.min(1, S.offsetMs / 864e5)) * W;
+    SD.i18n.t('ui.strip').map((l, n) => [SD.i18n.cap1(l), n * 24]).forEach(([l, h]) => { c.textAlign = h === 0 ? 'left' : h === STRIP_H ? 'right' : 'center'; c.fillText(l, h / 24 * W, 2 * d); });
+    const x = Math.max(0, Math.min(1, S.offsetMs / (STRIP_H * 3600e3))) * W;
     c.fillStyle = 'rgba(235,231,220,0.9)'; c.fillRect(Math.min(W - 2 * d, x), 0, 2 * d, H);
   }
   function fmtAt(d) {
@@ -327,17 +328,109 @@
   function followChord() { if (!audio.on || !S.state) return; const ch = viewState().chord; if (ch && voiceKey(ch) !== audio.key) soundChord(ch, 2.5); }   // a new note, or a voice changing register as the sky turns
 
   /* ---------- export: square art ---------- */
-  function download(cv, name) {
-    cv.toBlob(async b => {
-      try {                                                   // inside the claude.ai viewer a file is handed over through its downloads capability
-        const dl = window.claude && typeof window.claude.use === 'function' ? await window.claude.use('downloads') : null;
-        if (dl) { await dl.save({ filename: name, data: b }); return; }
-      } catch (e) { if (e && e.code === 'declined') return; }
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(b); a.download = name;
-      document.body.appendChild(a); a.click(); a.remove();
-      setTimeout(() => URL.revokeObjectURL(a.href), 4000);
-    }, 'image/png');
+  async function downloadBlob(b, name) {
+    try {                                                   // inside the claude.ai viewer a file is handed over through its downloads capability
+      const dl = window.claude && typeof window.claude.use === 'function' ? await window.claude.use('downloads') : null;
+      if (dl) { await dl.save({ filename: name, data: b }); return; }
+    } catch (e) { if (e && e.code === 'declined') return; }
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(b); a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  }
+  function download(cv, name) { cv.toBlob(b => downloadBlob(b, name), 'image/png'); }
+
+  /* ---------- charts out and in: a small file of the saved charts and settings, to carry between devices and addresses ---------- */
+  function exportCharts() {
+    const payload = { app: 'siderarium', format: 1, exported: new Date().toISOString(), natal: S.natal, charts: S.charts,
+      settings: { lang: S.lang, houses: S.houses, field: S.field, bodies: store.get('bodies', 'lights'), relocate: S.relocate, place: S.place } };
+    downloadBlob(new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' }), `siderarium-charts-${new Date().toISOString().slice(0, 10)}.json`);
+  }
+  function importCharts(file) {
+    const i = SD.i18n, note = $('import-note');
+    file.text().then(txt => {
+      const d = JSON.parse(txt);
+      if (!d || d.app !== 'siderarium' || !Array.isArray(d.charts)) throw new Error('format');
+      let n = 0;
+      for (const c of d.charts) {
+        if (!c || !c.date || !c.place || !Number.isFinite(+c.place.lat)) continue;
+        if (!c.id) c.id = uid();
+        if (!S.charts.some(x => x.id === c.id)) { S.charts.push(c); n++; }
+      }
+      store.set('charts', S.charts);
+      if (!S.natal && d.natal && d.natal.date && d.natal.place) { S.natal = d.natal; store.set('natal', S.natal); natalCache.key = null; }
+      note.textContent = i.cap1(i.t('ui.imported')(n));
+      refreshMenu(); recompute();
+    }).catch(() => { note.textContent = i.cap1(i.t('ui.badFile')); });
+  }
+
+  /* ---------- the birth chart report: everything an interpreter, human or machine, needs, as plain text ---------- */
+  function chartReport() {
+    const st = natalState(); if (!st) return;
+    const i = SD.i18n, C = SD.corr, n = S.natal, R = k => i.t('ui.rep.' + k);
+    const P = k => i.cap1(i.planet(k)), A = k => i.aspect(k);
+    const lonTxt = lon => { const L = ((lon % 360) + 360) % 360, sg = Math.floor(L / 30), d = L - sg * 30; return `${Math.floor(d)}°${String(Math.floor((d % 1) * 60)).padStart(2, '0')}′ ${i.sign(sg)} (${L.toFixed(2)}°)`; };
+    const pp = placeParts(new Date(n.date), n.place.tz), off = offsetOf(n.place.tz, new Date(n.date));
+    const L = [];
+    L.push(`# ${R('title')} · ${n.name || i.t('ui.noneSet')}`, '');
+    L.push(R('intro').replace('{houses}', S.houses), '');
+    L.push(`## ${R('birth')}`);
+    L.push(`- ${R('name')}: ${n.name || '—'}`);
+    L.push(`- ${R('local')}: ${pp.year}-${pp.month}-${pp.day} ${n.unknownTime ? R('noon') : pp.hour + ':' + pp.minute} (${n.place.tz}, ${off})`);
+    L.push(`- ${R('utc')}: ${new Date(n.date).toISOString().replace('T', ' ').slice(0, 16)} UTC`);
+    L.push(`- ${R('place')}: ${n.place.label || i.placeName(n.place.name)} · ${(+n.place.lat).toFixed(4)}, ${(+n.place.lon).toFixed(4)}`);
+    if (st.relocated) L.push(`- ${R('relocated')}: ${i.placeName(st.relocated)}`);
+    L.push(`- ${R('system')}: ${R('zodiac')} · ${S.houses} · ${st.sect === 'day' ? R('dayChart') : R('nightChart')}`, '');
+    L.push(`## ${R('angles')}`);
+    L.push(`- ASC ${lonTxt(st.asc)}`, `- MC ${lonTxt(st.mc)}`, `- DSC ${lonTxt(st.asc + 180)}`, `- IC ${lonTxt(st.mc + 180)}`, '');
+    L.push(`## ${R('houses')}`);
+    for (let h = 1; h <= 12; h++) L.push(`- ${i.roman(h)} ${lonTxt(st.cusps[h])}`);
+    L.push('');
+    L.push(`## ${R('planets')}`);
+    L.push(`| ${R('planet')} | ${R('position')} | ${R('house')} | ${R('motion')} | ${R('dignity')} | ${R('condition')} | ${R('decan')} |`, '|---|---|---|---|---|---|---|');
+    for (const k of C.ORDER) {
+      const b = st.bodies[k];
+      const motion = b.station ? R('stationary') : b.retro ? R('retrograde') : R('direct');
+      const cond = [b.cazimi && 'cazimi', b.combust && R('combust'), b.beams && R('beams'), b.oob && R('oob'), b.angular && R('angular')].filter(Boolean).join(', ') || '—';
+      const dg = `${b.dignity.score >= 0 ? '+' : ''}${b.dignity.score} ${b.dignity.labels.map(x => i.t('dignity.' + x.split(' ')[0]) === 'dignity.' + x.split(' ')[0] ? x : x.replace(/^reception with (\w+)$/, (m, o) => `${i.t('dignity.reception')} ${i.planet(o)}`).replace(/^\w+$/, y => i.t('dignity.' + y))).join(', ')}`;
+      const dec = `${i.decanOrd(b.decan.decan)} ${i.t('cap.decanOf')} ${i.sign(b.sign)} · ${P(b.decan.ruler)} · ${i.card(b.decan)} · ${i.title(b.decan)}`;
+      L.push(`| ${P(k)} | ${lonTxt(b.lon)} | ${i.roman(b.house)} | ${motion} ${b.speed.toFixed(2)}°/d | ${dg} | ${cond} | ${dec} |`);
+    }
+    L.push('');
+    const m = st.bodies.moon, mc = st.moon;
+    L.push(`## ${R('moon')}`);
+    L.push(`- ${R('phase')}: ${mc.phaseAngle.toFixed(1)}° · ${Math.round(mc.illum * 100)}% · ${mc.waxing ? R('waxing') : R('waning')}`);
+    L.push(`- ${R('verdict')}: ${i.verdict(mc.verdict)}${mc.verdict === 'void' && mc.tolerable ? ` (${R('tolerable')})` : ''}`);
+    if (mc.next) L.push(`- ${R('nextMoon')}: ${A(mc.next.aspect)} ${P(mc.next.planet)} ${R('inDays')} ${mc.next.days.toFixed(2)}`);
+    if (mc.flags && mc.flags.length) L.push(`- ${R('flags')}: ${mc.flags.map(f => i.flag(f)).join(', ')}`);
+    L.push(`- ${R('mansion')}: ${i.ordinal(m.mansion.index)} · ${i.name(m.mansion.name)}`, '');
+    L.push(`## ${R('aspects')}`);
+    L.push(`| ${R('pair')} | ${R('aspect')} | ${R('orb')} | ${R('phase2')} | ${R('power')} |`, '|---|---|---|---|---|');
+    for (const a of st.aspects) L.push(`| ${P(a.a)} – ${P(a.b)} | ${A(a.aspect)} (${a.angle}°) | ${a.orb.toFixed(2)}° | ${a.applying ? R('applying') : R('separating')}${a.dissociate ? ', ' + R('dissociate') : ''} | ${a.power.toFixed(2)} |`);
+    L.push('');
+    const h = st.hour;
+    L.push(`## ${R('hour')}`);
+    L.push(`- ${R('dayRuler')}: ${P(h.dayRuler)} · ${R('angel')} ${i.name(h.dayAngel)}`);
+    L.push(`- ${R('hourRuler')}: ${P(h.hourRuler)} · ${R('angel')} ${i.name(h.angel)} · ${R('hourIndex')} ${h.index + 1} ${h.isDay ? R('ofDay') : R('ofNight')}${h.polar ? ' · ' + R('polar') : ''}`, '');
+    L.push(`## ${R('elements')}`);
+    L.push(Object.entries(st.elements.shares).map(([k, v]) => `${i.t('elements.' + k) === 'elements.' + k ? k : i.t('elements.' + k)} ${Math.round(v * 100)}%`).join(' · '), '');
+    L.push(`## ${R('layers')}`);
+    const pr = st.configs.primary;
+    if (pr) L.push(`- ${R('figure')}: ${P(pr.a)} ${A(pr.aspect)} ${P(pr.b)} · {${pr.n}/${pr.k}} · ${R('orb')} ${pr.orb.toFixed(2)}°${st.configs.cut ? ` · ${R('cut')} ${P(st.configs.cut.by)}` : ''}`);
+    L.push(`- ${R('chord')}: ${i.chordLong(st.chord)}${st.chord.notes.length ? ' · ' + st.chord.notes.map(x => i.note(x)).join(' ') : ''}`);
+    L.push(`- ${R('windows')}: ${Object.entries(st.windows).map(([k, v]) => `${i.window(k)} ${v.toFixed(2)}`).join(' · ')}`);
+    L.push(`- ${R('titleOf')}: ${i.state(st.title.state)} · ${i.house12(st.title.house)} · ${i.window(st.title.mode)}`);
+    L.push(`- ${R('veil')}: ${st.veil.v.toFixed(2)}${st.veil.factors.length ? ' · ' + st.veil.factors.map(x => i.t('ui.veilOf.' + x.key)).join(', ') : ''}`, '');
+    if (S.state) {                                          // the sky of now against this chart
+      const tr = SD.engine.computeTransits(S.state, st).filter(x => x.power > 0.04), inter = SD.engine.computeInteractions(S.state, st, tr);
+      L.push(`## ${R('transits')} · ${placeStamp(S.state.date)} ${S.place.tz}`);
+      L.push(`- ${R('verdict')}: ${i.t('ui.r.' + inter.verdict) === 'ui.r.' + inter.verdict ? inter.verdict : i.t('ui.r.' + inter.verdict)} · ${R('harmony')} ${inter.harmony.toFixed(2)} · ${R('strife')} ${inter.strife.toFixed(2)}`);
+      for (const a of tr.slice(0, 14)) L.push(`- ${P(a.a)} ${A(a.aspect)} ${R('natal')} ${C.PLANETS[a.b] ? P(a.b) : a.b === 'ascendant' ? 'ASC' : 'MC'} · ${a.orb.toFixed(2)}° ${a.applying ? R('applying') : R('separating')} · ${a.power.toFixed(2)}`);
+      L.push('');
+    }
+    L.push(`— ${R('footer')} · siderarium.com · ${new Date().toISOString().slice(0, 16).replace('T', ' ')} UTC`);
+    const base = (n.name || 'chart').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '-').replace(/^-|-$/g, '');
+    downloadBlob(new Blob([L.join('\n')], { type: 'text/markdown' }), `siderarium-report-${base}.md`);
   }
   const stampOf = st => st.date.toISOString().slice(0, 16).replace(/[:T]/g, '');
   function exportPNG(px) {
@@ -417,7 +510,7 @@
     const live = S.offsetMs === 0 && !S.fixed && !S.playing;
     $('live').classList.toggle('on', live);
     $('now-float').hidden = live;                           // the way back, in sight whenever the clock has been moved
-    if (document.activeElement !== $('preview')) $('preview').value = Math.max(0, Math.min(1440, Math.round(S.offsetMs / 60000)));
+    if (document.activeElement !== $('preview')) $('preview').value = Math.max(0, Math.min(STRIP_H * 60, Math.round(S.offsetMs / 60000)));
     $('play').classList.toggle('on', S.playing);
     $('play').textContent = SD.i18n.cap1(SD.i18n.t(S.playing ? 'ui.pause' : 'ui.run'));
     $('speed').textContent = S.speed < 1 ? `${S.speed * 60}m/s` : `${S.speed}h/s`;
@@ -450,7 +543,7 @@
     $('set-lang').value = S.lang; $('set-houses').value = S.houses; $('set-field').value = !S.engrave ? 'glow' : S.field === 'guilloche' ? 'guilloche' : 'engraved'; $('set-bodies').value = S.luminous ? 'lights' : 'metal';
     $('set-relocate').value = S.relocate ? '1' : '0';
     $('natal-summary').textContent = natalSummary();
-    $('natal-saveas').disabled = !S.natal;
+    $('natal-saveas').disabled = !S.natal; $('natal-report').disabled = !S.natal;
     const ul = $('charts');
     ul.innerHTML = S.charts.length ? S.charts.map(c => `<li data-id="${c.id}"${S.natal && S.natal.id === c.id ? ' class="on"' : ''}><span class="name" data-act="load" role="button" tabindex="0" title="${i.t('ui.load')}">${esc(c.name)}</span><span class="ops"><button data-act="rename">${i.cap1(i.t('ui.rename'))}</button><button data-act="delete">${i.cap1(i.t('ui.del'))}</button></span></li>`).join('')
       : `<li class="empty">${i.cap1(i.t('ui.noCharts'))}</li>`;
@@ -478,6 +571,10 @@
     $('set-relocate').addEventListener('change', e => { S.relocate = e.target.value === '1'; store.set('relocate', S.relocate); natalCache.key = null; recompute(); });
     $('natal-edit').addEventListener('click', () => { openMenu(false); openBirth(); });
     $('natal-new').addEventListener('click', () => { openMenu(false); openBirth(true); });   // a blank form; the loaded chart stays until the new one is saved
+    $('natal-report').addEventListener('click', chartReport);
+    $('charts-export').addEventListener('click', exportCharts);
+    $('charts-import').addEventListener('click', () => $('charts-file').click());
+    $('charts-file').addEventListener('change', e => { const f = e.target.files && e.target.files[0]; if (f) importCharts(f); e.target.value = ''; });
     $('natal-saveas').addEventListener('click', () => { const row = $('chart-new'); row.hidden = !row.hidden; if (!row.hidden) { $('chart-name').value = S.natal && S.natal.name || ''; $('chart-name').focus(); } });
     const commitNew = () => { const name = $('chart-name').value.trim(); if (!name) return; saveChartAs(name); $('chart-new').hidden = true; };
     $('chart-ok').addEventListener('click', commitNew);

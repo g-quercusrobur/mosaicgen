@@ -1391,7 +1391,7 @@
     for (const [x, y] of [[0, 0], [W, 0], [0, H], [W, H]]) {
       const g = ctx.createRadialGradient(x, y, 0, x, y, r);
       g.addColorStop(0, K.rgba(col, a)); g.addColorStop(0.45, K.rgba(col, a * 0.28)); g.addColorStop(1, K.rgba(col, 0));
-      ctx.fillStyle = g; ctx.fillRect(Math.min(x, x - r), Math.min(y, y - r), r, r);
+      ctx.fillStyle = g; ctx.fillRect(x ? x - r : 0, y ? y - r : 0, r, r);   // the square that lies inside the screen at that corner
     }
     ctx.restore();
   }

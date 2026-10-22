@@ -281,3 +281,12 @@ The twelve-sided container has a vertex on every cusp, so it is irregular and tu
 ## The veil
 
 A fourth line under the three mothers, dashed, silver-violet, on its own scale from 0 to 1: the thinning of the veil [SD]. Factors, each a weight: twilight at sunrise and sunset (bell of 40 min), solar midnight (0.7); the dark Moon (0.9, bell of 25° of phase) and the full (0.7, 20°); the Moon in a water sign (0.45) or a water house (0.4); the Moon void (0.5); the hour of the Moon (0.45) or of Saturn (0.4), the day of either (0.2); the doors of the year by the Sun's longitude with a bell of 1.5°: Samhain 1, Beltane 0.8, Imbolc and Lammas 0.55, solstices and equinoxes 0.4; an eclipse 1; Neptune on the Moon by conjunction, opposition or square (0.5 × exactness) or within 3° of an angle (0.5). Combined as one minus the product of (one minus each): any strong cause alone opens it. The legend names the thinnest moment of the coming day (or of the week if the day is flat); the readout lists the factors in force.
+
+## The export file: a contract
+
+`siderarium-charts-<date>.json` carries the saved charts between devices and addresses. Every future version of Siderarium must read every file ever written, so the format is a contract:
+
+- Top level: `app` = "siderarium", `format` (integer, starts at 1), `exported` (ISO instant), `natal` (the loaded chart or null), `charts` (array), `settings` (object, optional, advisory).
+- A chart: `id` (string), `name` (string, optional), `date` (ISO 8601 instant in UTC, the one field that cannot be lost), `place` {`name`, `label` (optional), `lat`, `lon`, `tz` (IANA zone)}, `unknownTime` (boolean). Nothing else is required; everything the app shows is recomputed from `date`, `lat`, `lon` and `tz`.
+- Readers accept any `format` ≥ 1, read only the fields they know, ignore the rest, never require a field added later (new fields are optional with defaults), and never rename or change the meaning of a field listed here. A chart that lacks `id` is given one; a chart that lacks `date` or `place` is skipped, not fatal.
+- The report (`siderarium-report-<name>.md`) is plain Markdown for reading; it is not an import format.

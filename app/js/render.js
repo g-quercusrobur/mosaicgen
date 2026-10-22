@@ -226,8 +226,8 @@
     const px = Math.ceil(Lt.R * 2 * ext * k) + 4;
     if (engraveCache.key !== key) {
       const cv = engraveCache.canvas || document.createElement('canvas');
-      if (cv.width !== px) cv.width = cv.height = px; else cv.getContext('2d').clearRect(0, 0, px, px);
       const g = cv.getContext('2d');
+      if (cv.width !== px) cv.width = cv.height = px; else { g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, px, px); }   // clear under the identity: under the old transform only part of the plate was wiped, and the next minute's rings were drawn over the rest, a doubled rectangle
       g.setTransform(k, 0, 0, k, px / 2 - Lt.cx * k, px / 2 - Lt.cy * k);
       engrave(g, state, Lt, density);
       engraveCache.key = key; engraveCache.canvas = cv;

@@ -915,7 +915,7 @@
     if (natalModes.includes(S.mode) && !S.natal) S.mode = 'clock';
     document.body.classList.toggle('reading', S.reading && !S.wall); document.body.classList.toggle('wall', S.wall);
     bind(); bindMenu(); if (!S.wall) bindGesture(); size(); recompute(); drawNexts(); requestAnimationFrame(slideSeg);
-    if (S.firstVisit || S.place.name === 'here') locate(false);
+    if (!S.wall && (S.firstVisit || S.place.name === 'here')) locate(false);   // a wallpaper never asks for the position: it takes the address's place or the device's zone
     requestAnimationFrame(frame);
     if ('serviceWorker' in navigator && /^https?:/.test(location.protocol) && !/claude\.ai$/.test(location.hostname)) navigator.serviceWorker.register('./sw.js').catch(() => {});
   }

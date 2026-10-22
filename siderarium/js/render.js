@@ -1734,7 +1734,7 @@
   }
   /* a wallpaper: the sky without its wheel, the field running to the edges of a W × H canvas. the dial is sized to the width. */
   function renderWallpaper(ctx, state, W, H, t, opts = {}) {
-    const S = Math.round(Math.min(W, H) / 0.74);
+    const S = Math.round(Math.min(W, H) / 0.74 * (W > H ? 0.75 : 1));   // on a landscape screen (a desktop wallpaper) the figure sits a quarter smaller, clear of the icons
     return render(ctx, state, S, t, { ...opts, mode: 'clock', bare: { W, H }, caption: false });
   }
 

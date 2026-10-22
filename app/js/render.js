@@ -238,7 +238,9 @@
   }
   function engrave(ctx, state, Lt, density) {
     const L = lights(state, Lt).map(l => ({ ...l, rgb: K.hexToRgb(l.color) }));
-    const E = lunarE(state), u = Lt.u, step = (GUILLOCHE ? Math.max(4.4 * u, 3.0) : 4.4 * u) / density, segLen = (GUILLOCHE ? 5 : 7) * u / density;
+    const k = ctx.getTransform().a || 1;                   // device pixels per unit. the rings never closer than 3.2 device pixels, the pitch a retina screen shows: on a plain screen the old pitch was 1.6 pixels and aliased into moiré
+    const E = lunarE(state), u = Lt.u, step = Math.max((GUILLOCHE ? Math.max(4.4 * u, 3.0) : 4.4 * u) / density, 3.2 / k), segLen = (GUILLOCHE ? 5 : 7) * u / density;
+    const drift = 0.037;                                    // the waves' slow phase drift from ring to ring, as the approved engraving had it
     const lobes = 96, amp = Math.max(1.25 * u, 1.0);         // guilloché: grain d'orge as fine as the older engraving, alternate rings half a period apart
     let ring = 0;
     ctx.save(); ctx.lineCap = 'butt';
@@ -256,10 +258,10 @@
         const under = 1 - 0.4 * smooth(0, 0.35, y);
         const kk = Math.min(1, I * 2.2 * E * under);
         ctx.strokeStyle = `rgba(${Math.round(255 * cr / I)},${Math.round(255 * cg / I)},${Math.round(255 * cb / I)},${(0.18 + 0.82 * kk).toFixed(3)})`;
-        ctx.lineWidth = u * (0.45 + 2.6 * kk) / Math.sqrt(density);
+        ctx.lineWidth = Math.min(step * 0.7, u * (0.45 + 2.6 * kk) / Math.sqrt(density));   // a line at most seven tenths of the gap: the rings blend into a field, they do not merge into a wall
         ctx.beginPath();
         for (let q = 0; q <= 4; q++) {
-          const a = a0 + (a1 - a0) * q / 4, rr = GUILLOCHE ? r + amp * Math.sin(lobes * a + (ring % 2) * Math.PI) : r + 1.4 * u * Math.sin(12 * a + r * 0.037);
+          const a = a0 + (a1 - a0) * q / 4, rr = GUILLOCHE ? r + amp * Math.sin(lobes * a + (ring % 2) * Math.PI) : r + 1.4 * u * Math.sin(12 * a + r * drift);
           const px = Lt.cx + rr * Math.cos(a), py = Lt.cy - rr * Math.sin(a);
           q ? ctx.lineTo(px, py) : ctx.moveTo(px, py);
         }
@@ -1532,7 +1534,9 @@
       const m = ctx.getTransform(), k = m.a;
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       const sx = (Lt.cx - Lt.R) * k + m.e, sy = (Lt.cy - Lt.R) * k + m.f, sw = 2 * Lt.R * k;
-      ctx.drawImage(ctx.canvas, sx, sy, sw, sw, sx, sy, sw, sw);
+      // through a copy, never the canvas onto itself: a self-read under a filter leaves partial rectangles on some GPUs
+      const cp = scratchFor(ctx); cp.setTransform(1, 0, 0, 1, 0, 0); cp.drawImage(ctx.canvas, 0, 0);
+      ctx.drawImage(cp.canvas, sx, sy, sw, sw, sx, sy, sw, sw);
       ctx.restore();
     }
     ctx.restore(); // sky clip

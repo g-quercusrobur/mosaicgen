@@ -4,12 +4,23 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#000000">
-<title>Siderarium · the macrocosmic clock</title>
-<meta name="description" content="Siderarium: macrocosmic clock visually tracking the astrological energy of the moment. The sky of now as a living mandala; a timing tool for practitioners of the Arts.">
+<title>Siderarium · macrocosmic clock: planetary hours, electional timing, the sky of the moment</title>
+<meta name="description" content="A live astrological clock: the sky of this moment as a mandala, planetary hours and their angels, the Moon void of course, electional windows, the thinning of the veil. For astrologers, magicians and angel workers. Free, private, works offline.">
+<link rel="canonical" href="https://siderarium.com/">
+<link rel="alternate" hreflang="en" href="https://siderarium.com/">
+<link rel="alternate" hreflang="es" href="https://siderarium.com/app/?lang=es">
+<link rel="alternate" hreflang="x-default" href="https://siderarium.com/">
+<meta name="robots" content="index, follow, max-image-preview:large">
 <meta property="og:title" content="Siderarium · the macrocosmic clock">
 <meta property="og:description" content="The sky of the present moment as a living mandala: colour, geometry and chord. A live, synesthetic timetable for practitioners of planet and energy work.">
-<meta property="og:image" content="img/hero.jpg">
+<meta property="og:image" content="https://siderarium.com/img/hero.jpg">
+<meta property="og:url" content="https://siderarium.com/">
+<meta property="og:site_name" content="Siderarium">
 <meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Siderarium · the macrocosmic clock">
+<meta name="twitter:description" content="Planetary hours and their angels, the Moon's verdict, electional windows and the veil, drawn live from the sky of this moment.">
+<meta name="twitter:image" content="https://siderarium.com/img/hero.jpg">
 <link rel="icon" type="image/png" sizes="32x32" href="img/siderarium-32.png">
 <link rel="icon" type="image/png" sizes="64x64" href="img/siderarium-64.png">
 <link rel="icon" type="image/png" sizes="192x192" href="img/siderarium-192.png">
@@ -20,6 +31,20 @@
 @font-face { font-family: "Geist Mono"; font-weight: 400; font-display: swap; src: url("fonts/GeistMono-Regular.woff2") format("woff2"); }
 </style>
 <link rel="stylesheet" href="style.css">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@graph":[
+ {"@type":"Organization","@id":"https://siderarium.com/#org","name":"Hippocrene Design Works LLC","url":"https://siderarium.com/","logo":"https://siderarium.com/img/siderarium-512.png"},
+ {"@type":"WebSite","@id":"https://siderarium.com/#site","url":"https://siderarium.com/","name":"Siderarium","description":"The macrocosmic clock: the sky of the present moment as a living mandala, with planetary hours, the Moon's verdict, electional windows and the thinning of the veil.","publisher":{"@id":"https://siderarium.com/#org"},"inLanguage":["en","es"]},
+ {"@type":"SoftwareApplication","@id":"https://siderarium.com/#app","name":"Siderarium","alternateName":"Siderarium, the macrocosmic clock","url":"https://siderarium.com/app/","applicationCategory":"LifestyleApplication","applicationSubCategory":"Astrology","operatingSystem":"Web, iOS, Android, macOS, Windows","browserRequirements":"Requires a modern browser; installs as a progressive web app","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"description":"A live astrological clock for astrologers, magicians and angel workers: planetary hours and their angels, the Moon void of course and her verdict, electional windows, the thinning of the veil, birth charts and transits, the figure of the moment as a sigil and as a chord.","featureList":["Planetary hours and the angel of the hour","Moon void of course and the Moon's verdict","Electional windows: ideation, manifestation, destruction","The thinning of the veil","Birth charts with a world gazetteer, transits and synastry","Sigil of the moment","The chord of the sky, to listen"],"image":"https://siderarium.com/img/hero.jpg","author":{"@id":"https://siderarium.com/#org"},"isAccessibleForFree":true,"inLanguage":["en","es"]},
+ {"@type":"FAQPage","mainEntity":[
+  {"@type":"Question","name":"What are planetary hours?","acceptedAnswer":{"@type":"Answer","text":"The day from sunrise to sunset and the night from sunset to sunrise are each divided into twelve unequal hours, ruled in turn by Saturn, Jupiter, Mars, the Sun, Venus, Mercury and the Moon, the Chaldean order. Siderarium computes them for your exact place and names the hour's ruler and its angel."}},
+  {"@type":"Question","name":"What does Moon void of course mean?","acceptedAnswer":{"@type":"Answer","text":"The Moon makes no further Ptolemaic aspect to a classical planet before leaving her sign. Tradition holds that nothing begun then comes to much in the world; Siderarium shows the void, Lilly's tolerable exceptions, and the hours before and after it."}},
+  {"@type":"Question","name":"Is Siderarium a birth chart app?","acceptedAnswer":{"@type":"Answer","text":"Yes, among other things. Enter a birth once, the town found by name from a world gazetteer, and the chart is kept on your device. The transits view shows which of your natal figures the sky is setting off now, and whether harmony or strife prevails."}},
+  {"@type":"Question","name":"Is Siderarium free and private?","acceptedAnswer":{"@type":"Answer","text":"Free. No account, no cookies, no analytics, no server: the sky is computed in your browser and your birth data never leave your device. It installs from the browser on iPhone, Android, Mac and Windows and works offline."}},
+  {"@type":"Question","name":"How accurate is Siderarium?","acceptedAnswer":{"@type":"Answer","text":"Positions come from an ephemeris accurate to about one arcminute, with Regiomontanus houses by default and equal or Placidus on request. The about page in the app lists every rule and its source."}}
+ ]}
+]}
+</script>
 </head>
 <body>
 
@@ -29,6 +54,7 @@
     <a href="#how">How it works</a>
     <a href="#timing">Timing</a>
     <a href="#views">Views</a>
+    <a href="#who">For whom</a>
     <a href="#lineage">Lineage</a>
     <a href="#get">Get the app</a>
     <a class="btn small primary" href="app/">Open Siderarium</a>
@@ -65,7 +91,7 @@
         <p><strong>Every mark can be traced.</strong> Planetary positions come from an ephemeris accurate to the arcminute. A fixed set of rules turns them into colour, number, geometry and sound, and the readout names the rule behind each one.</p>
       </div>
       <figure>
-        <img src="img/desk-clock.jpg" alt="Siderarium on a desktop screen: the dial with its readout" width="1800" height="1125">
+        <img loading="lazy" src="img/desk-clock.jpg" alt="Siderarium on a desktop screen: the dial with its readout" width="1800" height="1125">
         <figcaption>Clock view with the readout open.</figcaption>
       </figure>
     </div>
@@ -75,7 +101,7 @@
     <div class="wrap">
       <div class="two flip">
         <figure>
-          <img src="img/figure.jpg" alt="The figure of the moment drawn as a sigil: a star polygon with its circles" width="1000" height="1000">
+          <img loading="lazy" src="img/figure.jpg" alt="The figure of the moment drawn as a sigil: a star polygon with its circles" width="1000" height="1000">
           <figcaption>The sigil layer: the figure alone, for copying by hand.</figcaption>
         </figure>
         <div class="prose">
@@ -108,7 +134,7 @@
         </div>
       </div>
       <figure class="phone">
-        <img src="img/phone.png" alt="Siderarium on a phone" width="780" height="1688">
+        <img loading="lazy" src="img/phone.png" alt="Siderarium on a phone" width="780" height="1688">
       </figure>
     </div>
   </section>
@@ -118,9 +144,9 @@
       <p class="kicker">Views</p>
       <h2>One sky, four readings.</h2>
       <div class="views">
-        <div class="view"><img src="img/desk-chart.jpg" alt="The chart view: a conventional wheel with aspect lines"><h3>Chart</h3><p>The same moment as a conventional wheel: houses, degrees, aspect lines, for the astrologer's eye.</p></div>
-        <div class="view"><img src="img/sigil.jpg" alt="The sigil view"><h3>Sigil</h3><p>The figure isolated in solid ink, with no field and no glow, to be copied onto paper or metal.</p></div>
-        <div class="view"><img src="img/readout.png" alt="The readout: bodies, dignities, the figure, sound, tarot"><h3>Readout</h3><p>Bodies and dignities, the figure and its orb, the chord, the decans and their cards, the hours of the day. Every mark, traceable.</p></div>
+        <div class="view"><img loading="lazy" src="img/desk-chart.jpg" alt="The chart view: a conventional wheel with aspect lines"><h3>Chart</h3><p>The same moment as a conventional wheel: houses, degrees, aspect lines, for the astrologer's eye.</p></div>
+        <div class="view"><img loading="lazy" src="img/sigil.jpg" alt="The sigil view"><h3>Sigil</h3><p>The figure isolated in solid ink, with no field and no glow, to be copied onto paper or metal.</p></div>
+        <div class="view"><img loading="lazy" src="img/readout.png" alt="The readout: bodies, dignities, the figure, sound, tarot"><h3>Readout</h3><p>Bodies and dignities, the figure and its orb, the chord, the decans and their cards, the hours of the day. Every mark, traceable.</p></div>
       </div>
     </div>
   </section>
@@ -128,7 +154,7 @@
   <section id="lineage">
     <div class="wrap two flip">
       <figure>
-        <img src="img/hero-square.jpg" alt="The dial without its frame, as a wallpaper" width="1080" height="1080">
+        <img loading="lazy" src="img/hero-square.jpg" alt="The dial without its frame, as a wallpaper" width="1080" height="1080">
         <figcaption>The wallpaper render: the field runs to the edges.</figcaption>
       </figure>
       <div class="prose">
@@ -136,6 +162,32 @@
         <h2>A cosmic clock, in a long line of them.</h2>
         <p>The Antikythera mechanism geared the Sun, the Moon and the eclipses two thousand years ago. Su Song's tower turned a celestial globe in Kaifeng in 1092. Giovanni Dondi's Astrarium gave Padua one dial for each of the seven planets in 1364, and the Prague Orloj has shown day, twilight and night on an astrolabe since 1410.</p>
         <p>Modern haute horlogerie kept the thread alive in the astronomical complications of Oechslin, van der Klaauw, Patek Philippe and Vacheron Constantin. Siderarium borrows their functional discipline: a dial on which every mark earns its place, a chapter ring, applied Roman numerals, the Moon shown in its phase, and nothing that does not read.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="who">
+    <div class="wrap">
+      <p class="kicker">For whom</p>
+      <h2>Astrologers, magicians, angel workers.</h2>
+      <div class="steps">
+        <div class="step"><span class="n">I</span><h3>Electional astrology</h3><p>The Moon's verdict at a glance: ripe, open, unripe or void of course, with Lilly's tolerances. The applying aspect, the combustion, the Via Combusta. The next twenty-four hours scanned for the windows of ideation, manifestation and destruction, and the thinning of the veil.</p></div>
+        <div class="step"><span class="n">II</span><h3>Planetary magic and talismans</h3><p>The ruler of the day and the planetary hour, computed from sunrise and sunset at your place, with the angel of the hour named: Michael, Gabriel, Raphael, Anael, Cassiel, Samael, Sachiel. Dignities, the decans and their images, the figure of the moment as a sigil to copy onto paper or metal.</p></div>
+        <div class="step"><span class="n">III</span><h3>Angel work and energy work</h3><p>A live, synesthetic timetable: the hour's guardians, the lunar mansion, the chord of the sky to hear while you work. Every mark is traceable to its rule in the readout, nothing is a black box.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="faq">
+    <div class="wrap">
+      <p class="kicker">Questions</p>
+      <h2>Asked often.</h2>
+      <div class="rows">
+        <div class="row"><span class="k">What are planetary hours?</span><p>The day from sunrise to sunset and the night from sunset to sunrise are each divided into twelve unequal hours, ruled in turn by Saturn, Jupiter, Mars, the Sun, Venus, Mercury and the Moon, the Chaldean order. Siderarium computes them for your exact place and names the hour's ruler and its angel.</p></div>
+        <div class="row"><span class="k">What does Moon void of course mean?</span><p>The Moon makes no further Ptolemaic aspect to a classical planet before leaving her sign. Tradition holds that nothing begun then comes to much in the world; Siderarium shows the void, Lilly's tolerable exceptions, and the hours before and after it.</p></div>
+        <div class="row"><span class="k">Is it a birth chart app?</span><p>Yes, among other things. Enter a birth once, the town found by name from a world gazetteer, and the chart is kept on your device. The transits view shows which of your natal figures the sky is setting off now, and whether harmony or strife prevails.</p></div>
+        <div class="row"><span class="k">Is it free, and is it private?</span><p>Free. No account, no cookies, no analytics, no server: the sky is computed in your browser and your birth data never leave your device. It installs from the browser on iPhone, Android, Mac and Windows and works offline.</p></div>
+        <div class="row"><span class="k">How accurate is it?</span><p>Positions come from an ephemeris accurate to about one arcminute, with Regiomontanus houses by default and equal or Placidus on request. The about page in the app lists every rule and its source.</p></div>
       </div>
     </div>
   </section>

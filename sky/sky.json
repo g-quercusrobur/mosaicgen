@@ -1,26 +1,26 @@
 {
- "rendered": "2026-10-22 04:32 utc",
+ "rendered": "2026-10-22 10:03 utc",
  "targets": [
   {
    "name": "rome",
    "place": "rome",
-   "caption": "Thursday · 22 October 2026 · 06:32 CEST · Rome",
-   "figure": "Sun biquintile Uranus",
-   "chord": "Chord D–F# · major third"
+   "caption": "Thursday · 22 October 2026 · 12:03 CEST · Rome",
+   "figure": "Sun conjunction Venus",
+   "chord": "Chord F#–G · minor second"
   },
   {
    "name": "new-york",
    "place": "new york",
-   "caption": "Thursday · 22 October 2026 · 00:32 GMT-4 · New York",
-   "figure": "Sun biquintile Uranus",
-   "chord": "Chord D–F# · major third"
+   "caption": "Thursday · 22 October 2026 · 06:03 GMT-4 · New York",
+   "figure": "Sun conjunction Venus",
+   "chord": "Chord F#–G · minor second"
   },
   {
    "name": "greenwich",
    "place": "greenwich",
-   "caption": "Thursday · 22 October 2026 · 04:32 GMT · Greenwich",
-   "figure": "Sun biquintile Uranus",
-   "chord": "Chord D–F# · major third"
+   "caption": "Thursday · 22 October 2026 · 10:03 GMT · Greenwich",
+   "figure": "Sun conjunction Venus",
+   "chord": "Chord F#–G · minor second"
   }
  ]
 }

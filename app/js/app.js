@@ -69,7 +69,7 @@
   };
   if (params.get('place') && PLACES[params.get('place')]) S.place = PLACES[params.get('place')];
   if (params.get('lat') && params.get('lon') && Number.isFinite(+params.get('lat')) && Number.isFinite(+params.get('lon')))   // any horizon, for a wallpaper: ?lat=45.05&lon=9.69&tz=Europe/Rome&name=Piacenza
-    S.place = { name: params.get('name') || 'here', lat: +params.get('lat'), lon: +params.get('lon'), tz: params.get('tz') || Intl.DateTimeFormat().resolvedOptions().timeZone };
+    S.place = { name: (params.get('name') || 'here').slice(0, 80), lat: Math.max(-90, Math.min(90, +params.get('lat'))), lon: Math.max(-180, Math.min(180, +params.get('lon'))), tz: validZone(params.get('tz')) ? params.get('tz') : Intl.DateTimeFormat().resolvedOptions().timeZone };
 
   const $ = id => document.getElementById(id);
   const canvas = $('dial');
@@ -348,19 +348,31 @@
       settings: { lang: S.lang, houses: S.houses, field: S.field, bodies: store.get('bodies', 'lights'), relocate: S.relocate, place: S.place } };
     downloadBlob(new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' }), `siderarium-charts-${new Date().toISOString().slice(0, 10)}.json`);
   }
+  /* a chart from outside is rebuilt from its known fields only, each one checked: a bad zone or date is refused, never run */
+  function validZone(tz) { try { new Intl.DateTimeFormat('en-GB', { timeZone: tz }); return typeof tz === 'string' && tz.length < 64; } catch (e) { return false; } }   // a declaration: it is used at the top of the module too
+  function soundChart(c) {
+    if (!c || typeof c !== 'object' || !c.place || typeof c.place !== 'object') return null;
+    const t = Date.parse(c.date); if (!Number.isFinite(t) || t < -62135596800000 || t > 253402300799000) return null;
+    const lat = +c.place.lat, lon = +c.place.lon;
+    if (!(lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180)) return null;
+    const tz = validZone(c.place.tz) ? c.place.tz : null; if (!tz) return null;
+    const str = (v, n) => typeof v === 'string' ? v.slice(0, n) : undefined;
+    return { id: str(c.id, 40) || uid(), name: str(c.name, 80), date: new Date(t).toISOString(), unknownTime: !!c.unknownTime,
+      place: { name: str(c.place.name, 80) || 'place', label: str(c.place.label, 160), lat, lon, tz } };
+  }
   function importCharts(file) {
     const i = SD.i18n, note = $('import-note');
     file.text().then(txt => {
       const d = JSON.parse(txt);
       if (!d || d.app !== 'siderarium' || !Array.isArray(d.charts)) throw new Error('format');
       let n = 0;
-      for (const c of d.charts) {
-        if (!c || !c.date || !c.place || !Number.isFinite(+c.place.lat)) continue;
-        if (!c.id) c.id = uid();
+      for (const raw of d.charts) {
+        const c = soundChart(raw); if (!c) continue;
         if (!S.charts.some(x => x.id === c.id)) { S.charts.push(c); n++; }
       }
       store.set('charts', S.charts);
-      if (!S.natal && d.natal && d.natal.date && d.natal.place) { S.natal = d.natal; store.set('natal', S.natal); natalCache.key = null; }
+      const nat = soundChart(d.natal);
+      if (!S.natal && nat) { S.natal = nat; store.set('natal', S.natal); natalCache.key = null; }
       note.textContent = i.cap1(i.t('ui.imported')(n));
       refreshMenu(); recompute();
     }).catch(() => { note.textContent = i.cap1(i.t('ui.badFile')); });

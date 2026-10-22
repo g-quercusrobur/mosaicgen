@@ -432,6 +432,49 @@
     return out;
   }
 
+  /* The thinning of the veil, 0..1 [SD]. The between-times of the day (twilight, solar midnight), the Moon's light
+     (dark, full), her place (water signs, water houses), her void, the hours of the Moon and of Saturn, the doors of
+     the year (the cross-quarters, Samhain heaviest; the solstices and equinoxes lighter), an eclipse, and Neptune on
+     the Moon or the angles. Each factor is a weight 0..1; they combine as "any of them": one strong cause opens it alone. */
+  function veilOf(st) {
+    const g = (x, s) => Math.exp(-0.5 * (x / s) * (x / s));
+    const f = [], add = (key, w) => { if (w > 0.02) f.push({ key, w: Math.min(1, w) }); };
+    const t = st.date.getTime(), h = st.hour, min = 60000;
+    if (h && h.sunrise && h.sunset) {
+      const rises = [h.sunrise, h.nextSunrise].filter(Boolean), sets = [h.sunset];
+      let tw = 0; for (const r of rises) tw = Math.max(tw, g((t - r.getTime()) / min, 40)); for (const x of sets) tw = Math.max(tw, g((t - x.getTime()) / min, 40));
+      add('twilight', 0.6 * tw);
+      if (h.nextSunrise) add('midnight', 0.45 * g((t - (h.sunset.getTime() + h.nextSunrise.getTime()) / 2) / min, 40));
+    }
+    const ph = st.moon.phaseAngle, dark = Math.min(ph, 360 - ph);
+    add('dark', 0.8 * g(dark, 25)); add('full', 0.6 * g(ph - 180, 20));
+    const m = st.bodies.moon;
+    if (C.SIGNS[m.sign].element === 'water') add('water', 0.45);
+    if ([4, 8, 12].includes(m.house)) add('waterHouse', 0.4);
+    if (st.moon.verdict === 'void') add('void', 0.5);
+    if (h) { if (h.hourRuler === 'moon') add('moonHour', 0.45); else if (h.hourRuler === 'saturn') add('saturnHour', 0.4); if (h.dayRuler === 'moon' || h.dayRuler === 'saturn') add('day', 0.2); }
+    const sl = st.bodies.sun.lon, dist = x => { const d = Math.abs(((sl - x) % 360 + 540) % 360 - 180); return d; };
+    const doors = [['samhain', 225, 0.8], ['beltane', 45, 0.65], ['imbolc', 315, 0.45], ['lammas', 135, 0.45], ['solstice', 90, 0.4], ['solstice', 270, 0.4], ['equinox', 0, 0.4], ['equinox', 180, 0.4]];
+    for (const [k, lon, w] of doors) add(k, w * g(dist(lon), 1.5));          // the doors as the Sun reaches them
+    // the doors as the calendar keeps them: the nights of 31 October, 30 April, 1 February and 31 July, a bell of 14 hours about local midnight
+    if (st.loc && st.loc.tz) {
+      try {
+        const pp = Object.fromEntries(new Intl.DateTimeFormat('en-GB', { timeZone: st.loc.tz, month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(st.date).map(x => [x.type, x.value]));
+        const hm = +pp.hour + pp.minute / 60, md = pp.month + '-' + pp.day;
+        const nights = { '10-31': ['samhain', 1, 1], '11-01': ['samhain', 1, -1], '04-30': ['beltane', 0.8, 1], '05-01': ['beltane', 0.8, -1], '02-01': ['imbolc', 0.55, 1], '02-02': ['imbolc', 0.55, -1], '07-31': ['lammas', 0.55, 1], '08-01': ['lammas', 0.55, -1] };
+        const n = nights[md];
+        if (n) { const hoursFromMidnight = n[2] > 0 ? 24 - hm : hm; add(n[0], n[1] * g(hoursFromMidnight, 14)); }
+      } catch (e) { /* no zone: the Sun's doors alone */ }
+    }
+    if ((st.events || []).some(e => e.type === 'eclipse')) add('eclipse', 1);
+    for (const a of st.aspects || []) if ((a.a === 'neptune' || a.b === 'neptune') && a.moon && ['conjunction', 'opposition', 'square'].includes(a.aspect)) add('neptune', 0.5 * a.exact);
+    const np = st.bodies.neptune.lon;
+    if ([st.asc, st.mc, (st.asc + 180) % 360, (st.mc + 180) % 360].some(x => dist.call(null, 0) >= 0 && Math.abs(((np - x) % 360 + 540) % 360 - 180) < 3)) add('neptuneAngle', 0.5);
+    let v = 1; for (const x of f) v *= 1 - x.w;
+    f.sort((a, b) => b.w - a.w);
+    return { v: 1 - v, factors: f };
+  }
+
   /* The next chord shift: walk forward in 10-minute steps until the chord's name changes,
      then halve the interval down to the minute. */
   function nextChordShift(date, loc, maxDays = 7) {
@@ -605,6 +648,7 @@
     st.elements = elements(st);
     st.mode = modeOf(st); st.windows = windowsOf(st);
     st.title = { house: st.bodies.moon.house, mode: st.mode.key, state: stateOf(st) };   // the title of the moment: stage of life, mother letter, time to work / watch / rest
+    st.veil = veilOf(st);
     return st;
   }
 

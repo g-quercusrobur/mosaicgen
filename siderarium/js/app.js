@@ -152,6 +152,7 @@
 
   /* ---------- the next 24 hours: ideation (aleph), incarnation (mem), destruction (shin) ---------- */
   const MOTHER_INK = { ideation: '#f2e8a0', incarnation: '#4a7ef0', destruction: '#ff5a2a' };   // king scale of the mother letters
+  const VEIL_INK = '#c9b8f5';                                // the veil: a silver violet, on its own scale, dashed
   const scan = { key: null, t0: 0, step: 20, vals: null, nexts: null, token: 0 };
   function scanIfNeeded() {
     const b = anchor();                                     // the strip stays anchored at now; the playhead moves along it
@@ -164,7 +165,7 @@
       if (token !== scan.token) return;
       for (let k = 0; k < 24 && i <= N; k++, i++) {
         const st = SD.engine.compute(new Date(b + i * scan.step * 60000), S.place, { light: true, houses: S.houses });
-        out.push({ ...st.windows, house: st.bodies.moon.house });   // the Moon's house at each step names the window's stage
+        out.push({ ...st.windows, house: st.bodies.moon.house, veil: st.veil.v });   // the Moon's house at each step names the window's stage; the veil rides along
       }
       if (i <= N) return setTimeout(chunk, 0);
       scan.vals = out;
@@ -174,6 +175,12 @@
         const T = Math.max(0.12, sorted[Math.floor(sorted.length * 0.85)]);
         let j = v.findIndex((x, n) => n > 0 && x >= T);
         if (j > 0) { while (j + 1 < v.length && v[j + 1] >= v[j]) j++; scan.nexts[m] = { at: new Date(b + j * scan.step * 60000), v: v[j], house: out[j].house }; }
+      }
+      {                                                       // the veil: its thinnest point in the coming day, else the week
+        const pick = (from, to) => { let j = -1, best = 0; for (let n = from; n < Math.min(to, out.length); n++) if (out[n].veil > best) { best = out[n].veil; j = n; } return j; };
+        let j = pick(1, 73); const jw = pick(1, out.length);   // a great night within the week outranks the day's own twilight
+        if (jw >= 0 && (j < 0 || out[jw].veil >= 0.9 || out[jw].veil > out[j].veil + 0.15)) j = jw;
+        scan.veil = j >= 0 ? { at: new Date(b + j * scan.step * 60000), v: out[j].veil, house: out[j].house } : null;
       }
       drawStrip(); drawNexts();
     })();
@@ -195,6 +202,10 @@
         vals.forEach((w, i) => { const x = i / n * W, y = H - 2 * d - (w[m] / peak) * (H - 4 * d - top); i ? c.lineTo(x, y) : c.moveTo(x, y); });
         c.stroke();
       }
+      c.strokeStyle = VEIL_INK; c.lineWidth = 1.4 * d; c.globalAlpha = 0.85; c.setLineDash([3 * d, 3 * d]);   // the veil on its own scale, 0 to 1
+      c.beginPath();
+      vals.forEach((w, i) => { const x = i / n * W, y = H - 2 * d - (w.veil || 0) * (H - 4 * d - top); i ? c.lineTo(x, y) : c.moveTo(x, y); });
+      c.stroke(); c.setLineDash([]);
       c.globalAlpha = 1;
     }
     c.font = `${10 * d}px "Geist Mono", monospace`; c.fillStyle = 'rgba(235,231,220,0.5)'; c.textBaseline = 'top';
@@ -213,7 +224,9 @@
       const n = scan.nexts[m];
       return n ? `<button data-jump="${n.at.toISOString()}" title="${i.t('ui.goTo')}"><i style="background:${col}"></i>${i.cap1(i.window(m))} · ${fmtAt(n.at)} · ${i.t('ui.r.in')} ${i.house12(n.house)}</button>`
                : `<span><i style="background:${col}"></i>${i.cap1(i.window(m))} · ${i.t('ui.notThisWeek')}</span>`;
-    }).join('');
+    }).join('') + (scan.veil
+      ? `<button data-jump="${scan.veil.at.toISOString()}" title="${i.t('ui.goTo')}"><i class="dash" style="background:${VEIL_INK}"></i>${i.cap1(i.t('ui.veil'))} · ${i.t('ui.veilThin')} ${fmtAt(scan.veil.at)} · ${i.t('ui.r.in')} ${i.house12(scan.veil.house)}</button>`
+      : `<span><i class="dash" style="background:${VEIL_INK}"></i>${i.cap1(i.t('ui.veil'))} · ${i.t('ui.notThisWeek')}</span>`);
     el.querySelectorAll('[data-jump]').forEach(b => b.addEventListener('click', () => { S.playing = false; S.offsetMs = new Date(b.dataset.jump).getTime() - anchor(); recompute(); }));
   }
 
@@ -390,6 +403,7 @@
       ${st.transits ? `<h3>${H('transits')}</h3>${verdict}<table>${interRows}</table><table>${st.transits.slice(0, 8).map(a => `<tr><td>${figName(a)}</td><td>${a.orb.toFixed(2)}° ${a.applying ? R('applying') : R('separating')}</td><td>${a.power.toFixed(2)}</td></tr>`).join('') || `<tr><td>${i.cap1(i.t('ui.noContact'))}</td></tr>`}</table>` : ''}
       <h3>${H('moon')}</h3>${st.moon.verdict === 'void' ? `<p class="dim">${i.cap1(R('voidNote'))}</p>` : ''}<p>${i.cap1(i.verdict(st.moon.verdict))} · ${st.moon.next ? `${R('nextMoon')} ${A(st.moon.next.aspect)} ${P(st.moon.next.planet)} ${R('in')} ${(st.moon.next.days * 24).toFixed(1)}h` : i.flag('void of course')}${st.moon.flags.filter(f => f !== 'void of course').map(f => ' · ' + i.flag(f === 'under the beams' ? 'beams' : f)).join('')}</p>
       <p>${i.cap1(guardians)}</p>
+      <p>${i.cap1(i.t('ui.veil'))} ${st.veil.v.toFixed(2)}${st.veil.factors.length ? ' · ' + st.veil.factors.map(x => i.t('ui.veilOf.' + x.key)).join(', ') : ''}</p>
       <p>${i.ordinal(st.bodies.moon.mansion.index)} ${R('mansion')} · ${i.name(st.bodies.moon.mansion.name)} (Agrippa II.33)</p>
       <h3>${H('hours')}</h3><p class="hours">${hours}</p>
       <h3>${H('events')}</h3><p>${i.cap1(ev)}</p>

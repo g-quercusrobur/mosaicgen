@@ -463,6 +463,7 @@
     $('set-bodies').addEventListener('change', e => { S.luminous = e.target.value === 'lights'; store.set('bodies', e.target.value); S.dirty = true; });
     $('set-relocate').addEventListener('change', e => { S.relocate = e.target.value === '1'; store.set('relocate', S.relocate); natalCache.key = null; recompute(); });
     $('natal-edit').addEventListener('click', () => { openMenu(false); openBirth(); });
+    $('natal-new').addEventListener('click', () => { openMenu(false); openBirth(true); });   // a blank form; the loaded chart stays until the new one is saved
     $('natal-saveas').addEventListener('click', () => { const row = $('chart-new'); row.hidden = !row.hidden; if (!row.hidden) { $('chart-name').value = S.natal && S.natal.name || ''; $('chart-name').focus(); } });
     const commitNew = () => { const name = $('chart-name').value.trim(); if (!name) return; saveChartAs(name); $('chart-new').hidden = true; };
     $('chart-ok').addEventListener('click', commitNew);
@@ -518,10 +519,10 @@
     $('birth-open').addEventListener('click', openBirth);
     $('birth-close').addEventListener('click', () => { $('birth').hidden = true; });
     $('birth-save').addEventListener('click', saveBirth);
+    bindPlaceSearch();
     $('birth-clear').addEventListener('click', () => { S.natal = null; store.set('natal', null); if (natalModes.includes(S.mode)) S.mode = 'clock'; $('birth').hidden = true; recompute(); });
     $('wallpaper').addEventListener('click', exportWallpaper);
     $('save').addEventListener('click', () => exportPNG(2048));
-    const bc = $('birth-city'); bc.innerHTML = ZONES.map(z => `<option value="${z.name}">${offsetOf(z.tz)} · ${SD.i18n.placeName(z.name)}</option>`).join('');
     $('sigil').addEventListener('click', () => { S.sigil = !S.sigil; S.dirty = true; updateControls(); });
     $('preview').addEventListener('input', e => { S.playing = false; S.offsetMs = Number(e.target.value) * 60000; recompute(); });
     $('save-hd').addEventListener('click', () => exportPNG(4096));
@@ -549,29 +550,92 @@
   }
 
   /* ---------- the nativity: birth data, kept on this device only ---------- */
-  function openBirth() {
-    const n = S.natal;
+  function openBirth(blank) {
+    const n = blank ? null : S.natal;
+    S.birthNew = !!blank;
     if (n) {
       const p = placeParts(new Date(n.date), n.place.tz);
       $('birth-name').value = n.name || '';
       $('birth-date').value = `${p.year}-${p.month}-${p.day}`; $('birth-time').value = n.unknownTime ? '' : `${p.hour}:${p.minute}`;
       $('birth-unknown').checked = !!n.unknownTime;
-      if (PLACES[n.place.name]) $('birth-city').value = n.place.name;
-      $('birth-lat').value = n.place.lat; $('birth-lon').value = n.place.lon;
-    } else { $('birth-name').value = ''; $('birth-city').value = S.place.name in PLACES ? S.place.name : 'greenwich'; $('birth-lat').value = ''; $('birth-lon').value = ''; }
+      choosePlace(n.place);
+    } else { $('birth-name').value = ''; $('birth-date').value = ''; $('birth-time').value = ''; $('birth-unknown').checked = false; choosePlace(null); }
     $('birth-note').textContent = '';
     $('birth').hidden = false;
+    loadPlaces().catch(() => {});                           // the list, fetched once, cached with the app
+  }
+  /* ---------- the birthplace: a gazetteer of every town of a thousand people (GeoNames, CC BY 4.0), searched as you type ----------
+     each entry carries its time zone, so the birth is read in the zone of its own place with the rules of its year. */
+  const gaz = { rows: null, loading: null };
+  const fold = t => String(t).toLowerCase().normalize('NFD').replace(/\p{M}/gu, '');
+  function loadPlaces() {
+    if (gaz.rows) return Promise.resolve(gaz.rows);
+    if (gaz.loading) return gaz.loading;
+    gaz.loading = fetch('data/places.txt').then(r => { if (!r.ok) throw new Error(r.status); return r.text(); }).then(txt => {
+      const L = txt.split('\n'), tz = L[1].split('\t'), cc = {}, a1 = {};
+      const cf = L[2].split('\t'); for (let i = 0; i + 1 < cf.length; i += 2) cc[cf[i]] = cf[i + 1];
+      const af = L[3].split('\t'); for (let i = 0; i + 1 < af.length; i += 2) a1[af[i]] = af[i + 1];
+      const rows = [];
+      for (let i = 4; i < L.length; i++) {
+        const f = L[i].split('\t'); if (f.length < 8) continue;
+        rows.push({ name: f[0], key: fold(f[0]) + (f[1] ? ' ' + fold(f[1]) : ''), cc: f[2], region: a1[f[2] + '.' + f[3]] || '', country: cc[f[2]] || f[2], lat: +f[4], lon: +f[5], tz: tz[+f[6]], pop: +f[7] });
+      }
+      gaz.rows = rows; gaz.loading = null; return rows;
+    }).catch(e => { gaz.loading = null; throw e; });
+    return gaz.loading;
+  }
+  function searchPlaces(q) {
+    q = fold(q.trim()); if (!q || !gaz.rows) return [];
+    const out = [];
+    for (const r of gaz.rows) {
+      const k = r.key; let sc = 0;
+      if (k === q || k.startsWith(q + ' ')) sc = 3; else if (k.startsWith(q)) sc = 2; else if (k.includes(' ' + q) || k.includes('-' + q)) sc = 1;
+      if (sc) out.push({ r, sc });
+    }
+    return out.sort((a, b) => b.sc - a.sc || b.r.pop - a.r.pop).slice(0, 8).map(x => x.r);
+  }
+  const placeLabel = r => `${r.name}${r.region ? ', ' + r.region : ''}${r.country ? ', ' + r.country : ''}`;
+  function nearestZone(lat, lon) {                        // for coordinates typed by hand: the zone of the nearest listed town
+    if (!gaz.rows) return S.place.tz;
+    let best = null, bd = 1e9;
+    for (const r of gaz.rows) { const dx = (r.lon - lon) * Math.cos(lat * Math.PI / 180), dy = r.lat - lat, d = dx * dx + dy * dy; if (d < bd) { bd = d; best = r; } }
+    return best ? best.tz : S.place.tz;
+  }
+  function choosePlace(pl) {                              // pl: a saved place {name, label?, lat, lon, tz} or a gazetteer row, or null
+    S.birthPlace = pl ? { name: pl.name, label: pl.label || (pl.country ? placeLabel(pl) : undefined), lat: pl.lat, lon: pl.lon, tz: pl.tz } : null;
+    $('birth-place').value = pl ? (S.birthPlace.label || SD.i18n.placeName(pl.name)) : '';
+    $('birth-lat').value = pl ? pl.lat : ''; $('birth-lon').value = pl ? pl.lon : '';
+    $('birth-chosen').textContent = pl ? `${pl.tz} · ${(+pl.lat).toFixed(3)}, ${(+pl.lon).toFixed(3)}` : '';
+    $('birth-results').hidden = true;
+  }
+  function bindPlaceSearch() {
+    const box = $('birth-place'), list = $('birth-results'); let timer = null;
+    const show = () => {
+      const q = box.value; if (!q.trim()) { list.hidden = true; return; }
+      if (!gaz.rows) { list.innerHTML = `<li><button type="button" disabled>${SD.i18n.cap1(SD.i18n.t(gaz.loading ? 'ui.placesLoading' : 'ui.noPlace'))}</button></li>`; list.hidden = false; return; }
+      const rows = searchPlaces(q);
+      list.innerHTML = rows.length ? rows.map((r, i) => `<li><button type="button" data-i="${i}">${esc(r.name)}<span class="where">${esc((r.region ? ', ' + r.region : '') + ', ' + r.country)}</span></button></li>`).join('')
+        : `<li><button type="button" disabled>${SD.i18n.cap1(SD.i18n.t('ui.noPlace'))}</button></li>`;
+      list.hidden = false; list.rows = rows;
+    };
+    box.addEventListener('input', () => { S.birthPlace = null; $('birth-chosen').textContent = ''; clearTimeout(timer); timer = setTimeout(() => { if (!gaz.rows && !gaz.loading) loadPlaces().then(show).catch(show); else if (gaz.loading) gaz.loading.then(show).catch(show); show(); }, 90); });
+    box.addEventListener('keydown', e => { if (e.key === 'Enter') { const b = list.querySelector('button[data-i]'); if (b) b.click(); e.preventDefault(); } if (e.key === 'Escape') list.hidden = true; });
+    list.addEventListener('click', e => { const b = e.target.closest('button[data-i]'); if (!b) return; choosePlace(list.rows[+b.dataset.i]); });
+    box.addEventListener('blur', () => setTimeout(() => { list.hidden = true; }, 150));
   }
   function saveBirth() {
     const dateTxt = normDate($('birth-date').value), unknown = $('birth-unknown').checked, timeTxt = unknown ? '12:00' : normTime($('birth-time').value);
     $('birth-date').value = dateTxt; if (!unknown) $('birth-time').value = timeTxt;
-    const city = PLACES[$('birth-city').value];
-    const lat = parseFloat($('birth-lat').value), lon = parseFloat($('birth-lon').value);
-    const place = Number.isFinite(lat) && Number.isFinite(lon) ? { name: $('birth-place').value.trim() || city.name, lat, lon, tz: city.tz } : { ...city };
+    const lat = parseFloat($('birth-lat').value), lon = parseFloat($('birth-lon').value), hand = Number.isFinite(lat) && Number.isFinite(lon);
+    let place = null;
+    if (S.birthPlace) place = { ...S.birthPlace, lat: hand ? lat : S.birthPlace.lat, lon: hand ? lon : S.birthPlace.lon };   // the coordinates may be corrected by hand
+    else if (hand) place = { name: $('birth-place').value.trim() || `${lat.toFixed(2)}, ${lon.toFixed(2)}`, lat, lon, tz: nearestZone(lat, lon) };
+    if (!place) { $('birth-note').textContent = SD.i18n.cap1(SD.i18n.t('ui.needPlace')); return; }
     const d = fromStamp(`${dateTxt} ${timeTxt}`, place.tz);
     if (!d) { $('birth-note').textContent = SD.i18n.cap1(SD.i18n.t('ui.badDate')); return; }
     const name = $('birth-name').value.trim();
-    S.natal = { date: d.toISOString(), place, unknownTime: unknown, name: name || undefined, id: name ? (S.natal && S.natal.id) || uid() : undefined };
+    S.natal = { date: d.toISOString(), place, unknownTime: unknown, name: name || undefined, id: name ? (!S.birthNew && S.natal && S.natal.id) || uid() : undefined };
+    S.birthNew = false;
     if (name) upsertChart(S.natal);                         // a named nativity is kept in the saved charts
     store.set('natal', S.natal); natalCache.key = null;
     $('birth').hidden = true;

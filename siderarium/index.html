@@ -20,7 +20,7 @@
 </head>
 <body>
   <header class="bar top">
-    <span class="brand"><span class="mark">siderarium</span><span class="tag" data-i18n="ui.tagline">the macrocosmic clock</span></span>
+    <span class="brand"><span class="mark">SIDERARIUM</span><span class="tag" data-i18n="ui.tagline">the macrocosmic clock</span></span>
     <nav class="seg" aria-label="view">
       <span class="seg-ind" aria-hidden="true"></span>
       <button data-mode="clock" data-i18n="ui.clock">clock</button>
@@ -49,7 +49,7 @@
     <section>
       <h2 data-i18n="ui.nativity">birth date</h2>
       <p id="natal-summary" class="meta"></p>
-      <div class="rowbtns"><button id="natal-edit" data-i18n="ui.edit">edit</button><button id="natal-saveas" data-i18n="ui.saveAs">save as</button></div>
+      <div class="rowbtns"><button id="natal-new" data-i18n="ui.newChart">new</button><button id="natal-edit" data-i18n="ui.edit">edit</button><button id="natal-saveas" data-i18n="ui.saveAs">save as</button></div>
       <div id="chart-new" class="row" hidden><input id="chart-name" type="text" autocomplete="off" data-i18n="ui.namePrompt" data-i18n-attr="placeholder" placeholder="a name for this chart"><button id="chart-ok" data-i18n="ui.ok">ok</button></div>
       <label class="row"><span data-i18n="ui.seenFrom">seen from</span><select id="set-relocate"><option value="0" data-i18n="ui.birthplace">birthplace</option><option value="1" data-i18n="ui.currentPlace">current place</option></select></label>
       <h2 data-i18n="ui.charts">saved charts</h2>
@@ -87,8 +87,9 @@
         <label><span data-i18n="ui.date">date</span> <input id="birth-date" type="text" inputmode="numeric" placeholder="yyyy-mm-dd" autocomplete="off"></label>
         <label><span data-i18n="ui.time">time</span> <input id="birth-time" type="text" inputmode="numeric" placeholder="hh:mm" autocomplete="off"></label>
         <label class="check"><input id="birth-unknown" type="checkbox"> <span data-i18n="ui.unknown">time unknown</span></label>
-        <label><span data-i18n="ui.city">city of the time zone</span> <select id="birth-city"></select></label>
-        <label><span data-i18n="ui.placeName">place name</span> <input id="birth-place" type="text" data-i18n="ui.placeHint" data-i18n-attr="placeholder" placeholder="optional, e.g. rome" autocomplete="off"></label>
+        <label><span data-i18n="ui.placeName">birthplace</span> <input id="birth-place" type="text" data-i18n="ui.placeHint" data-i18n-attr="placeholder" placeholder="type the town, e.g. Piacenza" autocomplete="off" spellcheck="false"></label>
+        <ul id="birth-results" class="results" hidden></ul>
+        <p id="birth-chosen" class="meta"></p>
         <div class="pair">
           <label><span data-i18n="ui.lat">latitude</span> <input id="birth-lat" type="text" inputmode="decimal" placeholder="44.9924"></label>
           <label><span data-i18n="ui.lon">longitude</span> <input id="birth-lon" type="text" inputmode="decimal" placeholder="9.0094"></label>
@@ -260,6 +261,7 @@
               <li>J. Kepler, <em>Harmonices Mundi</em>, book IV, 1619.</li>
               <li>J. Meeus, <em>Astronomical Algorithms</em>, 2nd ed., Willmann-Bell, 1998.</li>
               <li>D. Cross, <em>Astronomy Engine</em>, MIT licence, github.com/cosinekitty/astronomy.</li>
+              <li>Place names, coordinates and time zones of the birthplace search: GeoNames, CC BY 4.0, geonames.org.</li>
               <li>C. Brennan, <em>Hellenistic Astrology: The Study of Fate and Fortune</em>, Amor Fati, 2017.</li>
               <li>S. Skinner, <em>The Complete Magician's Tables</em>, Golden Hoard, 2006.</li>
               <li>S. Kynes, <em>Llewellyn's Complete Book of Correspondences</em>, Llewellyn, 2013.</li>

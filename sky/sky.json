@@ -1,24 +1,24 @@
 {
- "rendered": "2026-10-22 23:16 utc",
+ "rendered": "2026-10-23 04:37 utc",
  "targets": [
   {
    "name": "rome",
    "place": "rome",
-   "caption": "Friday · 23 October 2026 · 01:16 CEST · Rome",
+   "caption": "Friday · 23 October 2026 · 06:37 CEST · Rome",
    "figure": "Sun conjunction Venus",
    "chord": "Chord F#–G · minor second"
   },
   {
    "name": "new-york",
    "place": "new york",
-   "caption": "Thursday · 22 October 2026 · 19:16 GMT-4 · New York",
+   "caption": "Friday · 23 October 2026 · 00:37 GMT-4 · New York",
    "figure": "Sun conjunction Venus",
    "chord": "Chord F#–G · minor second"
   },
   {
    "name": "greenwich",
    "place": "greenwich",
-   "caption": "Thursday · 22 October 2026 · 23:16 GMT · Greenwich",
+   "caption": "Friday · 23 October 2026 · 04:37 GMT · Greenwich",
    "figure": "Sun conjunction Venus",
    "chord": "Chord F#–G · minor second"
   }

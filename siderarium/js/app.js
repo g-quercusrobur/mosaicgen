@@ -38,7 +38,8 @@
   }
   const store = {
     get(k, d) { try { const v = localStorage.getItem('cw.' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
-    set(k, v) { try { localStorage.setItem('cw.' + k, JSON.stringify(v)); } catch (e) { /* private mode */ } }
+    set(k, v) { try { localStorage.setItem('cw.' + k, JSON.stringify(v)); return localStorage.getItem('cw.' + k) === JSON.stringify(v); } catch (e) { return false; } },   // true only when the browser kept it
+    works() { try { localStorage.setItem('cw.probe', '1'); const ok = localStorage.getItem('cw.probe') === '1'; localStorage.removeItem('cw.probe'); return ok; } catch (e) { return false; } }
   };
   const params = new URLSearchParams(location.search);
 
@@ -762,7 +763,8 @@
     S.natal = { date: d.toISOString(), place, unknownTime: unknown, name: name || undefined, id: name ? (!S.birthNew && S.natal && S.natal.id) || uid() : undefined };
     S.birthNew = false;
     if (name) upsertChart(S.natal);                         // a named nativity is kept in the saved charts
-    store.set('natal', S.natal); natalCache.key = null;
+    const kept = store.set('natal', S.natal); natalCache.key = null;
+    if (!kept) { $('birth-note').textContent = SD.i18n.cap1(SD.i18n.t('ui.noStorage')); return; }   // the browser refuses to keep data: say so, keep the form open, the chart lives for this visit only
     $('birth').hidden = true;
     if (S.mode !== 'natal' && S.mode !== 'synastry') S.mode = 'synastry';
     store.set('mode', S.mode); recompute();
@@ -929,6 +931,8 @@
     bind(); bindMenu(); if (!S.wall) bindGesture(); size(); recompute(); drawNexts(); requestAnimationFrame(slideSeg);
     if (!S.wall && (S.firstVisit || S.place.name === 'here')) locate(false);   // a wallpaper never asks for the position: it takes the address's place or the device's zone
     requestAnimationFrame(frame);
+    if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});   // ask the browser not to evict the saved charts under storage pressure
+    if (!store.works()) { const w = document.createElement('p'); w.className = 'meta storage-warn'; w.textContent = SD.i18n.cap1(SD.i18n.t('ui.noStorage')); const ns = $('natal-summary'); if (ns) ns.after(w); }
     if ('serviceWorker' in navigator && /^https?:/.test(location.protocol) && !/claude\.ai$/.test(location.hostname)) navigator.serviceWorker.register('./sw.js').catch(() => {});
   }
   SD.app = { start, exportPNG, exportWallpaper, setLang, S, viewState, view, voicing, audio };

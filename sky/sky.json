@@ -1,26 +1,26 @@
 {
- "rendered": "2026-10-25 21:41 utc",
+ "rendered": "2026-10-26 00:10 utc",
  "targets": [
   {
    "name": "rome",
    "place": "rome",
-   "caption": "Sunday · 25 October 2026 · 22:41 CET · Rome",
+   "caption": "Monday · 26 October 2026 · 01:10 CET · Rome",
    "figure": "Sun square Pluto",
-   "chord": "Chord G–A# · minor third"
+   "chord": "Chord G diminished · C# G A#"
   },
   {
    "name": "new-york",
    "place": "new york",
-   "caption": "Sunday · 25 October 2026 · 17:41 GMT-4 · New York",
+   "caption": "Sunday · 25 October 2026 · 20:10 GMT-4 · New York",
    "figure": "Sun square Pluto",
-   "chord": "Chord G–A# · minor third"
+   "chord": "Chord G diminished · C# G A#"
   },
   {
    "name": "greenwich",
    "place": "greenwich",
-   "caption": "Sunday · 25 October 2026 · 21:41 GMT · Greenwich",
+   "caption": "Monday · 26 October 2026 · 00:10 GMT · Greenwich",
    "figure": "Sun square Pluto",
-   "chord": "Chord G–A# · minor third"
+   "chord": "Chord G diminished · C# G A#"
   }
  ]
 }

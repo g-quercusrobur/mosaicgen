@@ -99,6 +99,18 @@
     return natalCache.state;
   }
   const natalModes = ['natal', 'natalchart', 'synastry'];
+  /* the leading transits' dates (exact, entering and leaving orb) are searched once per transit and day and kept */
+  const spanCache = new Map();
+  function transitInfo(ns, tr) {
+    const day = Math.floor(now().getTime() / 864e5), spans = {}, houses = {};
+    for (const a of tr.slice(0, 4)) {
+      const key = [S.natal.id || S.natal.date, a.a, a.b, a.aspect, day].join('|');
+      if (!spanCache.has(key)) { if (spanCache.size > 200) spanCache.clear(); spanCache.set(key, SD.engine.transitSpan(a.a, a.nlon, a.angle, a.orbMax, now())); }
+      spans[a.a + '|' + a.b + '|' + a.aspect] = spanCache.get(key);
+      houses[a.a] = SD.engine.houseIn(ns.cusps, S.state.bodies[a.a].lon);
+    }
+    return { name: S.natal.name || '', spans, houses };
+  }
   function viewState() { return (S.mode === 'natal' || S.mode === 'natalchart') && S.natal ? natalState() : S.state; }
 
   function recompute() {
@@ -109,6 +121,7 @@
       const ns = natalState(), tr = SD.engine.computeTransits(S.state, ns).filter(x => x.power > 0.04);
       S.state.natal = ns; S.state.transits = tr;
       S.state.interaction = SD.engine.computeInteractions(S.state, ns, tr);   // what the two skies make together
+      S.state.transitInfo = transitInfo(ns, tr);                                 // when each leading transit is exact, and where it stands in the natal houses
       S.state.configs = { ...S.state.configs, primary: tr[0] || null, secondary: tr.slice(1, 3), scale: 1, cut: null };
     }
     S.lastCompute = performance.now();
@@ -560,7 +573,7 @@
     $('natal-summary').textContent = natalSummary();
     $('natal-saveas').disabled = !S.natal; $('natal-report').disabled = !S.natal;
     const ul = $('charts');
-    ul.innerHTML = S.charts.length ? S.charts.map(c => `<li data-id="${c.id}"${S.natal && S.natal.id === c.id ? ' class="on"' : ''}><span class="name" data-act="load" role="button" tabindex="0" title="${i.t('ui.load')}">${esc(c.name)}</span><span class="ops"><button data-act="rename">${i.cap1(i.t('ui.rename'))}</button><button data-act="delete">${i.cap1(i.t('ui.del'))}</button></span></li>`).join('')
+    ul.innerHTML = S.charts.length ? S.charts.map(c => `<li data-id="${c.id}"${S.natal && S.natal.id === c.id ? ' class="on"' : ''}><input type="radio" name="chart-use" class="use" data-act="load" aria-label="${i.t('ui.useChart')}" title="${i.t('ui.useChart')}"${S.natal && S.natal.id === c.id ? ' checked' : ''}><span class="name" data-act="load" role="button" tabindex="0" title="${i.t('ui.useChart')}">${esc(c.name)}</span><span class="ops"><button data-act="rename">${i.cap1(i.t('ui.rename'))}</button><button data-act="delete">${i.cap1(i.t('ui.del'))}</button></span></li>`).join('')
       : `<li class="empty">${i.cap1(i.t('ui.noCharts'))}</li>`;
   }
   const esc = t => String(t).replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
@@ -596,7 +609,7 @@
     $('chart-name').addEventListener('keydown', e => { if (e.key === 'Enter') commitNew(); if (e.key === 'Escape') $('chart-new').hidden = true; });
     $('charts').addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('span[data-act]')) { e.preventDefault(); e.target.click(); } });
     $('charts').addEventListener('click', e => {
-      const b = e.target.closest('[data-act]'); if (!b || e.target.tagName === 'INPUT') return;
+      const b = e.target.closest('[data-act]'); if (!b || (e.target.tagName === 'INPUT' && !e.target.classList.contains('use'))) return;
       const li = b.closest('li'), id = li.dataset.id, chart = S.charts.find(c => c.id === id); if (!chart) return;
       if (b.dataset.act === 'load') { S.natal = { ...chart }; store.set('natal', S.natal); natalCache.key = null; if (!natalModes.includes(S.mode)) S.mode = 'natal'; store.set('mode', S.mode); recompute(); refreshMenu(); openMenu(false); }
       else if (b.dataset.act === 'rename') {

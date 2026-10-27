@@ -652,5 +652,34 @@
     return st;
   }
 
-  SD.engine = { compute, computeTransits, computeInteractions, elements, nextChordShift, norm360, norm180, sep, houseOf, houseIn, mundane, semiArc, dignity, placidus, regiomontanus, equalHouses, synodic, rarity };
+  /* a transit in time: the instant of exactness nearest to now, and the span in orb around it, by stepping the
+     transiting planet's longitude. the Moon is searched over days in minutes; the others over months in hours. */
+  function transitSpan(key, targetLon, angle, orbMax, from) {
+    const P = C.PLANETS[key]; if (!P || !P.body) return null;
+    const moon = key === 'moon', step = moon ? 10 * 60000 : 6 * 3600e3, reach = moon ? 3 * 864e5 : 400 * 864e5;
+    const t0 = from.getTime();
+    const orbAt = ms => { const lon = eclipticOfDate(A.Body[P.body], A.MakeTime(new Date(ms))); return Math.abs(sep(lon, targetLon) - angle); };
+    let o0 = orbAt(t0), exact = null, best = o0, bestT = t0;
+    // walk outwards from now, both ways, until the orb has grown past its limit on each side; the minimum met is the exactness
+    let enter = null, leave = null;
+    for (let s = 1; s * step <= reach; s++) {
+      const tf = t0 + s * step, of = orbAt(tf);
+      if (of < best) { best = of; bestT = tf; }
+      if (leave === null && of > orbMax) leave = tf;
+      if (leave !== null && bestT < leave) break;
+    }
+    for (let s = 1; s * step <= reach; s++) {
+      const tb = t0 - s * step, ob = orbAt(tb);
+      if (ob < best - 1e-6 && (enter === null)) { best = ob; bestT = tb; }
+      if (enter === null && ob > orbMax) enter = tb;
+      if (enter !== null) break;
+    }
+    // refine the minimum to a few minutes by halving around bestT
+    let lo = bestT - step, hi = bestT + step;
+    for (let k = 0; k < 14; k++) { const m1 = lo + (hi - lo) / 3, m2 = hi - (hi - lo) / 3; if (orbAt(m1) < orbAt(m2)) hi = m2; else lo = m1; }
+    const tm = (lo + hi) / 2;
+    if (orbAt(tm) < Math.min(0.5, orbMax * 0.35)) exact = new Date(tm);
+    return { exact, enter: enter ? new Date(enter) : null, leave: leave ? new Date(leave) : null, orbNow: o0 };
+  }
+  SD.engine = { compute, computeTransits, computeInteractions, transitSpan, elements, nextChordShift, norm360, norm180, sep, houseOf, houseIn, mundane, semiArc, dignity, placidus, regiomontanus, equalHouses, synodic, rarity };
 })(window.SD = window.SD || {});

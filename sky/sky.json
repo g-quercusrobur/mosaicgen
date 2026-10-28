@@ -1,26 +1,26 @@
 {
- "rendered": "2026-10-28 01:13 utc",
+ "rendered": "2026-10-28 08:19 utc",
  "targets": [
   {
    "name": "rome",
    "place": "rome",
-   "caption": "Wednesday · 28 October 2026 · 02:13 CET · Rome",
-   "figure": "Sun quincunx Uranus",
-   "chord": "Chord G minor · D G A#"
+   "caption": "Wednesday · 28 October 2026 · 09:19 CET · Rome",
+   "figure": "Mars quintile Uranus",
+   "chord": "Chord E half-diminished · D E G A#"
   },
   {
    "name": "new-york",
    "place": "new york",
-   "caption": "Tuesday · 27 October 2026 · 21:13 GMT-4 · New York",
-   "figure": "Sun square Pluto",
-   "chord": "Chord G minor · D G A#"
+   "caption": "Wednesday · 28 October 2026 · 04:19 GMT-4 · New York",
+   "figure": "Mars sesquisquare Neptune",
+   "chord": "Chord E half-diminished · D E G A#"
   },
   {
    "name": "greenwich",
    "place": "greenwich",
-   "caption": "Wednesday · 28 October 2026 · 01:13 GMT · Greenwich",
+   "caption": "Wednesday · 28 October 2026 · 08:19 GMT · Greenwich",
    "figure": "Sun square Pluto",
-   "chord": "Chord G minor · D G A#"
+   "chord": "Chord E half-diminished · D E G A#"
   }
  ]
 }

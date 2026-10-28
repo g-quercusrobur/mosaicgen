@@ -1,0 +1,58 @@
+name: year of posts
+# renders one square image a day for a run of days, with the caption of the moment, and the posting plan (plan.csv, plan.json).
+# the images are published at https://siderarium.com/post/<date>.jpg, so a scheduler can take the CSV by image address;
+# the same set is attached to the run as a zip for download. started by hand from the Actions tab.
+on:
+  workflow_dispatch:
+    inputs:
+      start:
+        description: 'first day, yyyy-mm-dd'
+        required: true
+      days:
+        description: 'how many days'
+        default: '365'
+      place:
+        description: 'rome, new york, london, madrid, paris, berlin, los angeles, tokyo, sydney, mexico city, buenos aires'
+        default: 'rome'
+      hour:
+        description: 'local hour of the image, hh:mm'
+        default: '08:00'
+      lang:
+        description: 'en or es'
+        default: 'en'
+permissions:
+  contents: write
+concurrency:
+  group: pages
+  cancel-in-progress: false
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: playwright
+        working-directory: siderarium/tools
+        run: |
+          npm init -y >/dev/null
+          npm install --no-audit --no-fund playwright@1.47.2
+          npx playwright install --with-deps chromium
+      - name: render the days
+        working-directory: siderarium
+        run: node tools/render-year.js ../year-out "${{ github.event.inputs.start }}" "${{ github.event.inputs.days }}" "${{ github.event.inputs.place }}" "${{ github.event.inputs.hour }}" "${{ github.event.inputs.lang }}"
+      - name: attach the folder to this run
+        uses: actions/upload-artifact@v4
+        with:
+          name: siderarium-posts-${{ github.event.inputs.start }}
+          path: year-out
+      - name: publish to gh-pages/post
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./year-out
+          destination_dir: post
+          keep_files: true
+          commit_message: 'year of posts'

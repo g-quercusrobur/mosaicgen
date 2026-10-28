@@ -384,10 +384,23 @@
     const p = st.configs.primary, cf = st.configs, m = st.moon;
     const malefic = k => k === 'mars' || k === 'saturn' || k === 'pluto';
     if (!p) return { key: m.waxing ? 'ideation' : 'destruction', w: { ideation: m.waxing ? 1 : 0.3, incarnation: 0.3, destruction: m.waxing ? 0.3 : 1 }, quiet: true };
-    const hard = p.nature === 'hard' || (p.nature === 'fusion' && (malefic(p.a) || malefic(p.b))) || (cf.cut && malefic(cf.cut.by)) || (m.verdict === 'void' && !m.waxing);
+    // destruction needs a malefic in the figure, or a malefic cut, or the void waning Moon: a hard aspect between
+    // two benefics or lights is tension, not ruin, and keeps the passage from idea to thing (a recalibration: before,
+    // any hard aspect forced destruction and it led seven hours in ten)
+    const withMalefic = malefic(p.a) || malefic(p.b);
+    const hard = (p.nature === 'hard' && withMalefic) || (p.nature === 'fusion' && withMalefic) || (cf.cut && malefic(cf.cut.by));
+    const tense = (p.nature === 'hard' && !hard) || (m.verdict === 'void' && !m.waxing);   // tension, or the void waning Moon: destruction rises, does not rule outright
     const signed = (p.applying ? -1 : 1) * (p.days || 0);                    // days to exactness, negative before it
     const t = Math.max(0, Math.min(1, (signed + 0.3) / 0.6));                // the passage from idea to thing, smoothed over ±0.3 day
-    const w = hard ? { ideation: 0.3, incarnation: 0.3, destruction: 1 } : { ideation: 0.3 + 0.7 * (1 - t), incarnation: 0.3 + 0.7 * t, destruction: 0.3 };
+    // what has landed: the ruling figure is nearly always applying (the hierarchy favours it), so manifestation is also
+    // read from the strongest figure that was exact lately and is separating: a thing that has just come true
+    const landing = Math.max(t, ...[p, ...(cf.secondary || [])].map(f => (f && !f.applying && f.days !== undefined) ? Math.exp(-f.days / 0.75) : 0));
+    const w0 = hard ? { ideation: 0.3, incarnation: 0.3 + 0.4 * landing, destruction: 1 }
+      : { ideation: 0.3 + 0.7 * (1 - t), incarnation: 0.3 + 0.7 * landing, destruction: tense ? 0.6 : 0.3 };
+    // a weak ruling figure pulls weakly: its mode leads only in proportion to its power, otherwise the three mothers
+    // stand nearly level and the windows are decided by family, element and the Moon
+    const pull = Math.max(0, Math.min(1, p.power / 0.25));
+    const w = Object.fromEntries(Object.entries(w0).map(([k, v]) => [k, 0.45 + (v - 0.45) * pull]));
     const key = Object.entries(w).sort((a, b) => b[1] - a[1])[0][0];
     return { key, w, quiet: false };
   }
@@ -426,7 +439,7 @@
       if (key === 'destruction') beauty = (cf.cut ? 1 : 0.8) * (guard < 0.7 ? 1 : 0.85) * ({ ripe: 0.6, open: 0.8, unripe: 1, void: 0.3 }[v]) * (st.moon.waxing ? 0.8 : 1);
       else beauty = (cf.cut ? 0.55 : 1) * guard * ({ ripe: 1, open: 0.75, unripe: 0.4, void: 0.15 }[v]) * (key === 'incarnation' ? (st.moon.waxing ? 1 : 0.8) : 1);
       const strength = Math.min(1, Math.sqrt(p.power));
-      out[key] = Math.min(1, strength * (0.25 + 0.75 * fam) * (0.4 + 0.6 * el) * nature * beauty * 1.6);
+      out[key] = Math.min(1, strength * (0.4 + 0.6 * fam) * (0.5 + 0.5 * el) * nature * beauty * 1.6);   // the family and the element lift, they do not gate: the mode of the moment can carry a window
     }
     if (st.mode) for (const k of Object.keys(out)) out[k] *= st.mode.w[k];   // the mode of the moment leads; the others fall back
     return out;

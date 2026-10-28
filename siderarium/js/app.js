@@ -189,7 +189,7 @@
       scan.nexts = {};
       for (const m of Object.keys(MOTHER_INK)) {
         const v = out.map(w => w[m]), sorted = v.slice().sort((x, y) => x - y);
-        const T = Math.max(0.12, sorted[Math.floor(sorted.length * 0.85)]);
+        const T = Math.max(0.06, sorted[Math.floor(sorted.length * 0.85)]);   // each mother names her best hour of the week, even a modest one
         let j = v.findIndex((x, n) => n > 0 && x >= T);
         if (j > 0) { while (j + 1 < v.length && v[j + 1] >= v[j]) j++; scan.nexts[m] = { at: new Date(b + j * scan.step * 60000), v: v[j], house: out[j].house }; }
       }

@@ -1538,7 +1538,7 @@
     }
     cf.stations.forEach(st => drawStation(ctx, state, Lt, st, Rp, lw, E));
     const rippleCol = cf.ripple ? K.mixLight(C.PLANETS.moon.tincture, presence(state, cf.ripple.a === 'moon' ? cf.ripple.b : cf.ripple.a), 0.4, 0) : null;
-    if (!opts.plate && rippleCol) drawRipple(ctx, Lt, Rp, rippleCol, lw, E, t);
+    // the Moon's ripple, a ring opening from the centre, is retired: the field breathes enough
     const stars = constellation(geos, Rp);
     drawStars(ctx, stars, Lt, E, t);
 
@@ -1649,7 +1649,7 @@
     if (!info.bare && !info.groundEl) drawAuraLive(ctx, info.state, Lt, t);
     ctx.save();
     ctx.beginPath(); ctx.arc(Lt.cx, Lt.cy, Lt.R, 0, TAU); ctx.clip();
-    if (info.rippleCol) drawRipple(ctx, Lt, info.Rp, info.rippleCol, info.lw, info.E, t);
+    // the ripple is retired (see renderClock)
     if (!info.sigil) drawFlow(ctx, info.weave, info.state, Lt, info.E, t);
     ctx.globalCompositeOperation = 'lighter';
     info.stars.forEach((s, i) => {

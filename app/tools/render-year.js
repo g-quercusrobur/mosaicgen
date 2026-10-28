@@ -1,13 +1,13 @@
 /* renders one square image a day for a run of days, at a fixed local hour in one place, with the caption of the moment,
    and writes the posting plan beside them: plan.csv (date, time, caption, image_url) and plan.json.
    the ephemeris is deterministic, so a year can be rendered ahead and handed to any scheduler that takes a CSV.
-   usage: node tools/render-year.js <out dir> <start yyyy-mm-dd> <days> [place=rome] [hour=08:00] [lang=en] [chromium path]
+   usage: node tools/render-year.js <out dir> <start yyyy-mm-dd> <days> [place=rome] [hour=08:00] [lang=en] [chromium path] [base url]
    (run from the siderarium folder) */
 const fs = require('fs'), path = require('path');
 const { chromium } = require('playwright');
-const [out = 'year-out', start = new Date().toISOString().slice(0, 10), daysArg = '365', place = 'rome', hour = '08:00', lang = 'en', exe] = process.argv.slice(2);
+const [out = 'year-out', start = new Date().toISOString().slice(0, 10), daysArg = '365', place = 'rome', hour = '08:00', lang = 'en', exe, base] = process.argv.slice(2);
 const days = +daysArg;
-const SITE = 'https://siderarium.com/post/';
+const SITE = base || process.env.POST_BASE || 'https://siderarium.com/post/';   // the folder's public address, unlisted when the workflow gives it a token
 const TAGS = { en: '#siderarium #astrology #planetaryhours #electionalastrology #moonvoidofcourse #astrologicalclock #macrocosmicclock',
                es: '#siderarium #astrología #horasplanetarias #astrologíaelectiva #lunavacíadecurso #relojastrológico' };
 const ZONES = { rome: 'Europe/Rome', 'new york': 'America/New_York', london: 'Europe/London', greenwich: 'UTC', madrid: 'Europe/Madrid', paris: 'Europe/Paris', berlin: 'Europe/Berlin', 'los angeles': 'America/Los_Angeles', tokyo: 'Asia/Tokyo', sydney: 'Australia/Sydney', 'mexico city': 'America/Mexico_City', 'buenos aires': 'America/Argentina/Buenos_Aires' };

@@ -40,8 +40,13 @@ jobs:
           npm init -y >/dev/null
           npm install --no-audit --no-fund playwright@1.47.2
           npx playwright install --with-deps chromium
+      - name: an unlisted folder name, so the year ahead is reachable by its address but not findable
+        id: folder
+        run: echo "name=post-$(openssl rand -hex 6)" >> "$GITHUB_OUTPUT"
       - name: render the days
         working-directory: siderarium
+        env:
+          POST_BASE: https://siderarium.com/${{ steps.folder.outputs.name }}/
         run: node tools/render-year.js ../year-out "${{ github.event.inputs.start }}" "${{ github.event.inputs.days }}" "${{ github.event.inputs.place }}" "${{ github.event.inputs.hour }}" "${{ github.event.inputs.lang }}"
       - name: attach the folder to this run
         uses: actions/upload-artifact@v4
@@ -53,6 +58,8 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./year-out
-          destination_dir: post
+          destination_dir: ${{ steps.folder.outputs.name }}
           keep_files: true
           commit_message: 'year of posts'
+      - name: where it is
+        run: echo "Plan at https://siderarium.com/${{ steps.folder.outputs.name }}/plan.csv" >> "$GITHUB_STEP_SUMMARY"

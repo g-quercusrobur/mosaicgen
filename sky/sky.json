@@ -1,26 +1,26 @@
 {
- "rendered": "2026-10-29 06:58 utc",
+ "rendered": "2026-10-29 14:09 utc",
  "targets": [
   {
    "name": "rome",
    "place": "rome",
-   "caption": "Thursday · 29 October 2026 · 07:58 CET · Rome",
+   "caption": "Thursday · 29 October 2026 · 15:09 CET · Rome",
    "figure": "Mercury square Mars",
-   "chord": "Chord E–G · minor third"
+   "chord": "Chord E half-diminished · D E G A#"
   },
   {
    "name": "new-york",
    "place": "new york",
-   "caption": "Thursday · 29 October 2026 · 02:58 GMT-4 · New York",
+   "caption": "Thursday · 29 October 2026 · 10:09 GMT-4 · New York",
    "figure": "Mercury square Mars",
-   "chord": "Chord E–G · minor third"
+   "chord": "Chord E half-diminished · D E G A#"
   },
   {
    "name": "greenwich",
    "place": "greenwich",
-   "caption": "Thursday · 29 October 2026 · 06:58 GMT · Greenwich",
+   "caption": "Thursday · 29 October 2026 · 14:09 GMT · Greenwich",
    "figure": "Mercury square Mars",
-   "chord": "Chord E–G · minor third"
+   "chord": "Chord E half-diminished · D E G A#"
   }
  ]
 }

@@ -261,7 +261,7 @@
         ctx.lineWidth = Math.min(step * 0.7, u * (0.45 + 2.6 * kk) / Math.sqrt(density));   // a line at most seven tenths of the gap: the rings blend into a field, they do not merge into a wall
         ctx.beginPath();
         for (let q = 0; q <= 4; q++) {
-          const a = a0 + (a1 - a0) * q / 4, rr = GUILLOCHE ? r + amp * Math.sin(lobes * a + (ring % 2) * Math.PI) : r + 1.4 * u * Math.sin(12 * a + r * drift);
+          const a = a0 + (a1 - a0) * q / 4, rr = GUILLOCHE ? r + amp * Math.sin(lobes * a + (ring % 2) * Math.PI) : r + 2.1 * u * Math.sin(12 * a + r * drift);
           const px = Lt.cx + rr * Math.cos(a), py = Lt.cy - rr * Math.sin(a);
           q ? ctx.lineTo(px, py) : ctx.moveTo(px, py);
         }

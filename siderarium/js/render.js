@@ -1317,7 +1317,7 @@
       label: i.t('cap.clockLabel'),
       stateKey: T2.state,
       state: i.state(T2.state),
-      title: `${i.realm(T2.house)} · ${c1(i.window(T2.mode))} · ${i.t('cap.under')} ${i.name(H.angel)}`,   // the house as a realm: the first word reads as a place, the second as the work
+      title: `${i.t('cap.modeOf')} ${c1(i.window(T2.mode))} · ${i.realm(T2.house)} · ${i.t('cap.under')} ${i.name(H.angel)}`,   // the mode first, named as a mode; the house as a realm; the angel
       reason: `${c1(figLine)} · ${c1(mv)}${mn}`,
       l1: c1(`${state.natalView ? i.t('cap.nativity') + (state.relocated ? ' · ' + i.t('cap.relocated') + ' ' + i.placeName(state.relocated) : '') + ' · ' : ''}${T.day} · ${T.date} · ${T.time} ${T.zone} · ${i.placeName(state.loc.name)}`),
       detail1: cs(`${i.t('cap.dayOf')} ${i.planet(H.dayRuler)} · ${i.t('cap.hourOf')} ${i.planet(H.hourRuler)} · ${i.t('cap.sunIn')} ${i.t('cap.house')} ${i.roman(B.sun.house)} · ${dms(B.sun.deg)} ${i.sign(B.sun.sign)}`),

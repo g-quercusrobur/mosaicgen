@@ -588,7 +588,8 @@
     buildGlossary();
     $('glossary').hidden = false; $('about').hidden = true;
     const t = key && document.getElementById('g-' + key);
-    if (t) { t.scrollIntoView({ block: 'start' }); t.classList.add('lit'); setTimeout(() => t.classList.remove('lit'), 1500); }
+    document.querySelectorAll('#glossary-body .lit').forEach(x => x.classList.remove('lit'));
+    if (t) { t.scrollIntoView({ block: 'start' }); t.classList.add('lit'); }   // the entry stays lit until the next word is followed
     else $('glossary').scrollTop = 0;
   }
   const linkTerms = root => { try { SD.glossary.link(root, SD.i18n.locale().startsWith('es') ? 'es' : 'en'); } catch (e) { /* the glossary is a nicety */ } };

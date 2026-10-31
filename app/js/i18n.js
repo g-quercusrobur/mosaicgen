@@ -16,6 +16,7 @@
       verdict: { ripe: 'ripe', open: 'open', unripe: 'unripe', void: 'void' },
       windows: { ideation: 'ideation', incarnation: 'manifestation', destruction: 'destruction' },
       houses12: ['Body', 'Wealth', 'Communication', 'Roots', 'Creativity', 'Work', 'Union', 'Death', 'Vision', 'Honour', 'Society', 'Occult'],
+      realms: ['Realm of the Body', 'Realm of Wealth', 'Realm of Communication', 'Realm of Roots', 'Realm of Creativity', 'Realm of Work', 'Realm of Union', 'Realm of Death', 'Realm of Vision', 'Realm of Honour', 'Realm of Society', 'Realm of the Occult'],
       state: { work: 'Time to work', watch: 'Time to watch', shelter: 'Time to shelter' },
       chordSuffix: { '': 'major', '-': 'minor', dim: 'diminished', '+': 'augmented', sus4: 'suspended fourth', sus2: 'suspended second', maj7: 'major seventh', '7': 'dominant seventh', '-7': 'minor seventh', 'ø': 'half-diminished', dim7: 'diminished seventh' },
       noteNames: null,
@@ -77,6 +78,7 @@
       verdict: { ripe: 'madura', open: 'abierta', unripe: 'inmadura', void: 'vacía' },
       windows: { ideation: 'ideación', incarnation: 'manifestación', destruction: 'destrucción' },
       houses12: ['Cuerpo', 'Riqueza', 'Comunicación', 'Raíces', 'Creatividad', 'Trabajo', 'Unión', 'Muerte', 'Visión', 'Honor', 'Sociedad', 'Oculto'],
+      realms: ['Reino del Cuerpo', 'Reino de la Riqueza', 'Reino de la Comunicación', 'Reino de las Raíces', 'Reino de la Creatividad', 'Reino del Trabajo', 'Reino de la Unión', 'Reino de la Muerte', 'Reino de la Visión', 'Reino del Honor', 'Reino de la Sociedad', 'Reino de lo Oculto'],
       state: { work: 'Tiempo de obrar', watch: 'Tiempo de observar', shelter: 'Tiempo de resguardarse' },
       chordSuffix: { '': 'mayor', '-': 'menor', dim: 'disminuido', '+': 'aumentado', sus4: 'suspendido de cuarta', sus2: 'suspendido de segunda', maj7: 'con séptima mayor', '7': 'de séptima', '-7': 'menor con séptima', 'ø': 'semidisminuido', dim7: 'disminuido con séptima' },
       noteNames: { C: 'Do', 'C#': 'Do♯', D: 'Re', 'D#': 'Re♯', E: 'Mi', F: 'Fa', 'F#': 'Fa♯', G: 'Sol', 'G#': 'Sol♯', A: 'La', 'A#': 'La♯', B: 'Si' },
@@ -156,6 +158,7 @@
     titleCase: s => lang === 'en' ? String(s).split(' ').map((w, n) => (n && /^(of|from|and|in|the)$/.test(w)) ? w : I.cap1(w)).join(' ') : I.cap1(s),
     name: s => I.cap1(s),
     house12: n => d().houses12[n - 1] || String(n),
+    realm: n => (d().realms || [])[n - 1] || I.house12(n),
     state: k => d().state[k] || k,
     /* notes: letters in English, solfège in Spanish; a chord name as the engine writes it keeps its suffix */
     note: n => (d().noteNames ? d().noteNames[n] || n : n),

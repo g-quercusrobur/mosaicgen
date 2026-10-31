@@ -36,7 +36,7 @@
       ordinal: n => n + (n % 100 >= 11 && n % 100 <= 13 ? 'th' : ['th', 'st', 'nd', 'rd'][n % 10] || 'th'),
       decanOrd: ['first', 'second', 'third'],
       cap: {
-        nativity: 'birth chart', separating: 'separating', transitsTo: 'transits to', your: 'your', exact: 'exact', wasExact: 'was exact', untilOrb: 'in orb until', inYourHouse: 'in your house', inOrb: n => `${n} transit${n === 1 ? '' : 's'} in orb`, applyingN: n => `${n} applying`, noTransit: 'no transit in orb: the sky leaves the chart alone', dayOf: 'day of', hourOf: 'hour of', angel: 'angel of the hour', sunIn: 'Sun in', house: 'House', chord: 'chord', decanOf: 'decan of',
+        modeOf: 'Mode of', nativity: 'birth chart', separating: 'separating', transitsTo: 'transits to', your: 'your', exact: 'exact', wasExact: 'was exact', untilOrb: 'in orb until', inYourHouse: 'in your house', inOrb: n => `${n} transit${n === 1 ? '' : 's'} in orb`, applyingN: n => `${n} applying`, noTransit: 'no transit in orb: the sky leaves the chart alone', dayOf: 'day of', hourOf: 'hour of', angel: 'angel of the hour', sunIn: 'Sun in', house: 'House', chord: 'chord', decanOf: 'decan of',
         moonIn: 'moon in the', mansion: 'mansion', nextChord: 'next chord', quiet: 'quiet sky', transit: 'transit', natal: 'natal', exact: 'exact',
         moonApplying: 'moon applying', moonVoid: 'moon void of course', to: '', relocated: 'relocated to', tolerable: 'tolerable', clockLabel: 'Macrocosmic Clock', under: 'under', applying: 'applying'
       },
@@ -98,7 +98,7 @@
       ordinal: n => n + 'ª',
       decanOrd: ['primer', 'segundo', 'tercer'],
       cap: {
-        nativity: 'carta natal', separating: 'separando', transitsTo: 'tránsitos a', your: 'tu', exact: 'exacto', wasExact: 'fue exacto', untilOrb: 'en orbe hasta', inYourHouse: 'en tu casa', inOrb: n => `${n} tránsito${n === 1 ? '' : 's'} en orbe`, applyingN: n => `${n} aplicativo${n === 1 ? '' : 's'}`, noTransit: 'ningún tránsito en orbe: el cielo deja la carta en paz', dayOf: 'día de', hourOf: 'hora de', angel: 'ángel de la hora', sunIn: 'Sol en', house: 'Casa', chord: 'acorde', decanOf: 'decanato de',
+        modeOf: 'Modo de', nativity: 'carta natal', separating: 'separando', transitsTo: 'tránsitos a', your: 'tu', exact: 'exacto', wasExact: 'fue exacto', untilOrb: 'en orbe hasta', inYourHouse: 'en tu casa', inOrb: n => `${n} tránsito${n === 1 ? '' : 's'} en orbe`, applyingN: n => `${n} aplicativo${n === 1 ? '' : 's'}`, noTransit: 'ningún tránsito en orbe: el cielo deja la carta en paz', dayOf: 'día de', hourOf: 'hora de', angel: 'ángel de la hora', sunIn: 'Sol en', house: 'Casa', chord: 'acorde', decanOf: 'decanato de',
         moonIn: 'luna en la', mansion: 'mansión', nextChord: 'próximo acorde', quiet: 'cielo quieto', transit: 'tránsito', natal: 'natal', exact: 'exacto',
         moonApplying: 'luna aplicando', moonVoid: 'luna vacía de curso', to: 'a', relocated: 'reubicada a', tolerable: 'tolerable', clockLabel: 'Reloj Macrocósmico', under: 'bajo', applying: 'aplicando'
       },

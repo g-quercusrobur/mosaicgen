@@ -1345,7 +1345,7 @@
     const line = a => `${P(a.a)} ${A(a.aspect)} ${nat(a.b)}`;
     const short = a => `${line(a)} · ${a.orb.toFixed(1)}° ${i.t(a.applying ? 'cap.applying' : 'cap.separating')}`;
     const verdict = inter ? inter.verdict : 'balanced';
-    const stateKey = verdict === 'harmonyPrevails' ? 'work' : verdict === 'strifePrevails' ? 'rest' : 'watch';
+    const stateKey = verdict === 'harmonyPrevails' ? 'work' : verdict === 'strifePrevails' ? 'shelter' : 'watch';
     const fig = inter && inter.figures[0];
     const figTxt = fig ? (fig.name === 'setOff' ? `${P(fig.t)} ${i.t('ui.r.setsOff')} ${nat(fig.a)} ${A(fig.natalAspect)} ${P(fig.b)}` : `${P(fig.t)} ${i.t('ui.r.closes')} ${i.t('ui.r.fig.' + fig.name)} ${i.t('ui.r.with')} ${nat(fig.a)} ${A(fig.natalAspect)} ${P(fig.b)}`) : '';
     const housesTxt = Object.entries(info.houses).slice(0, 3).map(([k, h]) => `${P(k)} ${i.t('cap.inYourHouse')} ${i.roman(h)}`).join(' · ');
@@ -1364,7 +1364,7 @@
       l2: '', l3: '', fig: x.c1(tr[0] ? line(tr[0]) : ''), moon: '', chord: x.c1(x.chordTxt), decan: '', mansion: '', next: ''
     };
   }
-  const STATE_INK = { work: '#6fcf8e', watch: '#e3b341', rest: '#ff5a2a' };   // the one coloured text on the instrument
+  const STATE_INK = { work: '#6fcf8e', watch: '#e3b341', shelter: '#ff5a2a' };   // the one coloured text on the instrument
   function drawCaption(ctx, state, Lt) {
     const u = Lt.u, m = Lt.S * 0.0625, k = u * Lt.tc;     // type scales up on small screens; the 2048 export is unchanged
     const c = captionLines(state);

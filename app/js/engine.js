@@ -376,42 +376,67 @@
      The figure's planets and their signs must belong to the mother, the figure's nature must match it,
      and the moment must be beautiful for that work: whole, with harmonious guardians and a ripe moon
      (destruction takes the cut, the clash and the waning moon instead). */
-  /* The mode of the moment, one of the three mothers of the Sefer Yetzirah. Aleph, air, ideation while the ruling
-     aspect applies: what is coming. Mem, water, manifestation once it is exact and separating: what has landed.
-     Shin, fire, destruction when the aspect is hard, the portal is cut by a malefic, or the Moon is void and waning.
-     Lilly: an applying aspect shows what is to come, a separating one what is past. The reading of the mothers is [SD]. */
+  /* The mode of the moment, after the three mothers of the Sefer Yetzirah read as the text has them: Mem (water) and
+     Shin (fire) are the two poles, Aleph (air) is "the tongue of the balance" between them (SY 2:1, 3:1). Shin gathers
+     what breaks: a hard figure, heavier with a malefic in it, a malefic conjunction, a malefic cut, the void waning
+     Moon, the fire family. Mem gathers what lands: a figure just past exactness and separating, a soft figure between
+     benefics, the ripe Moon, the water and earth family. Aleph is the balance itself, high when the poles are even or
+     both weak, lifted by an applying soft figure and the air family. The Moon's own figures are left out of the mode:
+     they flip by the hour and belong to the state, not the mode. The reading of the mothers as poles is [SD]. */
   function modeOf(st) {
-    const p = st.configs.primary, cf = st.configs, m = st.moon;
+    const cf = st.configs, m = st.moon;
     const malefic = k => k === 'mars' || k === 'saturn' || k === 'pluto';
-    if (!p) return { key: m.waxing ? 'ideation' : 'destruction', w: { ideation: m.waxing ? 1 : 0.3, incarnation: 0.3, destruction: m.waxing ? 0.3 : 1 }, quiet: true };
-    // destruction needs a malefic in the figure, or a malefic cut, or the void waning Moon: a hard aspect between
-    // two benefics or lights is tension, not ruin, and keeps the passage from idea to thing (a recalibration: before,
-    // any hard aspect forced destruction and it led seven hours in ten)
-    const withMalefic = malefic(p.a) || malefic(p.b);
-    const hard = (p.nature === 'hard' && withMalefic) || (p.nature === 'fusion' && withMalefic) || (cf.cut && malefic(cf.cut.by));
-    const tense = (p.nature === 'hard' && !hard) || (m.verdict === 'void' && !m.waxing);   // tension, or the void waning Moon: destruction rises, does not rule outright
-    const signed = (p.applying ? -1 : 1) * (p.days || 0);                    // days to exactness, negative before it
-    const t = Math.max(0, Math.min(1, (signed + 0.3) / 0.6));                // the passage from idea to thing, smoothed over ±0.3 day
-    // what has landed: the ruling figure is nearly always applying (the hierarchy favours it), so manifestation is also
-    // read from the strongest figure that was exact lately and is separating: a thing that has just come true
-    const landing = Math.max(t, ...[p, ...(cf.secondary || [])].map(f => (f && !f.applying && f.days !== undefined) ? Math.exp(-f.days / 0.75) : 0));
-    const w0 = hard ? { ideation: 0.3, incarnation: 0.3 + 0.4 * landing, destruction: 1 }
-      : { ideation: 0.3 + 0.7 * (1 - t), incarnation: 0.3 + 0.7 * landing, destruction: tense ? 0.6 : 0.3 };
-    // a weak ruling figure pulls weakly: its mode leads only in proportion to its power, otherwise the three mothers
-    // stand nearly level and the windows are decided by family, element and the Moon
-    const pull = Math.max(0, Math.min(1, p.power / 0.25));
-    const w = Object.fromEntries(Object.entries(w0).map(([k, v]) => [k, 0.45 + (v - 0.45) * pull]));
+    const benefic = k => k === 'venus' || k === 'jupiter';
+    const figs = [cf.primary, ...(cf.secondary || [])].filter(f => f && !f.moon);
+    const p = figs[0] || cf.primary;
+    const any = xs => 1 - xs.reduce((a, x) => a * (1 - Math.max(0, Math.min(1, x))), 1);   // "any of these": one strong cause is enough
+    const fam = (f, M) => f ? ([f.a, f.b].reduce((a, k) => a + (M.planets[k] || 0), 0) / 2) : 0;
+    const el = (f, M) => f ? ([f.a, f.b].reduce((a, k) => a + (M.elements.includes(C.SIGNS[st.bodies[k].sign].element) ? 1 : 0), 0) / 2) : 0;
+    const strength = f => f ? Math.min(1, Math.sqrt(f.power / 0.3)) : 0;
+    const landing = f => (f && !f.applying && f.days !== undefined) ? Math.exp(-f.days / 0.75) : 0;
+    const M = C.MOTHERS;
+    let shin = 0, mem = 0, aleph = 0;
+    if (p) {
+      const s = strength(p), withMalefic = malefic(p.a) || malefic(p.b), withBenefic = benefic(p.a) || benefic(p.b);
+      shin = any([
+        p.nature === 'hard' ? (withMalefic ? 0.9 : 0.45) * s : 0,
+        p.nature === 'fusion' && withMalefic ? 0.7 * s : 0,
+        cf.cut && malefic(cf.cut.by) ? 0.6 : 0,
+        m.verdict === 'void' && !m.waxing ? 0.35 : 0,
+        0.3 * fam(p, M.destruction) * el(p, M.destruction)
+      ]);
+      mem = any([
+        0.9 * Math.max(...figs.map(landing), 0) * s,
+        p.nature !== 'hard' && withBenefic ? 0.6 * s : 0,
+        m.verdict === 'ripe' ? 0.3 : 0,
+        0.3 * fam(p, M.incarnation) * Math.max(el(p, M.incarnation), 0.5)
+      ]);
+      const balance = (1 - Math.abs(shin - mem)) * (1 - 0.5 * Math.max(shin, mem));
+      aleph = any([
+        balance,
+        p.nature !== 'hard' && p.applying ? 0.5 * s : 0,
+        0.3 * fam(p, M.ideation) * Math.max(el(p, M.ideation), 0.5)
+      ]);
+    } else { aleph = 0.6; mem = m.waxing ? 0.3 : 0.2; shin = m.waxing ? 0.2 : 0.3; }
+    const w = { ideation: Math.max(0.05, aleph), incarnation: Math.max(0.05, mem), destruction: Math.max(0.05, shin) };
+    const sum = w.ideation + w.incarnation + w.destruction;
+    const share = { ideation: w.ideation / sum, incarnation: w.incarnation / sum, destruction: w.destruction / sum };
     const key = Object.entries(w).sort((a, b) => b[1] - a[1])[0][0];
-    return { key, w, quiet: false };
+    return { key, w, share, quiet: !p };
   }
-  /* Time to work, to watch, to rest. Rest: the Moon unripe, or void without Lilly's tolerance. Work: the Moon ripe,
-     a figure of some strength, and no malefic cutting the portal against a building mode. Watch: everything between. */
+  /* Whether the magician can work at all: time to work, time to watch, time to shelter. Shelter: a storm, the fiery
+     pole strong while the Moon is weak, or a malefic cutting the portal with the Moon unripe or void. Work: the Moon
+     ripe (or open with a strong soft figure), a figure of some strength, the fiery pole not in command. Watch: between. */
   function stateOf(st) {
-    const m = st.moon, p = st.configs.primary, cut = st.configs.cut, mode = st.mode.key;
+    const m = st.moon, p = st.configs.primary, cut = st.configs.cut, md = st.mode;
     const malefic = k => k === 'mars' || k === 'saturn' || k === 'pluto';
-    if (m.verdict === 'unripe' || (m.verdict === 'void' && !m.tolerable)) return 'rest';
-    const against = cut && malefic(cut.by) && mode !== 'destruction';
-    if (m.verdict === 'ripe' && p && p.power >= 0.12 && !against) return 'work';
+    const weakMoon = m.verdict === 'unripe' || (m.verdict === 'void' && !m.tolerable);
+    const storm = (md.w.destruction >= 0.6 && weakMoon) || (cut && malefic(cut.by) && weakMoon) || (st.events || []).some(e => e.type === 'eclipse');
+    if (storm) return 'shelter';
+    if (weakMoon) return 'watch';
+    const strong = p && p.power >= 0.12;
+    const open = m.verdict === 'ripe' || (m.verdict === 'open' && p && p.nature !== 'hard' && p.power >= 0.2);
+    if (open && strong && md.w.destruction < 0.5 && !(cut && malefic(cut.by))) return 'work';
     return 'watch';
   }
   function windowsOf(st) {

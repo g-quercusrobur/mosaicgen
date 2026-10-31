@@ -182,7 +182,7 @@
       if (token !== scan.token) return;
       for (let k = 0; k < 24 && i <= N; k++, i++) {
         const st = SD.engine.compute(new Date(b + i * scan.step * 60000), S.place, { light: true, houses: S.houses });
-        out.push({ ...st.windows, house: st.bodies.moon.house, veil: st.veil.v });   // the Moon's house at each step names the window's stage; the veil rides along
+        out.push({ ...st.windows, house: st.bodies.moon.house, veil: st.veil.v, share: st.mode.share });   // the Moon's house names the window's stage; the veil and the mode's shares ride along
       }
       if (i <= N) return setTimeout(chunk, 0);
       scan.vals = out;
@@ -212,7 +212,15 @@
     if (scan.vals) {
       const n = STRIP_H * 3, vals = scan.vals.slice(0, n + 1), keys = Object.keys(MOTHER_INK);   // three steps an hour
       const peak = Math.max(0.08, ...scan.vals.flatMap(w => keys.map(k => w[k])));   // the week's strongest window sets the scale; the rows also carry the Moon's house, which is not a value
-      const top = 14 * d;                                     // room for the hour labels
+      const top = 22 * d;                                     // room for the hour labels and the band of the mode
+      // the band: at every step the three mothers' shares of the mode, stacked, so the balance is seen tipping
+      const bandY = 13 * d, bandH = 6 * d;
+      for (let i = 0; i < n; i++) {
+        const w = vals[i], sh = w.share || { ideation: 1 / 3, incarnation: 1 / 3, destruction: 1 / 3 };
+        const x0 = i / n * W, x1 = (i + 1) / n * W + 0.5; let y = bandY;
+        for (const [m, col] of Object.entries(MOTHER_INK)) { const hgt = sh[m] * bandH; c.fillStyle = col; c.globalAlpha = 0.75; c.fillRect(x0, y, x1 - x0, hgt); y += hgt; }
+      }
+      c.globalAlpha = 1;
       for (const [m, col] of Object.entries(MOTHER_INK)) {
         c.strokeStyle = col; c.lineWidth = 1.6 * d; c.globalAlpha = 0.9;
         c.beginPath();

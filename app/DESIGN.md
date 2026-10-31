@@ -298,3 +298,11 @@ Measured over sixty days at Rome: destruction led seven hours in ten, ideation o
 ## A year of posts
 
 `tools/render-year.js` renders one square image a day at a fixed local hour in one place, with the caption of the moment, and writes `plan.csv` (date, time, caption, image_url) and `plan.json`. The workflow `year of posts` runs it by hand, publishes the images at siderarium.com/post/<date>.jpg and attaches the folder to the run as a zip. Any scheduler that takes a CSV by image address can post a year from it.
+
+## The mothers as poles, and the three states (October 2026)
+
+Two different questions, two different scales. The three mothers answer *what kind of work* the hour favours: ideation (Aleph, air), manifestation (Mem, water), destruction (Shin, fire). The three states answer *whether to work at all*: time to work, time to watch, time to shelter.
+
+The mode now follows the Sefer Yetzirah's own structure (2:1, 3:1): Mem and Shin are the two poles and Aleph is "the tongue of the balance" between them. Shin gathers what breaks (a hard figure, heavier with a malefic; a malefic conjunction; a malefic cut; the void waning Moon; the fire family); Mem gathers what lands (a figure just past exactness and separating; a soft figure between benefics; the ripe Moon; the water and earth family); Aleph is the balance, high when the poles are even or both weak, lifted by an applying soft figure and the air family. Each pole combines its causes as "any of them". The Moon's own figures are left out of the mode (they belong to the state). The mode carries both weights `w` and shares `share` (the three summing to one); the strip draws the shares as a stacked band above the three lines, so the balance is seen tipping; the lines keep the strength of each kind of work.
+
+Shelter is the storm: the fiery pole strong (≥ 0.6) while the Moon is weak (unripe, or void beyond Lilly's tolerance), or a malefic cutting the portal under a weak Moon, or an eclipse. Work: the Moon ripe (or open with a strong soft figure), a figure of some strength, the fiery pole below half, no malefic cut. Watch: everything between. The reading of the mothers as poles and of shelter as the storm is [SD].

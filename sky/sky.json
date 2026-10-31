@@ -1,24 +1,24 @@
 {
- "rendered": "2026-10-31 05:25 utc",
+ "rendered": "2026-10-31 12:13 utc",
  "targets": [
   {
    "name": "rome",
    "place": "rome",
-   "caption": "Saturday · 31 October 2026 · 06:25 CET · Rome",
+   "caption": "Saturday · 31 October 2026 · 13:13 CET · Rome",
    "figure": "Mercury square Mars",
    "chord": "Chord C major · C E G"
   },
   {
    "name": "new-york",
    "place": "new york",
-   "caption": "Saturday · 31 October 2026 · 01:25 GMT-4 · New York",
+   "caption": "Saturday · 31 October 2026 · 08:13 GMT-4 · New York",
    "figure": "Mercury square Mars",
    "chord": "Chord C major · C E G"
   },
   {
    "name": "greenwich",
    "place": "greenwich",
-   "caption": "Saturday · 31 October 2026 · 05:25 GMT · Greenwich",
+   "caption": "Saturday · 31 October 2026 · 12:13 GMT · Greenwich",
    "figure": "Mercury square Mars",
    "chord": "Chord C major · C E G"
   }

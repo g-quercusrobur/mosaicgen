@@ -239,5 +239,6 @@ a.g:hover { text-decoration-style: solid; color: var(--ink); }
 .gbody h2 { font: 500 13px/1.4 var(--sans); letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-3); margin: 28px 0 8px; }
 .gbody dl { margin: 0; display: grid; gap: 10px; }
 .gbody dt { font: 500 16px/1.3 var(--sans); color: var(--ink); scroll-margin-top: 72px; }   /* clear of the close row */
-.gbody dt:target { color: #e3b341; }
+.gbody dt.lit, .gbody dt.lit + dd { background: rgba(111, 207, 142, 0.12); box-shadow: 0 0 0 6px rgba(111, 207, 142, 0.12); border-radius: 2px; }   /* the entry one arrived at, in faint siderarium green */
+.gbody dt.lit { color: #6fcf8e; }
 .gbody dd { margin: 0 0 6px; font: 400 15px/1.55 var(--sans); color: var(--ink-2); max-width: 68ch; }

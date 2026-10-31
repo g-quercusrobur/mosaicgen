@@ -1386,6 +1386,15 @@
     ctx.textAlign = 'left'; ctx.fillStyle = K.rgba(INK, 0.9); ctx.font = `500 ${Math.round(17 * k)}px ${SANS}`;
     if ('letterSpacing' in ctx) ctx.letterSpacing = `${(1.8 * k).toFixed(1)}px`;
     ctx.fillText(c.label, m, row(0));
+    {                                                     // beside the eyebrow, an underlined "what it means": the menu's key answers it
+      const i = I(), lw = ctx.measureText(c.label).width, link = i.t('cap.whatItMeans'), gap = 14 * k;
+      ctx.save(); ctx.font = `400 ${Math.round(15 * k)}px ${SANS}`; ctx.fillStyle = K.rgba(INK, 0.62);
+      const w = ctx.measureText(link).width, x = m + lw + gap, y = row(0);
+      ctx.fillText(link, x, y);
+      ctx.strokeStyle = K.rgba(INK, 0.5); ctx.lineWidth = Math.max(1, u); ctx.beginPath(); ctx.moveTo(x, y + 3 * k); ctx.lineTo(x + w, y + 3 * k); ctx.stroke();
+      ctx.restore();
+      Lt.eyebrow = { x: m, y: y - 17 * k, w: lw + gap + w, h: 22 * k, link: { x, w } };   // for the clickable area over the canvas
+    }
     if ('letterSpacing' in ctx) ctx.letterSpacing = '0px';
     // 2 · the state: do I work now. the one line in colour
     ctx.fillStyle = STATE_INK[c.stateKey] || INK; ctx.font = `500 ${Math.round(31 * k)}px ${SANS}`;

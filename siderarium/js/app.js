@@ -131,7 +131,7 @@
     const c = SD.render.captionLines(viewState());
     const low = s => s.replace(/^./, ch => ch.toLowerCase());
     for (const k in c) if (typeof c[k] === 'string') c[k] = esc(c[k]);
-    $('caption').innerHTML = `<p class="eyebrow">${c.label}</p><h2 class="h1 state-${c.stateKey}">${c.state}</h2><p class="deck">${c.title}</p><p class="reason">${c.reason}</p><p class="moment">${c.l1}</p><p class="detail">${c.detail1}<br>${c.detail2} · ${c.detail3}</p><p class="detail">${c.detail4}</p>`;
+    $('caption').innerHTML = `<p class="eyebrow">${c.label} <a class="what" href="#read-title">${esc(SD.i18n.t('cap.whatItMeans'))}</a></p><h2 class="h1 state-${c.stateKey}">${c.state}</h2><p class="deck">${c.title}</p><p class="reason">${c.reason}</p><p class="moment">${c.l1}</p><p class="detail">${c.detail1}<br>${c.detail2} · ${c.detail3}</p><p class="detail">${c.detail4}</p>`;
     if (!busy) scanIfNeeded();
     drawStrip();
     if (!busy) updateReadout();                            // the heavy parts wait until the clock rests
@@ -278,6 +278,15 @@
     ctx.drawImage(plate, 0, 0);
     ctx.setTransform(S.dpr * view.z, 0, 0, S.dpr * view.z, S.dpr * (view.x + S.ox), S.dpr * view.y);
     SD.render.overlay(ctx, info, t);
+    placeWhatLink(info);
+  }
+  /* the "what it means" link drawn on the canvas gets a clickable area in the page, following zoom and pan */
+  function placeWhatLink(info) {
+    const a = $('what-link'); if (!a) return;
+    const e = info && info.layout && info.layout.eyebrow;
+    if (!e || S.side < 560 || S.wall || document.body.classList.contains('bare')) { a.hidden = true; return; }
+    a.hidden = false;
+    a.style.left = `${view.x + S.ox + e.x * view.z}px`; a.style.top = `${view.y + e.y * view.z}px`; a.style.width = `${e.w * view.z}px`; a.style.height = `${e.h * view.z}px`;
   }
 
   /* ---------- sound: the chord as a slow organ drone ----------
@@ -600,6 +609,9 @@
     $('natal-edit').addEventListener('click', () => { openMenu(false); openBirth(); });
     $('natal-new').addEventListener('click', () => { openMenu(false); openBirth(true); });   // a blank form; the loaded chart stays until the new one is saved
     $('natal-report').addEventListener('click', chartReport);
+    const showKey = e => { e.preventDefault(); openMenu(true); const sec = $('read-title'); if (sec) sec.scrollIntoView({ block: 'start' }); };
+    $('what-link').addEventListener('click', showKey);
+    $('caption').addEventListener('click', e => { if (e.target.closest('a.what')) showKey(e); });
     $('charts-export').addEventListener('click', exportCharts);
     $('charts-import').addEventListener('click', () => $('charts-file').click());
     $('charts-file').addEventListener('change', e => { const f = e.target.files && e.target.files[0]; if (f) importCharts(f); e.target.value = ''; });

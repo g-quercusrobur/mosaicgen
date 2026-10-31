@@ -132,6 +132,7 @@
     const low = s => s.replace(/^./, ch => ch.toLowerCase());
     for (const k in c) if (typeof c[k] === 'string') c[k] = esc(c[k]);
     $('caption').innerHTML = `<p class="eyebrow">${c.label} <a class="what" href="#read-title">${esc(SD.i18n.t('cap.whatItMeans'))}</a></p><h2 class="h1 state-${c.stateKey}">${c.state}</h2><p class="deck">${c.title}</p><p class="reason">${c.reason}</p><p class="moment">${c.l1}</p><p class="detail">${c.detail1}<br>${c.detail2} · ${c.detail3}</p><p class="detail">${c.detail4}</p>`;
+    linkTerms($('caption'));
     if (!busy) scanIfNeeded();
     drawStrip();
     if (!busy) updateReadout();                            // the heavy parts wait until the clock rests
@@ -539,6 +540,7 @@
       <h3>${H('events')}</h3><p>${i.cap1(ev)}</p>
       <h3>${H('hierarchy')}</h3><table>${top}</table>
       <p class="dim">${i.cap1(R('sect'))} ${st.sect === 'day' ? R('day') : R('night')} · ASC ${Math.floor(st.asc % 30)}° ${i.sign(Math.floor(st.asc / 30))} · MC ${Math.floor(st.mc % 30)}° ${i.sign(Math.floor(st.mc / 30))} · ${R('dayRuler')} ${P(st.hour.dayRuler)} / ${i.name(st.hour.dayAngel)} · ${R('hour')} ${st.hour.index + 1} ${P(st.hour.hourRuler)} / ${i.name(st.hour.angel)}</p>`;
+    linkTerms($('readout'));
   }
 
   function updateControls() {
@@ -569,6 +571,27 @@
 
   /* ---------- the menu: view, settings, nativity and saved charts ---------- */
   const uid = () => Math.random().toString(36).slice(2, 10);
+  /* ---------- the glossary panel: built once per language, opened at a term ---------- */
+  let glossaryLang = null;
+  function buildGlossary() {
+    const i = SD.i18n, lang = i.locale().startsWith('es') ? 'es' : 'en', GL = SD.glossary;
+    if (glossaryLang === lang) return; glossaryLang = lang;
+    const groups = GL.groups[lang];
+    $('glossary-index').innerHTML = GL.order.map(g => `<a href="#gg-${g}">${groups[g]}</a>`).join('');
+    $('glossary-body').innerHTML = GL.order.map(g => {
+      const items = GL.entries.filter(x => x.group === g);
+      return `<h2 id="gg-${g}">${groups[g]}</h2><dl>${items.map(x => `<dt id="g-${x.key}">${esc(x[lang][0])}</dt><dd>${esc(x[lang][1])}</dd>`).join('')}</dl>`;
+    }).join('');
+    SD.glossary.link($('glossary-body'), lang);                 // the entries link to one another
+  }
+  function openGlossary(key) {
+    buildGlossary();
+    $('glossary').hidden = false; $('about').hidden = true;
+    const t = key && document.getElementById('g-' + key);
+    if (t) { t.scrollIntoView({ block: 'start' }); t.classList.add('lit'); setTimeout(() => t.classList.remove('lit'), 1500); }
+    else $('glossary').scrollTop = 0;
+  }
+  const linkTerms = root => { try { SD.glossary.link(root, SD.i18n.locale().startsWith('es') ? 'es' : 'en'); } catch (e) { /* the glossary is a nicety */ } };
   function natalSummary() {
     const i = SD.i18n;
     if (!S.natal) return i.cap1(i.t('ui.noneSet'));
@@ -680,6 +703,9 @@
     $('listen-corner').addEventListener('click', () => listen(!audio.on));
     $('about-open').addEventListener('click', () => { $('about').hidden = !$('about').hidden; $('about-open').classList.toggle('on', !$('about').hidden); if (!$('about').hidden) openMenu(false); });
     $('about-close').addEventListener('click', () => { $('about').hidden = true; $('about-open').classList.remove('on'); });
+    $('glossary-open').addEventListener('click', () => { openGlossary(); openMenu(false); });
+    $('glossary-close').addEventListener('click', () => { $('glossary').hidden = true; });
+    document.addEventListener('click', e => { const a = e.target.closest('a.g, [data-g]'); if (!a) return; e.preventDefault(); openGlossary(a.dataset.g); });
     const fullScreen = () => {                              // the f key: the bare dial, full screen where the browser allows it
       document.body.classList.toggle('bare');
       if (document.body.classList.contains('bare') && document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(() => {});

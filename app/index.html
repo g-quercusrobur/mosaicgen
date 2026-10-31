@@ -38,6 +38,7 @@
     <div class="sheet-head"><span class="mark" data-i18n="ui.menu">menu</span><button id="menu-close" data-i18n="ui.close">close</button></div>
     <section class="about-row">
       <button id="about-open" class="big" data-i18n="ui.about">About Siderarium</button>
+      <button id="glossary-open" class="big" data-i18n="ui.glossary">Glossary</button>
     </section>
     <section>
       <h2 data-i18n="ui.settings">settings</h2>
@@ -111,6 +112,15 @@
     </article>
   </section>
 
+  <section id="glossary" class="panel" hidden aria-label="glossary">
+    <div class="close-row"><button id="glossary-close" aria-label="close" data-i18n="ui.close">close</button></div>
+    <article>
+      <h1 data-i18n="ui.glossary">Glossary</h1>
+      <p class="meta" data-i18n="ui.glossaryNote">Every word on the dial, explained plainly. Tap a word anywhere in the readout to come here.</p>
+      <nav id="glossary-index" class="gindex"></nav>
+      <div id="glossary-body" class="gbody"></div>
+    </article>
+  </section>
   <section id="about" class="panel" hidden aria-label="about siderarium">
     <div class="close-row"><button id="about-close" aria-label="close" data-i18n="ui.close">close</button></div>
     <article data-about="en">
@@ -481,6 +491,7 @@
   <script src="js/engine.js"></script>
   <script src="js/glyphs.js"></script>
   <script src="js/render.js"></script>
+  <script src="js/glossary.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>
